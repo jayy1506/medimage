@@ -339,16 +339,22 @@ export default function UnifiedCurriculumDashboard() {
         <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm relative overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
             <div>
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-sky-50 border border-sky-200 text-adani-cyan text-xs font-bold uppercase tracking-wider mb-2">
-                <Activity className="w-3.5 h-3.5" />
-                B.Tech Semester VI • Comprehensive Course Dashboard
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-50 border border-sky-200 text-adani-cyan text-xs font-bold uppercase tracking-wider">
+                  <Activity className="w-3.5 h-3.5" />
+                  B.Tech Semester VI • Comprehensive Course Dashboard
+                </span>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 border border-purple-200 text-adani-purple text-xs font-bold">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Prepared for: Shravani Farkade (Roll No. 426054)
+                </span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                 Medical Text and Image Processing
               </h1>
               <p className="text-slate-600 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
                 Candidate: <span className="text-adani-cyan font-mono font-bold">{user?.email || "student.fet@adani.edu.in"}</span>.
-                Master all 6 clinical modules through interactive dual-panel theory, in-browser code sandbox, and strict &gt;75.0% pass rule assessments.
+                Concept → Example → Application question methodology active across all 6 foundational modules with strict &gt;75.0% pass rule.
               </p>
             </div>
 

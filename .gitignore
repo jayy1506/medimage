@@ -16,7 +16,7 @@ firebase-adminsdk*.json
 *.sqlite-wal
 *.db
 *.sqlite3
-data/
+/data/
 uploads/
 
 # Node.js

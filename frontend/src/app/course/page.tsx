@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { 
   BookOpen, 
@@ -11,205 +11,28 @@ import {
   Award, 
   Activity, 
   Sparkles,
-  LogOut
+  FileText,
+  Calculator,
+  UserCheck
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { UserNav } from "@/components/UserNav";
-
-interface TopicSummary {
-  id: string;
-  slug: string;
-  title: string;
-  order_index: number;
-  co_tags: string[];
-  read_time_minutes: number;
-  is_completed: boolean;
-}
-
-interface ModuleSummary {
-  id: string;
-  module_number: number;
-  title: string;
-  description: string;
-  theory_hours: number;
-  co_tags: string[];
-  topics_count: number;
-  completed_topics_count: number;
-  topics: TopicSummary[];
-}
+import { 
+  ALL_MODULES, 
+  QUICK_FORMULAS, 
+  STUDENT_NOTE_METADATA 
+} from "@/data/curriculumData";
 
 export default function CourseDashboardPage() {
-  const { user, profile, signOut } = useAuth();
-  const [modules, setModules] = useState<ModuleSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, profile } = useAuth();
+  const [activeTab, setActiveTab] = useState<"modules" | "formulas">("modules");
 
-  useEffect(() => {
-    // In production, fetches from GET /api/v1/course/modules
-    // Provide full accredited course syllabus matching CONTENT.md
-    setModules([
-      {
-        id: "mod-1",
-        module_number: 1,
-        title: "Medical Image Sources",
-        description: "Radiology, electromagnetic spectrum, basic X-ray physics, attenuation and imaging, CT, MRI, ultrasound, nuclear medicine and molecular imaging.",
-        theory_hours: 8,
-        co_tags: ["CO1"],
-        topics_count: 3,
-        completed_topics_count: 1,
-        topics: [
-          {
-            id: "t1-1",
-            slug: "m1-t1-radiology-spectrum",
-            title: "Radiology and the Electromagnetic Spectrum",
-            order_index: 1,
-            co_tags: ["CO1"],
-            read_time_minutes: 15,
-            is_completed: true
-          },
-          {
-            id: "t1-2",
-            slug: "m1-t2-xray-physics-attenuation",
-            title: "Basic X-ray Physics and Attenuation",
-            order_index: 2,
-            co_tags: ["CO1"],
-            read_time_minutes: 20,
-            is_completed: false
-          },
-          {
-            id: "t1-3",
-            slug: "m1-t3-computed-tomography",
-            title: "Computed Tomography (CT) Principles",
-            order_index: 3,
-            co_tags: ["CO1", "CO4"],
-            read_time_minutes: 25,
-            is_completed: false
-          }
-        ]
-      },
-      {
-        id: "mod-2",
-        module_number: 2,
-        title: "Image Processing in Clinical Practice",
-        description: "Clinical image databases, PACS, intensity operations, filter operations, clinical segmentation, spatial transforms.",
-        theory_hours: 8,
-        co_tags: ["CO2"],
-        topics_count: 1,
-        completed_topics_count: 0,
-        topics: [
-          {
-            id: "t2-1",
-            slug: "m2-t1-pacs-and-image-databases",
-            title: "Clinical Image Databases and PACS",
-            order_index: 1,
-            co_tags: ["CO2"],
-            read_time_minutes: 18,
-            is_completed: false
-          }
-        ]
-      },
-      {
-        id: "mod-3",
-        module_number: 3,
-        title: "Image Representation",
-        description: "Pixels and voxels, grayscale and color representation, image file formats, DICOM standard, image quality and SNR.",
-        theory_hours: 8,
-        co_tags: ["CO2", "CO4"],
-        topics_count: 2,
-        completed_topics_count: 0,
-        topics: [
-          {
-            id: "t3-1",
-            slug: "m3-t1-pixels-voxels-representation",
-            title: "Pixels, Voxels and Spatial Sampling",
-            order_index: 1,
-            co_tags: ["CO2"],
-            read_time_minutes: 15,
-            is_completed: false
-          },
-          {
-            id: "t3-2",
-            slug: "m3-t2-dicom-file-format",
-            title: "The DICOM Standard and Data Structure",
-            order_index: 2,
-            co_tags: ["CO2", "CO4"],
-            read_time_minutes: 22,
-            is_completed: false
-          }
-        ]
-      },
-      {
-        id: "mod-4",
-        module_number: 4,
-        title: "Operations in Intensity Space",
-        description: "Intensity transform function and dynamic range, windowing, histograms and histogram operations, dithering and depth.",
-        theory_hours: 7,
-        co_tags: ["CO2", "CO3"],
-        topics_count: 1,
-        completed_topics_count: 0,
-        topics: [
-          {
-            id: "t4-1",
-            slug: "m4-t1-windowing-and-dynamic-range",
-            title: "Windowing, Leveling and Dynamic Range Mapping",
-            order_index: 1,
-            co_tags: ["CO2", "CO3"],
-            read_time_minutes: 20,
-            is_completed: false
-          }
-        ]
-      },
-      {
-        id: "mod-5",
-        module_number: 5,
-        title: "Filtering, Transformations and Segmentation",
-        description: "Filtering, Fourier transform, segmentation, ROI definition and centroids, thresholding, region growing, evaluation of segmentation results.",
-        theory_hours: 7,
-        co_tags: ["CO3"],
-        topics_count: 1,
-        completed_topics_count: 0,
-        topics: [
-          {
-            id: "t5-1",
-            slug: "m5-t1-fourier-transforms-frequency",
-            title: "2D Fourier Transform and Frequency Domain Filtering",
-            order_index: 1,
-            co_tags: ["CO3"],
-            read_time_minutes: 22,
-            is_completed: false
-          }
-        ]
-      },
-      {
-        id: "mod-6",
-        module_number: 6,
-        title: "Spatial Transforms",
-        description: "Discretization, resolution and artifacts, interpolation and volume regularization, translation and rotation, reformatting, rendering and surface models.",
-        theory_hours: 7,
-        co_tags: ["CO3", "CO4"],
-        topics_count: 1,
-        completed_topics_count: 0,
-        topics: [
-          {
-            id: "t6-1",
-            slug: "m6-t1-multiplanar-reformatting",
-            title: "Multiplanar Reformatting (MPR) and 3D Rendering",
-            order_index: 1,
-            co_tags: ["CO3", "CO4"],
-            read_time_minutes: 20,
-            is_completed: false
-          }
-        ]
-      }
-    ]);
-    setIsLoading(false);
-  }, []);
-
-  const totalTopics = modules.reduce((sum, m) => sum + m.topics_count, 0);
-  const totalCompleted = modules.reduce((sum, m) => sum + m.completed_topics_count, 0);
-  const progressPct = totalTopics > 0 ? Math.round((totalCompleted / totalTopics) * 100) : 0;
+  const totalTopics = ALL_MODULES.reduce((sum, m) => sum + m.topics_count, 0);
+  const totalCompleted = ALL_MODULES.reduce((sum, m) => sum + m.completed_topics_count, 0);
+  const progressPct = Math.round((totalCompleted / totalTopics) * 100);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       {/* Navigation Bar */}
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 py-3 flex items-center justify-between">
@@ -224,7 +47,7 @@ export default function CourseDashboardPage() {
             </Link>
             <div className="hidden sm:block h-5 w-px bg-slate-300" />
             <span className="hidden sm:block text-xs font-bold text-adani-navy uppercase tracking-wider">
-              Workstation • AIDS 12605.1
+              {STUDENT_NOTE_METADATA.course_code} • Workstation
             </span>
           </div>
 
@@ -235,24 +58,31 @@ export default function CourseDashboardPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1 space-y-8">
-        {/* Welcome & Progress Banner */}
-        <div className="p-8 rounded-3xl bg-gradient-to-r from-adani-navy via-adani-dark to-slate-900 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="space-y-2 max-w-xl">
-            <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-white/10 text-adani-cyan text-[11px] font-bold uppercase tracking-wider">
-              <Activity className="w-3.5 h-3.5" />
-              <span>B.Tech Semester VI • Faculty of Engg &amp; Tech</span>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 space-y-6">
+        {/* Student Dedication & Academic Header */}
+        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-adani-navy via-slate-900 to-slate-950 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+          <div className="space-y-3 max-w-2xl relative z-10">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/30 text-adani-cyan text-[11px] font-bold uppercase tracking-wider">
+                <UserCheck className="w-3.5 h-3.5" />
+                <span>Prepared for: {STUDENT_NOTE_METADATA.prepared_for} (Roll No. {STUDENT_NOTE_METADATA.roll_no})</span>
+              </span>
+              <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full bg-purple-500/20 border border-purple-400/30 text-purple-300 text-[10px] font-bold">
+                <Sparkles className="w-3 h-3" />
+                <span>Concept → Example → Application Question</span>
+              </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-              Medical Text and Image Processing
+
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+              {STUDENT_NOTE_METADATA.title}
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Explore 6 foundational modules covering radiology physics, DICOM standards, dynamic range windowing, and 3D multiplanar reformatting. Clear each module at &gt;75% to achieve mastery.
+              Comprehensive accredited learning modules for B.Tech Semester VI. Every topic includes detailed physics, mathematical derivations, worked clinical examples, and verified application questions.
             </p>
           </div>
 
           {/* Progress Circular Dial */}
-          <div className="flex items-center space-x-4 bg-white/10 p-5 rounded-2xl border border-white/10 flex-shrink-0">
+          <div className="flex items-center space-x-4 bg-white/10 p-5 rounded-2xl border border-white/10 flex-shrink-0 relative z-10">
             <div className="text-center">
               <div className="text-3xl font-black text-adani-cyan">{progressPct}%</div>
               <div className="text-[10px] text-slate-300 uppercase tracking-wider font-bold">Curriculum Cleared</div>
@@ -265,67 +95,122 @@ export default function CourseDashboardPage() {
           </div>
         </div>
 
-        {/* Modules Outline */}
-        <div className="space-y-6">
-          <h2 className="text-lg font-black text-slate-900 tracking-tight">
-            Curriculum Modules &amp; Interactive Topics
-          </h2>
+        {/* View Switcher Tabs: Modules Outline vs Formula Sheet */}
+        <div className="flex items-center gap-2 border-b border-slate-200 pb-2">
+          <button
+            onClick={() => setActiveTab("modules")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              activeTab === "modules"
+                ? "bg-adani-cyan text-white shadow-sm"
+                : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            6 Curriculum Modules ({totalTopics} Topics)
+          </button>
 
-          <div className="grid grid-cols-1 gap-6">
-            {modules.map((m) => (
-              <div
-                key={m.id}
-                className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4 hover:border-adani-cyan/40 transition-colors"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
-                  <div className="flex items-center space-x-3">
-                    <span className="h-8 w-8 rounded-lg bg-adani-cyan/10 text-adani-cyan font-black text-sm flex items-center justify-center">
-                      0{m.module_number}
-                    </span>
-                    <div>
-                      <h3 className="text-base font-bold text-slate-900">{m.title}</h3>
-                      <p className="text-xs text-slate-500">{m.description}</p>
+          <button
+            onClick={() => setActiveTab("formulas")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              activeTab === "formulas"
+                ? "bg-adani-purple text-white shadow-sm"
+                : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+            }`}
+          >
+            <Calculator className="w-3.5 h-3.5" />
+            Quick Formula Sheet ({QUICK_FORMULAS.length} Equations)
+          </button>
+        </div>
+
+        {/* TAB 1: 6 CURRICULUM MODULES */}
+        {activeTab === "modules" && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 gap-6">
+              {ALL_MODULES.map((m) => (
+                <div
+                  key={m.id}
+                  className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4 hover:border-adani-cyan/40 transition-colors"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+                    <div className="flex items-center space-x-3">
+                      <span className="h-9 w-9 rounded-xl bg-gradient-to-tr from-sky-50 to-sky-100 border border-sky-200 text-adani-cyan font-black text-sm flex items-center justify-center">
+                        0{m.module_number}
+                      </span>
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900">{m.title}</h3>
+                        <p className="text-xs text-slate-500 mt-0.5">{m.description}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2 flex-shrink-0">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                        {m.theory_hours}h Theory
+                      </span>
+                      {m.co_tags.map((co) => (
+                        <span key={co} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-50 text-adani-cyan border border-sky-200">
+                          {co}
+                        </span>
+                      ))}
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2 flex-shrink-0">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
-                      {m.theory_hours}h Theory
-                    </span>
-                    {m.co_tags.map((co) => (
-                      <span key={co} className="text-[10px] font-bold px-2 py-0.5 rounded bg-adani-cyan/10 text-adani-cyan">
-                        {co}
-                      </span>
+                  {/* Topics in this module */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {m.topics.map((t) => (
+                      <Link
+                        key={t.id}
+                        href={`/course/${m.id}/${t.slug}`}
+                        className="group p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-white hover:border-adani-cyan hover:shadow-md transition-all flex items-center justify-between"
+                      >
+                        <div className="flex items-center space-x-2.5 min-w-0">
+                          {t.is_completed ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                          ) : (
+                            <Circle className="w-4 h-4 text-slate-300 group-hover:text-adani-cyan flex-shrink-0" />
+                          )}
+                          <span className="text-xs font-semibold text-slate-800 group-hover:text-adani-navy truncate">
+                            {t.title}
+                          </span>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-adani-cyan flex-shrink-0 ml-1.5 transform group-hover:translate-x-0.5 transition-transform" />
+                      </Link>
                     ))}
                   </div>
                 </div>
-
-                {/* Topics in this module */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {m.topics.map((t) => (
-                    <Link
-                      key={t.id}
-                      href={`/course/${m.id}/${t.slug}`}
-                      className="group p-3.5 rounded-xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:border-adani-cyan hover:shadow-sm transition-all flex items-center justify-between"
-                    >
-                      <div className="flex items-center space-x-2.5 min-w-0">
-                        {t.is_completed ? (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                        ) : (
-                          <Circle className="w-4 h-4 text-slate-300 group-hover:text-adani-cyan flex-shrink-0" />
-                        )}
-                        <span className="text-xs font-semibold text-slate-800 group-hover:text-adani-navy truncate">
-                          {t.title}
-                        </span>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-adani-cyan flex-shrink-0 ml-2 transform group-hover:translate-x-0.5 transition-transform" />
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* TAB 2: QUICK FORMULA SHEET */}
+        {activeTab === "formulas" && (
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+            <div className="border-b border-slate-100 pb-3">
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Calculator className="w-4 h-4 text-adani-purple" />
+                Medical Image Processing: Quick Formula Reference Sheet
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Key mathematical laws, physical relationships, and clinical quantitative equations used across Modules I through VI.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {QUICK_FORMULAS.map((f, idx) => (
+                <div key={idx} className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2 hover:bg-slate-100/60 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800">{f.name}</span>
+                    <span className="text-[10px] font-mono text-slate-400">EQ #{idx + 1}</span>
+                  </div>
+                  <div className="p-2.5 bg-white rounded-lg border border-slate-200 font-mono text-xs font-bold text-adani-navy overflow-x-auto text-center">
+                    {f.formula}
+                  </div>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">{f.notes}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
