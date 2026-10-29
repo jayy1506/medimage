@@ -28,9 +28,15 @@ export default function LoginPage() {
         await resetPassword(email);
         setResetSent(true);
       } else {
-        await signIn(email, password);
-        // Successful sign-in redirects to course dashboard
-        router.push("/course");
+        const userProf = await signIn(email, password);
+        // Role-based destination routing
+        if (email.toLowerCase() === "jthakre62@gmail.com" || userProf?.role === "admin") {
+          router.push("/admin");
+        } else if (userProf?.role === "faculty") {
+          router.push("/faculty");
+        } else {
+          router.push("/course");
+        }
       }
     } catch (err: any) {
       if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password") {

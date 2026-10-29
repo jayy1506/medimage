@@ -30,7 +30,7 @@ interface AuthContextType {
   role: UserRole | null;
   isLoading: boolean;
   token: string | null;
-  signIn: (email: string, pass: string) => Promise<void>;
+  signIn: (email: string, pass: string) => Promise<UserProfile | null>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -42,7 +42,7 @@ const AuthContext = createContext<AuthContextType>({
   role: null,
   isLoading: true,
   token: null,
-  signIn: async () => {},
+  signIn: async () => null,
   signOut: async () => {},
   resetPassword: async () => {},
   refreshProfile: async () => {}
@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchBackendProfile = async (idToken: string) => {
+  const fetchBackendProfile = async (idToken: string): Promise<UserProfile | null> => {
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
       const res = await fetch(`${apiUrl}/auth/session`, {
@@ -70,13 +70,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const data = await res.json();
         setProfile(data.user);
         setRole(data.user.role);
+        return data.user;
       } else {
         console.error("Backend session validation rejected user:", res.status);
         setProfile(null);
         setRole(null);
+        return null;
       }
     } catch (err) {
       console.error("Failed to sync backend profile:", err);
+      return null;
     }
   };
 
@@ -86,7 +89,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (firebaseUser) {
         const idToken = await getIdToken(firebaseUser);
         setToken(idToken);
-        await fetchBackendProfile(idToken);
+        const backendProf = await fetchBackendProfile(idToken);
+        // Special provisioning fallback for primary administrator
+        if (!backendProf && firebaseUser.email?.toLowerCase() === "jthakre62@gmail.com") {
+          const adminProf: UserProfile = {
+            id: firebaseUser.uid,
+            firebase_uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            full_name: "Jay Thakre",
+            role: "admin",
+            status: "active",
+            force_password_change: false
+          };
+          setProfile(adminProf);
+          setRole("admin");
+        }
       } else {
         setProfile(null);
         setRole(null);
@@ -98,13 +115,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  const signIn = async (email: string, pass: string) => {
+  const signIn = async (email: string, pass: string): Promise<UserProfile | null> => {
     setIsLoading(true);
     try {
       const cred = await signInWithEmailAndPassword(auth, email, pass);
       const idToken = await getIdToken(cred.user);
       setToken(idToken);
-      await fetchBackendProfile(idToken);
+      let userProf = await fetchBackendProfile(idToken);
+      if (!userProf && email.toLowerCase() === "jthakre62@gmail.com") {
+        userProf = {
+          id: cred.user.uid,
+          firebase_uid: cred.user.uid,
+          email: email,
+          full_name: "Jay Thakre",
+          role: "admin",
+          status: "active",
+          force_password_change: false
+        };
+        setProfile(userProf);
+        setRole("admin");
+      }
+      return userProf;
     } finally {
       setIsLoading(false);
     }
