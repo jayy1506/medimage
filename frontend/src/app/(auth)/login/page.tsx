@@ -3,9 +3,14 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Lock, Mail, ArrowRight, ShieldAlert, CheckCircle2 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const { signIn, resetPassword } = useAuth();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -20,14 +25,23 @@ export default function LoginPage() {
 
     try {
       if (isResetMode) {
-        // Send password reset / setup link
+        await resetPassword(email);
         setResetSent(true);
       } else {
-        // Sign in via Firebase Auth client
-        setErrorMessage("Firebase client authentication configured. Enter verified credentials.");
+        await signIn(email, password);
+        // Successful sign-in redirects to course dashboard
+        router.push("/course");
       }
     } catch (err: any) {
-      setErrorMessage(err.message || "Failed to authenticate.");
+      if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password") {
+        setErrorMessage("Invalid institutional email or password.");
+      } else if (err.code === "auth/user-not-found") {
+        setErrorMessage("No account exists for this email. Contact your course administrator for an invite.");
+      } else if (err.code === "auth/too-many-requests") {
+        setErrorMessage("Access temporarily locked due to multiple failed attempts. Please reset your password or try again later.");
+      } else {
+        setErrorMessage(err.message || "Failed to authenticate.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -146,7 +160,7 @@ export default function LoginPage() {
                 className="w-full flex justify-center items-center py-2.5 px-4 border border-transparent rounded-lg shadow-md text-sm font-bold text-white bg-gradient-to-r from-adani-cyan via-adani-purple to-adani-magenta hover:opacity-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-adani-purple disabled:opacity-50 transition-all"
               >
                 {isLoading ? (
-                  "Verifying..."
+                  "Verifying Credentials..."
                 ) : isResetMode ? (
                   "Send Setup / Reset Link"
                 ) : (

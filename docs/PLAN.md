@@ -31,15 +31,15 @@
 ## Milestone 1: Invite-Only Authentication & RBAC Engine
 *Estimated Duration: 1.5 Days*
 
-- [ ] **Task 1.1: Firebase Authentication Backend Middleware**
+- [x] **Task 1.1: Firebase Authentication Backend Middleware**
   - Implement FastAPI dependency to verify Firebase Bearer tokens, decode custom claims (`role`), and check active status in Postgres `users` table.
   - Enforce `403 Forbidden` for disabled users or users missing from the database.
-  - Verification: Pytest suite validating valid token, expired token, unknown user, and disabled user.
-- [ ] **Task 1.2: Admin User Management Endpoints**
+  - Verification: Pytest suite validating valid token, expired token, unknown user, and disabled user (`backend/tests/test_auth.py`).
+- [x] **Task 1.2: Admin User Management Endpoints**
   - Build `POST /api/v1/admin/users` (single user invite) and `POST /api/v1/admin/users/bulk` (CSV import).
   - Generate Firebase password reset activation links and log actions in `audit_logs`.
   - Verification: Automated test imports 10 mock students from CSV; asserts Firebase accounts and Postgres records created.
-- [ ] **Task 1.3: Frontend Login & First-Time Password Reset Flow**
+- [x] **Task 1.3: Frontend Login & First-Time Password Reset Flow**
   - Build clinical-grade login page (email/password only; zero public signup).
   - Implement force password change workflow on initial login.
   - Add route guards in Next.js middleware redirecting unauthenticated users to `/login`.
