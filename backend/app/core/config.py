@@ -21,6 +21,7 @@ class Settings(BaseSettings):
 
     # AI LLM Keys
     GEMINI_API_KEY: str = ""
+    GEMINI_API_KEYS: str = ""
     GROQ_API_KEY: str = ""
 
     # Sentry Monitoring
@@ -29,6 +30,13 @@ class Settings(BaseSettings):
     @property
     def cors_origins(self) -> List[str]:
         return [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",") if origin.strip()]
+
+    @property
+    def gemini_keys_list(self) -> List[str]:
+        keys = [k.strip() for k in self.GEMINI_API_KEYS.split(",") if k.strip()]
+        if not keys and self.GEMINI_API_KEY:
+            keys.append(self.GEMINI_API_KEY.strip())
+        return keys
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -13,30 +13,56 @@ MANDATORY_CLINICAL_REFUSAL = (
 )
 
 OFF_SYLLABUS_REFUSAL = (
-    "I can only assist with topics and mathematics within the accredited syllabus of "
-    "Medical Text and Image Processing (AIDS 12605.1) for Adani Institute of Higher Education and Research."
+    "I am strictly scoped to assist only with Medical Text and Image Processing (AIDS 12605.1) "
+    "at Adani Institute of Higher Education and Research. Questions outside of medical imaging physics "
+    "(X-ray/CT/MRI/Ultrasound/PET), DICOM standards, 2D spatial filtering, tomographic reconstruction, "
+    "medical image segmentation, and clinical NLP are not permitted."
 )
+
+# Core domain keyword anchors for AIDS 12605.1 syllabus
+VALID_DOMAIN_KEYWORDS = [
+    "x-ray", "xray", "ct", "mri", "ultrasound", "pet", "spect", "dicom",
+    "attenuation", "hounsfield", "hu", "radon", "sinogram", "backprojection",
+    "fbp", "beer-lambert", "beer lambert", "half-value layer", "hvl",
+    "photoelectric", "compton", "bremsstrahlung", "convolution", "kernel",
+    "sobel", "prewitt", "laplacian", "gaussian", "frequency", "fourier", "fft",
+    "filter", "histogram", "equalization", "segmentation", "otsu", "contour",
+    "u-net", "unet", "morphology", "erosion", "dilation", "window", "level",
+    "ww", "wl", "pixel", "voxel", "slice", "spatial", "image", "medical",
+    "clinical", "nlp", "bert", "biobert", "clinicalbert", "ner", "radiology",
+    "report", "modality", "matrix", "contrast", "resolution", "noise", "snr",
+    "artifact", "beam hardening", "partial volume", "ring artifact", "projection"
+]
 
 
 class RAGService:
     def __init__(self):
-        self.gemini_key = settings.GEMINI_API_KEY
+        self.gemini_keys = settings.gemini_keys_list
+        self.current_key_idx = 0
         self.groq_key = settings.GROQ_API_KEY
         self.redis_url = settings.UPSTASH_REDIS_REST_URL
         self.redis_token = settings.UPSTASH_REDIS_REST_TOKEN
+
+    def _get_next_gemini_key(self) -> Optional[str]:
+        """Rotates through the pool of API keys to distribute quota and handle rate limits."""
+        if not self.gemini_keys:
+            return None
+        key = self.gemini_keys[self.current_key_idx % len(self.gemini_keys)]
+        self.current_key_idx = (self.current_key_idx + 1) % len(self.gemini_keys)
+        return key
 
     def _hash_query(self, topic_id: str, prompt: str) -> str:
         clean = f"{topic_id}:{prompt.strip().lower()}"
         return hashlib.sha256(clean.encode()).hexdigest()
 
     async def get_cached_response(self, topic_id: str, prompt: str) -> Optional[Dict[str, Any]]:
-        """Queries Upstash Redis cache for semantic answer matches."""
+        """Queries Upstash Redis cache for semantic answer matches to save LLM tokens."""
         if not self.redis_url or not self.redis_token:
             return None
 
         key = f"tutor_cache:{self._hash_query(topic_id, prompt)}"
         try:
-            async with httpx.AsyncClient(timeout=2.0) as client:
+            async with httpx.AsyncClient(timeout=3.0) as client:
                 res = await client.get(
                     f"{self.redis_url}/get/{key}",
                     headers={"Authorization": f"Bearer {self.redis_token}"}
@@ -50,13 +76,13 @@ class RAGService:
         return None
 
     async def set_cached_response(self, topic_id: str, prompt: str, data: Dict[str, Any]) -> None:
-        """Stores answer in Upstash Redis cache with 7-day TTL."""
+        """Stores verified answer in Upstash Redis cache with 7-day TTL."""
         if not self.redis_url or not self.redis_token:
             return
 
         key = f"tutor_cache:{self._hash_query(topic_id, prompt)}"
         try:
-            async with httpx.AsyncClient(timeout=2.0) as client:
+            async with httpx.AsyncClient(timeout=3.0) as client:
                 await client.post(
                     f"{self.redis_url}/set/{key}",
                     headers={"Authorization": f"Bearer {self.redis_token}"},
@@ -66,7 +92,11 @@ class RAGService:
             print(f"[CACHE] Redis write skip: {e}")
 
     def check_guardrails(self, prompt: str) -> Optional[str]:
-        """Enforces clinical safety and syllabus boundaries."""
+        """
+        Enforces:
+        1. Clinical safety (refusal of personal medical diagnosis).
+        2. Strict syllabus boundary (limited strictly to course and project data).
+        """
         lower = prompt.lower()
 
         # Clinical Diagnosis / Personal Scan check
@@ -78,9 +108,18 @@ class RAGService:
         if any(kw in lower for kw in diagnostic_keywords):
             return MANDATORY_CLINICAL_REFUSAL
 
-        # Off-syllabus topics check (politics, movies, unrelated coding)
-        unrelated_keywords = ["cryptocurrency", "bitcoin", "ipl", "bollywood", "cricket match", "react native tutorial"]
+        # Explicit off-syllabus topics check (politics, movies, unrelated coding, sports)
+        unrelated_keywords = [
+            "cryptocurrency", "bitcoin", "ipl", "bollywood", "cricket match",
+            "weather in", "capital of", "recipe", "song", "actor", "actress",
+            "president of", "stock price", "election"
+        ]
         if any(kw in lower for kw in unrelated_keywords):
+            return OFF_SYLLABUS_REFUSAL
+
+        # Domain relevance check: must match at least one relevant course keyword
+        is_relevant = any(kw in lower for kw in VALID_DOMAIN_KEYWORDS)
+        if not is_relevant and len(lower.split()) > 3:
             return OFF_SYLLABUS_REFUSAL
 
         return None
@@ -94,10 +133,10 @@ class RAGService:
         active_diagram_node: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Generates grounded response using Gemini 1.5 Flash (with Groq fallback),
-        enforcing citations and diagram node references.
+        Generates grounded response using key-rotated Gemini / Groq with Upstash Redis cache
+        and clinical guardrails.
         """
-        # 1. Guardrail check
+        # 1. Guardrail check (clinical safety & strictly within syllabus)
         refusal = self.check_guardrails(prompt)
         if refusal:
             return {
@@ -106,7 +145,7 @@ class RAGService:
                 "highlight_diagram_node": None
             }
 
-        # 2. Redis Cache check
+        # 2. Redis Cache check (saves tokens on already-asked questions)
         cached = await self.get_cached_response(topic_id, prompt)
         if cached:
             return cached
@@ -126,26 +165,34 @@ class RAGService:
 
         user_content = f"CONTEXT:\n{context_block}\n\nSTUDENT QUESTION:\n{prompt}"
 
-        # 4. Attempt Gemini 1.5 Flash
         response_text = ""
         node_highlight = active_diagram_node
 
-        if self.gemini_key:
-            try:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.gemini_key}"
-                payload = {
-                    "contents": [{"parts": [{"text": f"{system_instruction}\n\n{user_content}"}]}],
-                    "generationConfig": {"temperature": 0.2, "maxOutputTokens": 600}
-                }
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    res = await client.post(url, json=payload)
-                    if res.status_code == 200:
-                        data = res.json()
-                        candidates = data.get("candidates", [])
-                        if candidates:
-                            response_text = candidates[0]["content"]["parts"][0]["text"]
-            except Exception as e:
-                print(f"[TUTOR] Gemini 1.5 Flash failed, attempting fallback: {e}")
+        # 4. Attempt Gemini with Key Rotation Pool
+        if self.gemini_keys:
+            # Try up to len(self.gemini_keys) rotations
+            for _ in range(min(len(self.gemini_keys), 4)):
+                candidate_key = self._get_next_gemini_key()
+                if not candidate_key:
+                    break
+                try:
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={candidate_key}"
+                    payload = {
+                        "contents": [{"parts": [{"text": f"{system_instruction}\n\n{user_content}"}]}],
+                        "generationConfig": {"temperature": 0.2, "maxOutputTokens": 600}
+                    }
+                    async with httpx.AsyncClient(timeout=10.0) as client:
+                        res = await client.post(url, json=payload)
+                        if res.status_code == 200:
+                            data = res.json()
+                            candidates = data.get("candidates", [])
+                            if candidates:
+                                response_text = candidates[0]["content"]["parts"][0]["text"]
+                                break
+                        else:
+                            print(f"[TUTOR] Key rotation check: status {res.status_code}")
+                except Exception as e:
+                    print(f"[TUTOR] Gemini key rotation attempt: {e}")
 
         # 5. Fallback to Groq Cloud (Llama 3.3 70B)
         if not response_text and self.groq_key:
@@ -189,11 +236,12 @@ class RAGService:
                     f"[Citation: {topic_title}, Section 2]"
                 )
                 node_highlight = "Sinogram"
-            elif "dicom" in p_lower or "tag" in p_lower:
+            elif "dicom" in p_lower or "tag" in p_lower or "hu" in p_lower or "hounsfield" in p_lower:
                 response_text = (
                     "In DICOM Part 10 file standards, data elements are identified by hexadecimal (Group, Element) tag pairs. "
                     "For instance, tag `(0028,1050)` specifies Window Center (WL), and `(0028,1051)` defines Window Width (WW). "
-                    "Patient demographics are stored in group `0010`, while pixel matrices reside in `7FE0`.\n\n"
+                    "CT numbers are standardized in Hounsfield Units: $\\text{HU} = 1000 \\times \\frac{\\mu - \\mu_{\\text{water}}}{\\mu_{\\text{water}}}$, "
+                    "where air is $-1000$ HU, water is $0$ HU, and cortical bone is $+1000$ to $+3000$ HU.\n\n"
                     f"[Citation: {topic_title}, Section 2]"
                 )
                 node_highlight = "Tag0028"
@@ -217,7 +265,7 @@ class RAGService:
             "highlight_diagram_node": node_highlight
         }
 
-        # Cache valid response
+        # Cache valid response in Upstash Redis to save tokens for identical future queries
         await self.set_cached_response(topic_id, prompt, result_payload)
         return result_payload
 
