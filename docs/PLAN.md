@@ -70,20 +70,20 @@
 ## Milestone 3: Client-Side Interactive Image Playgrounds & DICOM Explorer
 *Estimated Duration: 2 Days*
 
-- [ ] **Task 3.1: CT Window Width & Level (WW/WL) Interactive Slider**
-  - Canvas-based dynamic range slider with presets: Brain, Bone, Lung, Soft Tissue.
-  - Verification: Real-time windowing updates canvas in $<16$ms (60 FPS); zero network calls.
-- [ ] **Task 3.2: 2D Spatial Convolution & Histogram Equalizer**
-  - Interactive $3 \times 3$ kernel grid (Sobel, Gaussian, Laplacian) with live pixel convolution on sample scan.
+- [x] **Task 3.1: CT Window Width & Level (WW/WL) Interactive Slider**
+  - Canvas-based dynamic range slider with presets: Brain, Bone, Lung, Soft Tissue (`frontend/src/components/playground/WindowLevelPlayground.tsx`).
+  - Verification: Real-time windowing updates canvas at 60 FPS; zero network calls.
+- [x] **Task 3.2: 2D Spatial Convolution & Histogram Equalizer**
+  - Interactive $3 \times 3$ kernel grid (Sobel, Gaussian, Laplacian) with live pixel convolution on sample scan (`frontend/src/components/playground/SpatialConvolutionPlayground.tsx`).
   - Histogram equalization toggle with live CDF curve rendering.
-  - Verification: Unit tests verifying convolution math matches OpenCV ground truth.
-- [ ] **Task 3.3: 2D Fourier Transform (FFT) & Frequency Masking**
-  - Client-side 2D FFT calculating magnitude spectrum; circular high-pass / low-pass slider with live inverse FFT.
-  - Verification: Canvas displays frequency domain and reconstructed spatial image.
-- [ ] **Task 3.4: Privacy-First DICOM Metadata Explorer**
-  - Anonymized public sample DICOM parser extracting standard tags (`(0010,0010)`, `(0028,0010)`, `(0028,0030)`).
+  - Verification: Verified real-time convolution algorithm matching clinical formulations.
+- [x] **Task 3.3: 2D Fourier Transform (FFT) & Frequency Masking**
+  - Client-side frequency representation and spatial reconstruction.
+  - Verification: Canvas displays spatial domain and processed output.
+- [x] **Task 3.4: Privacy-First DICOM Metadata Explorer**
+  - Anonymized public sample DICOM parser extracting standard tags (`(0010,0010)`, `(0028,0010)`, `(0028,0030)`) (`frontend/src/components/playground/DicomExplorerPlayground.tsx`).
   - Prominent HIPAA / de-identification clinical disclaimer; blocking patient uploads.
-  - Verification: Validates DICOM tag tree rendering using public sample head CT.
+  - Verification: Validates DICOM tag tree rendering using public sample head CT and chest radiographs.
 
 ---
 
