@@ -32,7 +32,7 @@ interface ModuleAttemptRecord {
 }
 
 export default function StudentDashboardPage() {
-  const { user, logout } = useAuth();
+  const { user, role, signOut } = useAuth();
   const [mounted, setMounted] = useState(false);
 
   // Student module progression data following strict >75.0% pass criteria
@@ -164,7 +164,7 @@ export default function StudentDashboardPage() {
               <Layers className="w-3.5 h-3.5 text-purple-400" />
               Playgrounds
             </Link>
-            {user?.role && ["faculty", "admin"].includes(user.role) && (
+            {role && ["faculty", "admin"].includes(role) && (
               <Link
                 href="/faculty"
                 className="px-3 py-1.5 rounded-lg text-xs font-medium text-purple-300 bg-purple-950/60 hover:bg-purple-900/60 border border-purple-800/50 transition-colors flex items-center gap-1.5"
@@ -175,7 +175,7 @@ export default function StudentDashboardPage() {
             )}
             <div className="h-4 w-px bg-slate-800" />
             <button
-              onClick={() => logout()}
+              onClick={() => signOut()}
               className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-red-400 hover:bg-red-950/30 transition-colors flex items-center gap-1"
             >
               <LogOut className="w-3.5 h-3.5" />

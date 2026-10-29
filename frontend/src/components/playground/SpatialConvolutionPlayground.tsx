@@ -279,7 +279,7 @@ export default function SpatialConvolutionPlayground() {
           </div>
 
           <p className="text-xs text-slate-500 leading-relaxed italic">
-            Convolution formula: $g(x, y) = \\sum_{s=-1}^{1} \\sum_{t=-1}^{1} f(x-s, y-t) \\, w(s, t)$.
+            {"Convolution formula: $g(x, y) = \\sum_{s=-1}^{1} \\sum_{t=-1}^{1} f(x-s, y-t) \\, w(s, t)$."}
           </p>
         </div>
       </div>

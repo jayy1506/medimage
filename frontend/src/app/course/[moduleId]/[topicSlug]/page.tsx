@@ -31,7 +31,7 @@ const TOPICS_DATA: Record<string, TopicPayload> = {
         section_type: "overview",
         title: "Clinical Overview: Why Tissue Attenuation Matters",
         content_markdown: "All diagnostic projection radiography and CT imaging relies on differential photon attenuation. When an X-ray beam traverses patient anatomy, bone ($Z \\approx 13.8$) attenuates photons far more aggressively than muscle or fat ($Z \\approx 7.4$). This differential transmission casts the latent radiographic shadow recorded by the detector matrix.",
-        formula_latex: None,
+        formula_latex: null,
         linked_diagram_id: "diag-attenuation"
       },
       {
@@ -58,7 +58,7 @@ const TOPICS_DATA: Record<string, TopicPayload> = {
         section_type: "common_pitfalls",
         title: "Common Misconceptions & Exam Traps",
         content_markdown: "- Confusing Linear Attenuation ($\\mu$) with Mass Attenuation ($\\mu / \\rho$): $\\mu$ depends on physical density and physical state (ice vs water vs steam), whereas $\\mu / \\rho$ is independent of density.\n- Polychromatic Beam Hardening: Real clinical X-ray tubes emit polychromatic spectra. As the beam penetrates tissue, lower-energy photons are preferentially absorbed, causing the effective mean energy of the surviving beam to increase.",
-        formula_latex: None,
+        formula_latex: null,
         linked_diagram_id: "diag-attenuation"
       }
     ],
@@ -171,7 +171,7 @@ const TOPICS_DATA: Record<string, TopicPayload> = {
         section_type: "overview",
         title: "The Diagnostic Spectrum",
         content_markdown: "Medical imaging exploits distinct windows across the electromagnetic spectrum: from radio waves in MRI (64–128 MHz) to ultra-high energy gamma rays in PET (511 keV annihilation photons). Diagnostic X-rays occupy the 0.01 to 10 nm wavelength band.",
-        formula_latex: None,
+        formula_latex: null,
         linked_diagram_id: "diag-spectrum"
       }
     ],
