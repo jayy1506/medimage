@@ -1,0 +1,32 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-adani-cyan: #0077B6;
+  --color-adani-purple: #662D91;
+  --color-adani-magenta: #B82662;
+  --color-primary-navy: #0B2545;
+}
+
+body {
+  color: #0F172A;
+  background: #F8FAFC;
+  font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+/* Custom scrollbars for side-by-side workstation */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
