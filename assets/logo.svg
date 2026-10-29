@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 120" width="100%" height="100%">
+  <defs>
+    <linearGradient id="dmiherNavyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B2545" />
+      <stop offset="100%" stop-color="#07192F" />
+    </linearGradient>
+    <linearGradient id="dmiherGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F5D061" />
+      <stop offset="100%" stop-color="#D4AF37" />
+    </linearGradient>
+    <filter id="subtleGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.15" />
+    </filter>
+  </defs>
+
+  <!-- Crest Emblem Container -->
+  <g transform="translate(15, 10)" filter="url(#subtleGlow)">
+    <!-- Hexagonal Shield / Medical Imaging Sensor Matrix Shape -->
+    <path d="M50 0 L90 22 L90 68 L50 90 L10 68 L10 22 Z" fill="url(#dmiherNavyGrad)" stroke="url(#dmiherGoldGrad)" stroke-width="3" />
+    
+    <!-- Medical Cross / Focus Reticle -->
+    <path d="M43 25 H57 V43 H75 V57 H57 V75 H43 V57 H25 V43 H43 Z" fill="url(#dmiherGoldGrad)" opacity="0.9" />
+    
+    <!-- Central Imaging Node / Photon Core -->
+    <circle cx="50" cy="50" r="4.5" fill="#0284C7" />
+    
+    <!-- Concentric Beam Scan Lines -->
+    <circle cx="50" cy="50" r="32" fill="none" stroke="#0284C7" stroke-width="1.2" stroke-dasharray="3 3" opacity="0.7" />
+  </g>
+
+  <!-- Typography: DMIHER Institutional Brand -->
+  <g transform="translate(130, 20)">
+    <!-- Institution Acronym -->
+    <text x="0" y="32" font-family="'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="28" fill="#0B2545" letter-spacing="1.5">
+      DMIHER
+    </text>
+
+    <!-- Faculty Department Badge -->
+    <rect x="135" y="12" width="180" height="24" rx="4" fill="#D4AF37" fill-opacity="0.18" stroke="#D4AF37" stroke-width="1" />
+    <text x="145" y="28" font-family="'Inter', -apple-system, sans-serif" font-weight="700" font-size="12" fill="#8B6F15" letter-spacing="0.8">
+      FACULTY OF ENGG &amp; TECH
+    </text>
+
+    <!-- Course Title & Code -->
+    <text x="0" y="58" font-family="'Inter', -apple-system, 'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="16" fill="#0284C7" letter-spacing="0.5">
+      Medical Text &amp; Image Processing
+    </text>
+
+    <text x="0" y="78" font-family="'JetBrains Mono', 'Segoe UI Mono', monospace" font-weight="600" font-size="12" fill="#64748B" letter-spacing="0.5">
+      COURSE AIDS 12605.1 • B.TECH SEMESTER VI
+    </text>
+  </g>
+</svg>
