@@ -1,7 +1,7 @@
 import pytest
 import uuid
 from decimal import Decimal
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 from httpx import AsyncClient, ASGITransport
 from app.main import app
 from app.models.user import User
@@ -62,7 +62,10 @@ async def test_assessment_submit_endpoint():
     mock_result_prev = MagicMock()
     mock_result_prev.scalars.return_value.all.return_value = []
 
-    mock_db.execute.side_effect = [mock_result_ass, mock_result_prev, MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock()]
+    mock_db.execute = AsyncMock(side_effect=[mock_result_ass, mock_result_prev, MagicMock(), MagicMock(), MagicMock(), MagicMock(), MagicMock()])
+    mock_db.commit = AsyncMock()
+    mock_db.flush = AsyncMock()
+    mock_db.refresh = AsyncMock()
 
     async def override_get_db():
         yield mock_db

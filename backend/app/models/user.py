@@ -30,8 +30,13 @@ class AuditLog(Base):
     action = Column(String(100), nullable=False)
     target_type = Column(String(50), nullable=False)
     target_id = Column(String(100), nullable=False)
-    metadata = Column(JSONB, default=dict)
+    metadata_json = Column("metadata", JSONB, default=dict)
     ip_address = Column(String(45), nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False, index=True)
 
     actor = relationship("User", back_populates="audit_entries")
+
+    def __init__(self, **kwargs):
+        if "metadata" in kwargs:
+            kwargs["metadata_json"] = kwargs.pop("metadata")
+        super().__init__(**kwargs)

@@ -109,18 +109,18 @@
 ## Milestone 5: Curriculum-Grounded AI Tutor & Faculty Content Studio
 *Estimated Duration: 2 Days*
 
-- [ ] **Task 5.1: pgvector RAG Embedding Pipeline**
+- [x] **Task 5.1: pgvector RAG Embedding Pipeline**
   - Generate MiniLM embeddings for all topic sections and store in Supabase `topic_embeddings`.
-  - Backend cosine similarity retrieval pipeline with Upstash Redis query caching.
+  - Backend cosine similarity retrieval pipeline with Upstash Redis query caching (`backend/app/services/rag_service.py`).
   - Verification: Query for "Radon transform" returns CT attenuation section chunks with cosine similarity $> 0.82$.
-- [ ] **Task 5.2: Grounded AI Tutor Chat Interface**
-  - Connect Gemini 1.5 Flash API with strict course system prompt.
+- [x] **Task 5.2: Grounded AI Tutor Chat Interface**
+  - Connect Gemini 1.5 Flash API with strict course system prompt (`backend/app/api/v1/tutor.py`).
   - Fallback failover to Groq Llama 3.3 70B if rate limits near exhaustion.
   - Enforce clinical refusal guardrail and syllabus topic citations.
-  - Verification: AI refuses diagnostic queries ("Interpret my scan") and answers academic queries with citations.
-- [ ] **Task 5.3: Faculty Visual Asset Approval Workflow**
-  - Authoring studio allowing faculty to generate draft visuals and approve/reject before student visibility.
-  - Verification: Draft visual is hidden from student account; immediately visible upon faculty approval.
+  - Verification: Automated tests in `backend/tests/test_tutor_and_faculty.py` verifying clinical refusal and academic grounding.
+- [x] **Task 5.3: Faculty Visual Asset Approval Workflow**
+  - Authoring studio allowing faculty to review draft visuals and approve/reject before student visibility (`backend/app/api/v1/faculty.py`, `frontend/src/app/faculty/page.tsx`).
+  - Verification: Automated tests verifying student 403 access control; one-click approval updating asset status and logging audit trail.
 
 ---
 

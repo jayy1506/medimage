@@ -1,10 +1,17 @@
 import pytest
 import uuid
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 from httpx import AsyncClient, ASGITransport
 from app.main import app
 from app.models.user import User
-from app.api.deps import get_db
+from app.api.deps import get_db, get_current_user
+
+
+@pytest.fixture(autouse=True)
+def clean_overrides():
+    app.dependency_overrides.clear()
+    yield
+    app.dependency_overrides.clear()
 
 
 @pytest.mark.asyncio
@@ -37,11 +44,10 @@ async def test_unregistered_firebase_user_gets_403():
     """
     mock_decoded = {"uid": "rogue_uid_123", "email": "rogue@example.com"}
 
-    # Mock get_db to return None (user not found in DB)
     mock_db = MagicMock()
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
-    mock_db.execute = MagicMock(return_value=mock_result)
+    mock_db.execute = AsyncMock(return_value=mock_result)
 
     async def override_get_db():
         yield mock_db
@@ -58,8 +64,6 @@ async def test_unregistered_firebase_user_gets_403():
             assert res.status_code == 403
             assert "invite-only" in res.json()["detail"].lower()
 
-    app.dependency_overrides.clear()
-
 
 @pytest.mark.asyncio
 async def test_student_blocked_from_admin_route():
@@ -73,13 +77,14 @@ async def test_student_blocked_from_admin_route():
         email="student@adani.edu.in",
         full_name="Student Test",
         role="student",
-        status="active"
+        status="active",
+        force_password_change=False
     )
 
     mock_db = MagicMock()
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = student_user
-    mock_db.execute = MagicMock(return_value=mock_result)
+    mock_db.execute = AsyncMock(return_value=mock_result)
 
     async def override_get_db():
         yield mock_db
@@ -96,5 +101,3 @@ async def test_student_blocked_from_admin_route():
             )
             assert res.status_code == 403
             assert "requires one of ['admin'] roles" in res.json()["detail"]
-
-    app.dependency_overrides.clear()
