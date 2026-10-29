@@ -8,20 +8,25 @@
 
 ## 1. Design System & Brand Identity
 
-The platform balances high-tech academic rigor with clinical precision. It uses the official DMIHER institutional palette paired with an ultra-clean, clinical-grade UI (Inter typography, subtle glassmorphic headers, crisp SVG iconography, high-contrast dark/light clinical themes).
+The platform balances high-tech academic rigor with clinical precision. It uses the official Adani Institute of Higher Education and Research institutional palette (Cyan, Royal Purple, and Magenta gradient) paired with an ultra-clean, clinical-grade UI (Inter typography, subtle glassmorphic headers, crisp SVG iconography, high-contrast dark/light clinical themes).
 
 ### 1.1 Color Tokens
 
 ```css
 :root {
-  /* DMIHER FET Primary Palette */
-  --color-primary-navy: #0B2545;       /* Deep Academic Navy (DMIHER FET Primary) */
+  /* Adani Institute of Higher Education and Research Primary Palette */
+  --color-adani-cyan: #0077B6;         /* Brand Cyan (from 'a' in adani logo) */
+  --color-adani-purple: #662D91;       /* Brand Royal Purple (mid-gradient) */
+  --color-adani-magenta: #B82662;      /* Brand Magenta / Ruby ('i' in adani logo) */
+  --color-brand-gradient: linear-gradient(135deg, #0077B6 0%, #662D91 50%, #B82662 100%);
+
+  /* Primary Structural Palette */
+  --color-primary-navy: #0B2545;       /* Deep Academic Navy (Interface contrast) */
   --color-primary-navy-dark: #07192F;  /* Background for dark clinical mode */
-  --color-accent-gold: #D4AF37;        /* Institutional Gold (Accents, badges, highlights) */
-  --color-accent-gold-hover: #B8972C;  /* Darker Gold for interactive states */
+  --color-accent-gold: #D4AF37;        /* Gold (Badges, mastery achievements) */
 
   /* Clinical Semantics */
-  --color-clinical-cyan: #0284C7;      /* Medical imaging / diagnostic accent */
+  --color-clinical-cyan: #0077B6;      /* Medical imaging / diagnostic accent */
   --color-clinical-teal: #0D9488;      /* Process pipelines & flowcharts */
   --color-success: #16A34A;            /* Pass threshold (>75%), active node */
   --color-warning: #EAB308;            /* Draft status, quota alert */
@@ -31,7 +36,7 @@ The platform balances high-tech academic rigor with clinical precision. It uses 
   --color-surface-light: #F8FAFC;      /* App light background */
   --color-surface-white: #FFFFFF;      /* Card and panel background */
   --color-border-subtle: #E2E8F0;      /* Card dividers and panel borders */
-  --color-text-main: #0F172A;          /* Slate 900 for high-contrast reading */
+  --color-text-main: #1E293B;          /* Slate 800 for high-contrast reading */
   --color-text-muted: #64748B;         /* Slate 500 for secondary descriptions */
 
   /* Dark Clinical Theme */
