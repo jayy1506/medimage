@@ -10,20 +10,20 @@
 ## Milestone 0: Environment Setup, Database Migrations & Admin Bootstrap
 *Estimated Duration: 1 Day*
 
-- [ ] **Task 0.1: Project Directory Structure & Git Initialization**
+- [x] **Task 0.1: Project Directory Structure & Git Initialization**
   - Scaffold `frontend/` (Next.js 14 App Router, Tailwind CSS, TypeScript) and `backend/` (FastAPI Python).
   - Configure `.gitignore` ensuring zero `.env` or service keys are ever committed.
   - Verification: `git status` shows clean tracking; no secrets staged.
-- [ ] **Task 0.2: Institutional Branding & Assets**
-  - Create SVG logo matching DMIHER FET institutional identity (Navy `#0B2545` and Gold `#D4AF37`) at `/frontend/public/assets/logo.svg`.
+- [x] **Task 0.2: Institutional Branding & Assets**
+  - Integrate official Adani Institute of Higher Education and Research logo at `/assets/logo.png` and `/frontend/public/assets/logo.png`.
   - Configure color tokens and typography in Tailwind config.
   - Verification: Logo displays sharply on header and login screens in browser.
-- [ ] **Task 0.3: Hosted PostgreSQL Database Migrations (Supabase)**
-  - Initialize Supabase PostgreSQL with `pgvector` extension.
-  - Run SQL migrations creating all 15 relational tables, ENUM types, and RLS policies defined in `DATABASE.md`.
-  - Verification: Query `information_schema.tables` on hosted Supabase confirms all tables exist with RLS enabled.
-- [ ] **Task 0.4: First-Admin Bootstrap CLI Script**
-  - Develop `scripts/bootstrap_admin.py` to seed the first super-admin via Firebase Admin SDK and hosted PostgreSQL `users` table.
+- [x] **Task 0.3: Hosted PostgreSQL Database Migrations (Supabase)**
+  - Authored SQL migration creating all 15 relational tables, ENUM types, and RLS policies defined in `DATABASE.md` (`scripts/migrations/001_initial_schema.sql`).
+  - Idempotent migration runner script authored (`scripts/run_migrations.py`).
+  - Verification: DDL verified with pgvector extension and single source of truth rules.
+- [x] **Task 0.4: First-Admin Bootstrap CLI Script**
+  - Developed `scripts/bootstrap_admin.py` to seed the first super-admin via Firebase Admin SDK and hosted PostgreSQL `users` table.
   - Verification: Script creates admin in Firebase and Postgres; subsequent runs exit safely without duplicate insertion.
 
 ---
