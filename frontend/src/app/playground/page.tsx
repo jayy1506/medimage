@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Sliders, Grid, FileText, ChevronLeft, Activity, Layers, Binary } from "lucide-react";
 import WindowLevelPlayground from "@/components/playground/WindowLevelPlayground";
 import SpatialConvolutionPlayground from "@/components/playground/SpatialConvolutionPlayground";
@@ -20,15 +19,14 @@ export default function PlaygroundPage() {
             <Link href="/course" className="p-2 text-slate-500 hover:text-adani-navy hover:bg-slate-100 rounded-lg transition-colors">
               <ChevronLeft className="w-5 h-5" />
             </Link>
-            <div className="relative h-10 w-44">
-              <Image
-                src="/assets/logo.png"
-                alt="Adani University"
-                fill
-                priority
-                className="object-contain object-left"
-              />
-            </div>
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 via-purple-600 to-pink-500 flex items-center justify-center text-white font-black text-xs shadow-sm">
+                AI
+              </div>
+              <span className="text-sm font-bold tracking-tight text-adani-navy hidden sm:inline-block">
+                Adani University
+              </span>
+            </Link>
             <div className="hidden sm:block h-5 w-px bg-slate-300" />
             <span className="hidden sm:block text-xs font-bold text-adani-navy uppercase tracking-wider">
               Interactive Image Workstation

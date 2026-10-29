@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { 
   BookOpen, 
   CheckCircle2, 
@@ -214,14 +213,13 @@ export default function CourseDashboardPage() {
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <Link href="/" className="relative h-10 w-44">
-              <Image
-                src="/assets/logo.png"
-                alt="Adani University"
-                fill
-                priority
-                className="object-contain object-left"
-              />
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 via-purple-600 to-pink-500 flex items-center justify-center text-white font-black text-xs shadow-sm">
+                AI
+              </div>
+              <span className="text-sm font-bold tracking-tight text-adani-navy hidden sm:inline-block">
+                Adani University
+              </span>
             </Link>
             <div className="hidden sm:block h-5 w-px bg-slate-300" />
             <span className="hidden sm:block text-xs font-bold text-adani-navy uppercase tracking-wider">

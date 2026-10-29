@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { 
   BookOpen, 
@@ -65,15 +64,19 @@ export default function HomePage() {
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="relative h-12 w-48 sm:w-56">
-              <Image
-                src="/assets/logo.png"
-                alt="Adani Institute of Higher Education and Research"
-                fill
-                priority
-                className="object-contain object-left"
-              />
-            </div>
+            <Link href="/" className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 via-purple-600 to-pink-500 flex items-center justify-center text-white font-black text-sm shadow-md">
+                AI
+              </div>
+              <div>
+                <span className="text-base font-extrabold tracking-tight text-adani-navy block leading-none">
+                  Adani University
+                </span>
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mt-1">
+                  Institute of Higher Education & Research
+                </span>
+              </div>
+            </Link>
             <div className="hidden md:block h-6 w-px bg-slate-300" />
             <div className="hidden md:flex flex-col">
               <span className="text-xs font-semibold uppercase tracking-wider text-adani-navy">
@@ -86,6 +89,12 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center space-x-3">
+            <Link
+              href="/dashboard"
+              className="hidden sm:inline-flex items-center text-xs font-bold text-slate-700 hover:text-adani-navy px-3 py-2 rounded-lg hover:bg-slate-100 transition-colors"
+            >
+              Curriculum Dashboard
+            </Link>
             <Link
               href="/login"
               className="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-adani-cyan via-adani-purple to-adani-magenta hover:opacity-95 rounded-lg shadow-sm transition-all"
@@ -217,14 +226,10 @@ export default function HomePage() {
       <footer className="bg-adani-dark text-slate-400 text-xs py-8 border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
-            <div className="relative h-8 w-36">
-              <Image
-                src="/assets/logo.png"
-                alt="Adani University"
-                fill
-                className="object-contain object-left brightness-200"
-              />
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-sky-500 via-purple-600 to-pink-500 flex items-center justify-center text-white font-black text-xs shadow-sm">
+              AI
             </div>
+            <span className="font-semibold text-slate-300">Adani University</span>
             <span>• Faculty of Engineering and Technology</span>
           </div>
           <div>

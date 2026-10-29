@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Lock, Mail, ArrowRight, ShieldAlert, CheckCircle2 } from "lucide-react";
@@ -35,7 +34,7 @@ export default function LoginPage() {
         } else if (userProf?.role === "faculty") {
           router.push("/faculty");
         } else {
-          router.push("/course");
+          router.push("/dashboard");
         }
       }
     } catch (err: any) {
@@ -56,15 +55,11 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <Link href="/" className="inline-block relative h-16 w-64 mb-4">
-          <Image
-            src="/assets/logo.png"
-            alt="Adani Institute of Higher Education and Research"
-            fill
-            priority
-            className="object-contain"
-          />
-        </Link>
+        <div className="inline-flex items-center justify-center gap-2 mb-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-600 via-purple-600 to-pink-600 flex items-center justify-center text-white font-black text-base shadow-lg shadow-purple-600/30">
+            AI
+          </div>
+        </div>
         <h2 className="text-xs font-bold uppercase tracking-widest text-adani-cyan">
           Faculty of Engineering and Technology
         </h2>
