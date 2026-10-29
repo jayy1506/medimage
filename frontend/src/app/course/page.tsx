@@ -64,8 +64,8 @@ export default function CourseDashboardPage() {
           <div className="space-y-3 max-w-2xl relative z-10">
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/30 text-adani-cyan text-[11px] font-bold uppercase tracking-wider">
-                <UserCheck className="w-3.5 h-3.5" />
-                <span>Prepared for: {STUDENT_NOTE_METADATA.prepared_for} (Roll No. {STUDENT_NOTE_METADATA.roll_no})</span>
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>Accredited Academic Notes • {STUDENT_NOTE_METADATA.course_code}</span>
               </span>
               <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full bg-purple-500/20 border border-purple-400/30 text-purple-300 text-[10px] font-bold">
                 <Sparkles className="w-3 h-3" />

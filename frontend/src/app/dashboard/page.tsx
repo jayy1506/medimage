@@ -346,7 +346,7 @@ export default function UnifiedCurriculumDashboard() {
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 border border-purple-200 text-adani-purple text-xs font-bold">
                   <Sparkles className="w-3.5 h-3.5" />
-                  Prepared for: Shravani Farkade (Roll No. 426054)
+                  Accredited Study Notes • AIDS 12605.1
                 </span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">

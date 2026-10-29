@@ -24,8 +24,6 @@ export interface CurriculumModule {
 
 export const STUDENT_NOTE_METADATA = {
   title: "Medical Image Processing: Complete Study Notes",
-  prepared_for: "Shravani Farkade",
-  roll_no: "426054",
   course_code: "AIDS 12605.1",
   university: "Adani University - Faculty of Engineering and Technology"
 };

@@ -20,7 +20,7 @@ export default function TopicPage({
     return <DualPanelViewer topic={TOPICS_DATA_REGISTRY[topicSlug]} />;
   }
 
-  // 2. Dynamic generation based on Shravani Farkade's study notes
+  // 2. Dynamic generation based on accredited study notes
   let matchedTopic: any = null;
   let matchedModule: any = null;
 
@@ -59,7 +59,7 @@ export default function TopicPage({
         section_number: 1,
         section_type: "objectives",
         title: `Concept: ${matchedTopic.title}`,
-        content_markdown: `**Study Notes • Prepared for ${STUDENT_NOTE_METADATA.prepared_for} (Roll No. ${STUDENT_NOTE_METADATA.roll_no})**\n\nThis academic unit investigates foundational principles in **${matchedModule.title}**. Every diagnostic imaging algorithm follows a deterministic pipeline from physical signal generation to computational enhancement and diagnostic clinical decision-making.`,
+        content_markdown: `**Accredited Study Notes • ${STUDENT_NOTE_METADATA.course_code}**\n\nThis academic unit investigates foundational principles in **${matchedModule.title}**. Every diagnostic imaging algorithm follows a deterministic pipeline from physical signal generation to computational enhancement and diagnostic clinical decision-making.`,
         formula_latex: null,
         linked_diagram_id: "diag-auto"
       },
