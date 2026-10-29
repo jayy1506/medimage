@@ -127,13 +127,13 @@
 ## Milestone 6: Class Analytics, 200+ Concurrency Load Testing & Hardening
 *Estimated Duration: 1.5 Days*
 
-- [ ] **Task 6.1: Student & Faculty Dashboards**
-  - Student: Progress ring, Course Outcome attainment, module attempt history.
-  - Faculty: Class score distribution, question difficulty indices, grading override interface.
-  - Verification: UI test confirming metrics calculate accurately from hosted PostgreSQL.
-- [ ] **Task 6.2: 200+ Concurrency Load Test**
-  - k6 / Locust script simulating 200 concurrent students reading topics and taking quizzes.
+- [x] **Task 6.1: Student & Faculty Dashboards**
+  - Student: Progress ring, Course Outcome attainment, module attempt history (`frontend/src/app/dashboard/page.tsx`).
+  - Faculty: Class score distribution, question difficulty indices, grading override interface (`frontend/src/app/faculty/page.tsx`).
+  - Verification: UI and automated test confirming metrics calculate accurately from hosted PostgreSQL.
+- [x] **Task 6.2: 200+ Concurrency Load Test**
+  - k6 / Locust script simulating 200 concurrent students reading topics and taking quizzes (`scripts/load_test_200_users.py`, `scripts/load_test_200_users.js`).
   - Verification: 0 errors; p95 latency $< 400$ms within free-tier Supabase connection pool limits.
-- [ ] **Task 6.3: Production Verification, Sentry Monitoring & Documentation Handover**
-  - Configure Sentry free-tier error tracking; verify zero unhandled exceptions.
+- [x] **Task 6.3: Production Verification, Sentry Monitoring & Documentation Handover**
+  - Configure Sentry free-tier error tracking (`backend/app/main.py`); verify zero unhandled exceptions.
   - Review all documentation, verify Ralph loop pass status, and prepare final handover report.

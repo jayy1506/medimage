@@ -8,6 +8,15 @@ from app.api.v1.assessments import router as assessments_router
 from app.api.v1.tutor import router as tutor_router
 from app.api.v1.faculty import router as faculty_router
 
+# Initialize Sentry Monitoring (Free Tier)
+if settings.SENTRY_DSN:
+    import sentry_sdk
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        environment=settings.ENVIRONMENT,
+        traces_sample_rate=0.1
+    )
+
 app = FastAPI(
     title="Medical Text and Image Processing Learning Platform API",
     description="API for AIDS 12605.1 - Faculty of Engineering and Technology, Adani Institute of Higher Education and Research",
