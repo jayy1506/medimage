@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
+import { UserNav } from "@/components/UserNav";
 import { 
   BookOpen, 
   ShieldCheck, 
@@ -58,6 +62,8 @@ const MODULES = [
 ];
 
 export default function HomePage() {
+  const { user, profile } = useAuth();
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Top Navigation */}
@@ -95,13 +101,17 @@ export default function HomePage() {
             >
               Curriculum Dashboard
             </Link>
-            <Link
-              href="/login"
-              className="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-adani-cyan via-adani-purple to-adani-magenta hover:opacity-95 rounded-lg shadow-sm transition-all"
-            >
-              Sign In (Invite-Only)
-              <ArrowRight className="ml-2 w-4 h-4" />
-            </Link>
+            {user || profile ? (
+              <UserNav />
+            ) : (
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-adani-cyan via-adani-purple to-adani-magenta hover:opacity-95 rounded-lg shadow-sm transition-all"
+              >
+                Sign In (Invite-Only)
+                <ArrowRight className="ml-2 w-4 h-4" />
+              </Link>
+            )}
           </div>
         </div>
       </header>

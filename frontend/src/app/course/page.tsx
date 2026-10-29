@@ -14,6 +14,7 @@ import {
   LogOut
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { UserNav } from "@/components/UserNav";
 
 interface TopicSummary {
   id: string;
@@ -228,17 +229,7 @@ export default function CourseDashboardPage() {
           </div>
 
           <div className="flex items-center space-x-3">
-            <div className="text-right hidden sm:block">
-              <p className="text-xs font-bold text-slate-900">{profile?.full_name || "Student Workstation"}</p>
-              <p className="text-[10px] text-slate-500 font-mono capitalize">{profile?.role || "Enrolled Student"}</p>
-            </div>
-            <button
-              onClick={() => signOut()}
-              title="Sign Out"
-              className="p-2 text-slate-500 hover:text-red-600 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+            <UserNav />
           </div>
         </div>
       </header>

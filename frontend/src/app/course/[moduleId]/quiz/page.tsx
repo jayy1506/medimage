@@ -13,6 +13,7 @@ import {
   AlertTriangle,
   HelpCircle
 } from "lucide-react";
+import { UserNav } from "@/components/UserNav";
 
 interface QuizQuestion {
   id: string;
@@ -149,9 +150,12 @@ export default function ModuleQuizPage({
             Back to Course Syllabus
           </Link>
 
-          <div className="flex items-center space-x-2 text-xs font-semibold text-slate-600 bg-white px-3 py-1.5 rounded-lg border border-slate-200">
-            <Clock className="w-3.5 h-3.5 text-adani-cyan" />
-            <span>Pass Threshold: &gt; 75.0% Required</span>
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 text-xs font-semibold text-slate-600 bg-white px-3 py-1.5 rounded-lg border border-slate-200">
+              <Clock className="w-3.5 h-3.5 text-adani-cyan" />
+              <span>Pass Threshold: &gt; 75.0% Required</span>
+            </div>
+            <UserNav />
           </div>
         </div>
 

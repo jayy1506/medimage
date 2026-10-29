@@ -18,6 +18,7 @@ import {
 import MermaidDiagram from "@/components/diagrams/MermaidDiagram";
 import QuickCheckQuiz, { QuickCheckQuestion } from "@/components/topic/QuickCheckQuiz";
 import TopicAiTutor from "@/components/tutor/TopicAiTutor";
+import { UserNav } from "@/components/UserNav";
 
 export interface SectionData {
   id: string;
@@ -183,6 +184,9 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
                 </>
               )}
             </button>
+
+            <div className="h-4 w-px bg-slate-200 hidden sm:block" />
+            <UserNav />
           </div>
         </div>
       </header>

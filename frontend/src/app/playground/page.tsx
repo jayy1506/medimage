@@ -6,6 +6,7 @@ import { Sliders, Grid, FileText, ChevronLeft, Activity, Layers, Binary } from "
 import WindowLevelPlayground from "@/components/playground/WindowLevelPlayground";
 import SpatialConvolutionPlayground from "@/components/playground/SpatialConvolutionPlayground";
 import DicomExplorerPlayground from "@/components/playground/DicomExplorerPlayground";
+import { UserNav } from "@/components/UserNav";
 
 export default function PlaygroundPage() {
   const [activeTab, setActiveTab] = useState<"windowing" | "convolution" | "dicom">("windowing");
@@ -33,11 +34,13 @@ export default function PlaygroundPage() {
             </span>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
             <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200">
               <Activity className="w-3 h-3 mr-1 text-emerald-500" />
               100% Client-Side Engine
             </span>
+            <div className="h-4 w-px bg-slate-200 hidden sm:block" />
+            <UserNav />
           </div>
         </div>
       </header>

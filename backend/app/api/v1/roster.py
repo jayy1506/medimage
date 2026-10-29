@@ -10,12 +10,23 @@ class InviteUserRequest(BaseModel):
     email: EmailStr
     full_name: str
     role: str = "student"
+    temporary_password: Optional[str] = "Feat@123"
     actor_email: Optional[str] = "jthakre62@gmail.com"
 
 
 class UpdateStatusRequest(BaseModel):
     status: str
     actor_email: Optional[str] = "jthakre62@gmail.com"
+
+
+class ResetPasswordRequest(BaseModel):
+    new_password: str = "Feat@123"
+    actor_email: Optional[str] = "jthakre62@gmail.com"
+
+
+class ChangePasswordRequest(BaseModel):
+    email: EmailStr
+    new_password: str
 
 
 @router.get("", summary="Get all students, faculty, and admins from Redis cache")
@@ -29,7 +40,7 @@ async def get_roster():
     }
 
 
-@router.post("", summary="Add new student or faculty, persisting directly in Redis")
+@router.post("", summary="Add new student or faculty with default password Feat@123")
 async def add_roster_user(payload: InviteUserRequest):
     new_user = {
         "id": f"u-{int(id(payload))}",
@@ -37,14 +48,45 @@ async def add_roster_user(payload: InviteUserRequest):
         "full_name": payload.full_name,
         "role": payload.role,
         "status": "pending_first_login",
+        "temporary_password": payload.temporary_password or "Feat@123",
+        "force_password_change": True,
         "created_at": "2026-10-30T00:00:00Z"
     }
     updated_roster = await roster_redis_service.add_user(new_user, actor_email=payload.actor_email)
     audit_logs = await roster_redis_service.get_audit_logs()
     return {
-        "message": f"Successfully added {payload.role} {payload.email} to Redis cache",
+        "message": f"Successfully added {payload.role} {payload.email} with default password Feat@123",
         "users": updated_roster,
         "audit_logs": audit_logs
+    }
+
+
+@router.post("/{user_id}/reset-password", summary="Reset user password back to Feat@123")
+async def reset_password(user_id: str, payload: ResetPasswordRequest):
+    updated = await roster_redis_service.reset_user_password(
+        user_id,
+        new_password=payload.new_password,
+        actor_email=payload.actor_email
+    )
+    audit_logs = await roster_redis_service.get_audit_logs()
+    return {
+        "message": f"Password reset to {payload.new_password} for user",
+        "users": updated,
+        "audit_logs": audit_logs
+    }
+
+
+@router.post("/change-password", summary="Change password on first login")
+async def change_password(payload: ChangePasswordRequest):
+    success = await roster_redis_service.change_user_password(
+        email=payload.email,
+        new_password=payload.new_password
+    )
+    if not success:
+        raise HTTPException(status_code=404, detail="User not found in roster")
+    return {
+        "message": "Password successfully updated. Account activated.",
+        "status": "active"
     }
 
 

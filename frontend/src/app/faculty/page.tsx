@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { UserNav } from "@/components/UserNav";
 import { 
   Sparkles, 
   CheckCircle2, 
@@ -454,13 +455,8 @@ export default function FacultyStudioPage() {
               </Link>
             )}
 
-            <button
-              onClick={() => signOut()}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors flex items-center gap-1"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              Sign Out
-            </button>
+            <div className="h-4 w-px bg-slate-200" />
+            <UserNav />
           </div>
         </div>
       </header>

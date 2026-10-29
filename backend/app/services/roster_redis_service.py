@@ -10,6 +10,8 @@ INITIAL_ROSTER = [
         "full_name": "Jay Thakre",
         "role": "admin",
         "status": "active",
+        "temporary_password": "Jay1523",
+        "force_password_change": False,
         "created_at": "2026-10-29T10:00:00Z"
     },
     {
@@ -18,6 +20,8 @@ INITIAL_ROSTER = [
         "full_name": "Dr. R. K. Sharma",
         "role": "faculty",
         "status": "active",
+        "temporary_password": "Feat@123",
+        "force_password_change": False,
         "created_at": "2026-10-29T10:30:00Z"
     },
     {
@@ -26,6 +30,8 @@ INITIAL_ROSTER = [
         "full_name": "Dr. Anjali Patel",
         "role": "faculty",
         "status": "active",
+        "temporary_password": "Feat@123",
+        "force_password_change": False,
         "created_at": "2026-10-29T11:15:00Z"
     },
     {
@@ -34,6 +40,8 @@ INITIAL_ROSTER = [
         "full_name": "Aarav Patel",
         "role": "student",
         "status": "active",
+        "temporary_password": "Feat@123",
+        "force_password_change": False,
         "created_at": "2026-10-29T12:00:00Z"
     },
     {
@@ -42,6 +50,8 @@ INITIAL_ROSTER = [
         "full_name": "Diya Sharma",
         "role": "student",
         "status": "active",
+        "temporary_password": "Feat@123",
+        "force_password_change": False,
         "created_at": "2026-10-29T12:05:00Z"
     },
     {
@@ -50,6 +60,8 @@ INITIAL_ROSTER = [
         "full_name": "Kabir Mehta",
         "role": "student",
         "status": "pending_first_login",
+        "temporary_password": "Feat@123",
+        "force_password_change": True,
         "created_at": "2026-10-29T13:40:00Z"
     }
 ]
@@ -71,7 +83,7 @@ INITIAL_AUDIT_LOGS = [
         "target": "kabir.m@adani.edu.in",
         "timestamp": "12 mins ago",
         "ip": "103.21.124.2",
-        "details": "Provisioned student seat for AIDS 12605.1"
+        "details": "Provisioned student seat for AIDS 12605.1 with default password Feat@123"
     }
 ]
 
@@ -119,13 +131,28 @@ class RosterRedisService:
     async def get_roster(self) -> List[Dict[str, Any]]:
         cached = await self._redis_get(self.roster_key)
         if cached is not None and isinstance(cached, list):
+            # Ensure every user has temporary_password field populated
+            has_changes = False
+            for u in cached:
+                if "temporary_password" not in u:
+                    u["temporary_password"] = "Jay1523" if "jthakre" in u.get("email", "") else "Feat@123"
+                    has_changes = True
+                if "force_password_change" not in u:
+                    u["force_password_change"] = False if "jthakre" in u.get("email", "") else True
+                    has_changes = True
+            if has_changes:
+                await self._redis_set(self.roster_key, cached)
             return cached
+
         # Initialize seed in Redis
         await self._redis_set(self.roster_key, INITIAL_ROSTER)
         return INITIAL_ROSTER
 
     async def add_user(self, user: Dict[str, Any], actor_email: str = "jthakre62@gmail.com") -> List[Dict[str, Any]]:
         roster = await self.get_roster()
+        user["temporary_password"] = user.get("temporary_password") or "Feat@123"
+        user["force_password_change"] = user.get("force_password_change", True)
+
         # Avoid duplicate emails
         roster = [u for u in roster if u["email"].lower() != user["email"].lower()]
         roster.insert(0, user)
@@ -139,7 +166,7 @@ class RosterRedisService:
             "target": user["email"],
             "timestamp": "Just now",
             "ip": "127.0.0.1",
-            "details": f"Added {user.get('role', 'user')} {user.get('full_name')} to Redis roster"
+            "details": f"Added {user.get('role', 'user')} {user.get('full_name')} with default password Feat@123"
         })
         return roster
 
@@ -164,6 +191,51 @@ class RosterRedisService:
             })
         return roster
 
+    async def reset_user_password(self, user_id: str, new_password: str = "Feat@123", actor_email: str = "jthakre62@gmail.com") -> List[Dict[str, Any]]:
+        roster = await self.get_roster()
+        target_email = ""
+        for u in roster:
+            if u["id"] == user_id:
+                u["temporary_password"] = new_password
+                u["force_password_change"] = True
+                target_email = u["email"]
+                break
+        await self._redis_set(self.roster_key, roster)
+        if target_email:
+            await self.add_audit_log({
+                "id": f"aud-reset-{user_id}",
+                "actor_email": actor_email,
+                "action": "RESET_PASSWORD",
+                "target": target_email,
+                "timestamp": "Just now",
+                "ip": "127.0.0.1",
+                "details": f"Password reset to common default ({new_password})"
+            })
+        return roster
+
+    async def change_user_password(self, email: str, new_password: str) -> bool:
+        roster = await self.get_roster()
+        matched = False
+        for u in roster:
+            if u["email"].lower() == email.lower():
+                u["temporary_password"] = new_password
+                u["force_password_change"] = False
+                matched = True
+                break
+        if matched:
+            await self._redis_set(self.roster_key, roster)
+            await self.add_audit_log({
+                "id": f"aud-change-{hash(email)}",
+                "actor_email": email,
+                "action": "CHANGE_PASSWORD_FIRST_LOGIN",
+                "target": email,
+                "timestamp": "Just now",
+                "ip": "127.0.0.1",
+                "details": "User successfully set personal password on first login"
+            })
+            return True
+        return False
+
     async def delete_user(self, user_id: str, actor_email: str = "jthakre62@gmail.com") -> List[Dict[str, Any]]:
         roster = await self.get_roster()
         target_email = ""
@@ -181,7 +253,7 @@ class RosterRedisService:
                 "target": target_email,
                 "timestamp": "Just now",
                 "ip": "127.0.0.1",
-                "details": f"Removed from course roster in Redis"
+                "details": "Removed from course roster in Redis"
             })
         return roster
 
@@ -195,7 +267,6 @@ class RosterRedisService:
     async def add_audit_log(self, entry: Dict[str, Any]) -> List[Dict[str, Any]]:
         logs = await self.get_audit_logs()
         logs.insert(0, entry)
-        # Keep latest 50
         logs = logs[:50]
         await self._redis_set(self.audit_key, logs)
         return logs
