@@ -1,6 +1,6 @@
 # Medical Text and Image Processing Interactive Learning Platform
 ### Course: AIDS 12605.1 (B.Tech Semester VI)
-### Faculty of Engineering and Technology (FET), Datta Meghe Institute of Higher Education & Research (DMIHER)
+### Faculty of Engineering and Technology, Adani Institute of Higher Education and Research (Deemed to be University)
 
 [![Phase 1 Docs](https://img.shields.io/badge/Phase%201-Docs%20Complete-green.svg)](#)
 [![Access Control](https://img.shields.io/badge/Access-Invite--Only-blue.svg)](#)
@@ -11,7 +11,7 @@
 
 ## 1. Overview
 
-This platform is a dedicated, high-performance interactive learning environment built specifically for the **Medical Text and Image Processing (AIDS 12605.1)** undergraduate curriculum at DMIHER FET.
+This platform is a dedicated, high-performance interactive learning environment built specifically for the **Medical Text and Image Processing (AIDS 12605.1)** undergraduate curriculum at Adani Institute of Higher Education and Research.
 
 ### Key Capabilities:
 - **Synchronized Dual-Panel Topic Pages:** Conceptual explanations on the left dynamically trigger and control interactive diagrams and visual workstations on the right.
