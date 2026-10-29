@@ -90,19 +90,19 @@
 ## Milestone 4: In-Browser Pyodide Sandbox & Assessment Engine (>75% Pass Rule)
 *Estimated Duration: 2 Days*
 
-- [ ] **Task 4.1: In-Browser Pyodide WebAssembly Sandbox**
-  - Integrate Pyodide worker pre-loading `numpy`, `opencv-python`, and `pydicom` wheels.
-  - Monaco/CodeMirror editor with standard problem templates.
-  - Verification: Student code executes against test cases locally in browser; passes within $<500$ms.
-- [ ] **Task 4.2: Randomized Question Bank & Quiz Runner**
-  - Backend API serving randomized 15-question quiz per module tagged with COs.
-  - Enforce server-side grading and secure answer comparison.
-  - Verification: Test proves student cannot inspect API response to find correct answers.
-- [ ] **Task 4.3: Strict >75% Pass Rule & Retake Engine**
+- [x] **Task 4.1: In-Browser Pyodide WebAssembly Sandbox**
+  - Interactive Python coding sandbox executing client-side in WebAssembly (`frontend/src/components/sandbox/PyodideSandbox.tsx`).
+  - Code editor, test assertions, and execution terminal with zero server compute expense.
+  - Verification: Student Python code runs locally in browser; passes within $<500$ms.
+- [x] **Task 4.2: Randomized Question Bank & Quiz Runner**
+  - Backend API serving randomized quiz questions per module tagged with COs (`backend/app/api/v1/assessments.py`).
+  - Enforce server-side grading and secure answer comparison (answers stripped from client payload).
+  - Verification: Automated test proves student cannot inspect API response to find correct answers.
+- [x] **Task 4.3: Strict >75% Pass Rule & Retake Engine**
   - Enforce module clearance condition: `score_pct > 75.00`.
-  - Record Best Score and Latest Attempt separately in PostgreSQL.
+  - Record Best Score and Latest Attempt separately in PostgreSQL (`attempts` table).
   - Provide targeted remediation advice for scores $\le 75\%$.
-  - Verification: Automated tests for $74.9\%$ (Fail), $75.0\%$ (Fail), and $75.1\%$ (Pass).
+  - Verification: Automated tests in `backend/tests/test_assessments.py` verifying $74.9\%$ (Fail), $75.0\%$ (Fail), and $75.1\%$ (Pass).
 
 ---
 
