@@ -195,15 +195,47 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     setMounted(true);
 
+    // 1. Immediately hydrate from local cache on mount
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem("medimage_redis_roster_cache");
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setUsersList(parsed);
+          }
+        } catch (e) {}
+      }
+    }
+
+    // 2. Fetch latest from Upstash Redis and perform zero-loss merge
     const loadRedisRoster = async () => {
       try {
         const res = await fetch(`${API_BASE}/admin/roster`);
         if (res.ok) {
           const data = await res.json();
-          if (data.users && data.users.length > 0) {
-            setUsersList(data.users);
+          if (data.users && Array.isArray(data.users) && data.users.length > 0) {
+            const userMap = new Map<string, ManagedUser>();
+            // Load existing local cache first
             if (typeof window !== "undefined") {
-              localStorage.setItem("medimage_redis_roster_cache", JSON.stringify(data.users));
+              try {
+                const local = localStorage.getItem("medimage_redis_roster_cache");
+                if (local) {
+                  const parsed: ManagedUser[] = JSON.parse(local);
+                  for (const u of parsed) {
+                    if (u && u.email) userMap.set(u.email.toLowerCase(), u);
+                  }
+                }
+              } catch (e) {}
+            }
+            // Merge backend users
+            for (const u of data.users) {
+              if (u && u.email) userMap.set(u.email.toLowerCase(), u);
+            }
+            const mergedList = Array.from(userMap.values());
+            setUsersList(mergedList);
+            if (typeof window !== "undefined") {
+              localStorage.setItem("medimage_redis_roster_cache", JSON.stringify(mergedList));
             }
           }
           if (data.audit_logs) {
@@ -302,7 +334,20 @@ export default function AdminDashboardPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        if (data.users) setUsersList(data.users);
+        if (data.users && Array.isArray(data.users)) {
+          const userMap = new Map<string, ManagedUser>();
+          for (const u of updated) {
+            if (u && u.email) userMap.set(u.email.toLowerCase(), u);
+          }
+          for (const u of data.users) {
+            if (u && u.email) userMap.set(u.email.toLowerCase(), u);
+          }
+          const merged = Array.from(userMap.values());
+          setUsersList(merged);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("medimage_redis_roster_cache", JSON.stringify(merged));
+          }
+        }
         if (data.audit_logs) setAuditLogs(data.audit_logs);
       }
     } catch (err) {
@@ -375,7 +420,12 @@ export default function AdminDashboardPage() {
       const res = await fetch(`${API_BASE}/admin/roster`);
       if (res.ok) {
         const data = await res.json();
-        if (data.users) setUsersList(data.users);
+        if (data.users && Array.isArray(data.users)) {
+          setUsersList(data.users);
+          if (typeof window !== "undefined") {
+            localStorage.setItem("medimage_redis_roster_cache", JSON.stringify(data.users));
+          }
+        }
       }
     } catch (e) {}
 
@@ -532,7 +582,7 @@ export default function AdminDashboardPage() {
           <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center justify-between">
             <div>
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Redis Cache Engine</span>
-              <span className="text-sm font-black text-emerald-600 mt-1 block flex items-center gap-1">
+              <span className="text-sm font-black text-emerald-600 mt-1 flex items-center gap-1">
                 <Database className="w-4 h-4" /> Upstash Serverless
               </span>
               <span className="text-[11px] text-slate-500 font-medium mt-0.5 block">

@@ -164,19 +164,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // 2. Check Course Roster (Upstash Redis & local cache) for common password Feat@123 or user's custom password
     try {
-      let rosterList: any[] = [];
+      let localCached: any[] = [];
+      if (typeof window !== "undefined") {
+        try {
+          const raw = localStorage.getItem("medimage_redis_roster_cache");
+          if (raw) localCached = JSON.parse(raw);
+        } catch (e) {}
+      }
+
+      let backendUsers: any[] = [];
       try {
         const res = await fetch(`${API_BASE}/admin/roster`);
         if (res.ok) {
           const data = await res.json();
-          if (data.users) rosterList = data.users;
+          if (data.users && Array.isArray(data.users)) {
+            backendUsers = data.users;
+          }
         }
-      } catch (e) {
-        if (typeof window !== "undefined") {
-          const cached = localStorage.getItem("medimage_redis_roster_cache");
-          if (cached) rosterList = JSON.parse(cached);
-        }
+      } catch (e) {}
+
+      // Zero-loss union of both local cache and backend Redis
+      const userMap = new Map<string, any>();
+      for (const u of localCached) {
+        if (u && u.email) userMap.set(u.email.toLowerCase(), u);
       }
+      for (const u of backendUsers) {
+        if (u && u.email) userMap.set(u.email.toLowerCase(), u);
+      }
+      const rosterList = Array.from(userMap.values());
 
       const found = rosterList.find((u) => u.email.toLowerCase() === normalizedEmail);
       if (found) {

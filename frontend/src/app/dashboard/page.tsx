@@ -631,7 +631,7 @@ export default function UnifiedCurriculumDashboard() {
                       </div>
 
                       {/* Module Assessment Trigger Bar */}
-                      <div className="pt-3 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
+                      <div className="pt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
                         <div>
                           <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
                             <Award className="w-4 h-4 text-adani-purple" />
