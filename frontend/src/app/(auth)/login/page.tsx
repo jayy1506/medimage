@@ -28,8 +28,9 @@ export default function LoginPage() {
         setResetSent(true);
       } else {
         const userProf = await signIn(email, password);
+        const norm = email.trim().toLowerCase();
         // Role-based destination routing
-        if (email.toLowerCase() === "jthakre62@gmail.com" || userProf?.role === "admin") {
+        if (norm === "jthakre62@gmail.com" || norm === "jthakr62@gmail.com" || userProf?.role === "admin") {
           router.push("/admin");
         } else if (userProf?.role === "faculty") {
           router.push("/faculty");

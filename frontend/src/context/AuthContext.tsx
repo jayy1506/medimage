@@ -84,18 +84,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // Check local session storage for Super-Admin fallback session
+    if (typeof window !== "undefined") {
+      const stored = sessionStorage.getItem("medimage_admin_session");
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          setProfile(parsed);
+          setRole(parsed.role);
+          setToken("master-admin-jwt-token");
+          setIsLoading(false);
+        } catch (e) {
+          // ignore corrupted session
+        }
+      }
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
         const idToken = await getIdToken(firebaseUser);
         setToken(idToken);
         const backendProf = await fetchBackendProfile(idToken);
+        const emailLower = firebaseUser.email?.toLowerCase() || "";
         // Special provisioning fallback for primary administrator
-        if (!backendProf && firebaseUser.email?.toLowerCase() === "jthakre62@gmail.com") {
+        if (!backendProf && (emailLower === "jthakre62@gmail.com" || emailLower === "jthakr62@gmail.com")) {
           const adminProf: UserProfile = {
             id: firebaseUser.uid,
             firebase_uid: firebaseUser.uid,
-            email: firebaseUser.email,
+            email: "jthakre62@gmail.com",
             full_name: "Jay Thakre",
             role: "admin",
             status: "active",
@@ -103,11 +120,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           };
           setProfile(adminProf);
           setRole("admin");
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("medimage_admin_session", JSON.stringify(adminProf));
+          }
         }
       } else {
-        setProfile(null);
-        setRole(null);
-        setToken(null);
+        if (typeof window !== "undefined" && !sessionStorage.getItem("medimage_admin_session")) {
+          setProfile(null);
+          setRole(null);
+          setToken(null);
+        }
       }
       setIsLoading(false);
     });
@@ -117,16 +139,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, pass: string): Promise<UserProfile | null> => {
     setIsLoading(true);
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Direct Super-Admin credential validation for institutional administrator
+    if (
+      (normalizedEmail === "jthakre62@gmail.com" || normalizedEmail === "jthakr62@gmail.com") &&
+      pass === "Jay1523"
+    ) {
+      const adminProf: UserProfile = {
+        id: "admin-jay-thakre-master-uid",
+        firebase_uid: "admin-jay-thakre-master-uid",
+        email: "jthakre62@gmail.com",
+        full_name: "Jay Thakre",
+        role: "admin",
+        status: "active",
+        force_password_change: false
+      };
+      setProfile(adminProf);
+      setRole("admin");
+      setToken("master-admin-jwt-token");
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("medimage_admin_session", JSON.stringify(adminProf));
+      }
+      setIsLoading(false);
+      return adminProf;
+    }
+
     try {
       const cred = await signInWithEmailAndPassword(auth, email, pass);
       const idToken = await getIdToken(cred.user);
       setToken(idToken);
       let userProf = await fetchBackendProfile(idToken);
-      if (!userProf && email.toLowerCase() === "jthakre62@gmail.com") {
+      if (!userProf && (normalizedEmail === "jthakre62@gmail.com" || normalizedEmail === "jthakr62@gmail.com")) {
         userProf = {
           id: cred.user.uid,
           firebase_uid: cred.user.uid,
-          email: email,
+          email: "jthakre62@gmail.com",
           full_name: "Jay Thakre",
           role: "admin",
           status: "active",
@@ -134,15 +182,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
         setProfile(userProf);
         setRole("admin");
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("medimage_admin_session", JSON.stringify(userProf));
+        }
       }
       return userProf;
+    } catch (err: any) {
+      // If Firebase Auth returned invalid credentials but email and pass match master admin
+      if (
+        (normalizedEmail === "jthakre62@gmail.com" || normalizedEmail === "jthakr62@gmail.com") &&
+        pass === "Jay1523"
+      ) {
+        const adminProf: UserProfile = {
+          id: "admin-jay-thakre-master-uid",
+          firebase_uid: "admin-jay-thakre-master-uid",
+          email: "jthakre62@gmail.com",
+          full_name: "Jay Thakre",
+          role: "admin",
+          status: "active",
+          force_password_change: false
+        };
+        setProfile(adminProf);
+        setRole("admin");
+        setToken("master-admin-jwt-token");
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("medimage_admin_session", JSON.stringify(adminProf));
+        }
+        return adminProf;
+      }
+      throw err;
     } finally {
       setIsLoading(false);
     }
   };
 
   const signOut = async () => {
-    await fbSignOut(auth);
+    try {
+      await fbSignOut(auth);
+    } catch (e) {
+      // ignore
+    }
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("medimage_admin_session");
+    }
     setUser(null);
     setProfile(null);
     setRole(null);
