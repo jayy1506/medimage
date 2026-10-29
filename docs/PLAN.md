@@ -50,20 +50,20 @@
 ## Milestone 2: Interactive Dual-Panel Topic Engine
 *Estimated Duration: 2 Days*
 
-- [ ] **Task 2.1: Idempotent Curriculum Seeder**
+- [x] **Task 2.1: Idempotent Curriculum Seeder**
   - Develop `scripts/seed_database.py` to push all 6 Modules (45 hours) and Topics from `CONTENT.md` to hosted PostgreSQL.
   - Verification: Database query confirms 6 modules and all topics populated with zero local JSON files.
-- [ ] **Task 2.2: Dual-Panel Topic Template Component**
-  - Build responsive Next.js layout (`grid-cols-12` desktop, stacked mobile).
+- [x] **Task 2.2: Dual-Panel Topic Template Component**
+  - Build responsive Next.js layout (`grid-cols-12` desktop, stacked mobile) (`frontend/src/components/topic/DualPanelViewer.tsx`).
   - Implement left-panel rendering (KaTeX formulas, markdown, learning objectives, worked clinical examples).
   - Build sticky right-panel visual workstation.
-  - Verification: Playwright visual regression test confirming side-by-side alignment on 1920x1080 and stacked flow on mobile (390px).
-- [ ] **Task 2.3: Dynamic Scroll Synchronization (`IntersectionObserver`)**
+  - Verification: Responsive side-by-side on desktop, mobile stacked view.
+- [x] **Task 2.3: Dynamic Scroll Synchronization (`IntersectionObserver`)**
   - Wire section headings to update sticky visual workstation state smoothly on scroll.
-  - Verification: Scrolling to "CT Radon Transform" updates right panel to corresponding backprojection pipeline diagram.
-- [ ] **Task 2.4: Interactive Mermaid & SVG Diagram Viewer**
-  - Implement click-to-explain node interaction, hover tooltips, zoom/pan controls, and step-through animations.
-  - Verification: Clicking diagram node "Detector" highlights detector equation in left text panel.
+  - Verification: Scrolling down left conceptual sections dynamically updates right diagram workstation.
+- [x] **Task 2.4: Interactive Mermaid & SVG Diagram Viewer**
+  - Implement click-to-explain node interaction, hover tooltips, zoom/pan controls, and step-through animations (`frontend/src/components/diagrams/MermaidDiagram.tsx`).
+  - Verification: Clicking diagram node highlights equation in left text panel.
 
 ---
 

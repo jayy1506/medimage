@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.v1.auth import router as auth_router
 from app.api.v1.admin import router as admin_router
+from app.api.v1.course import router as course_router
 
 app = FastAPI(
     title="Medical Text and Image Processing Learning Platform API",
@@ -24,6 +25,7 @@ app.add_middleware(
 # Register API v1 Routers
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
+app.include_router(course_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["System"])
