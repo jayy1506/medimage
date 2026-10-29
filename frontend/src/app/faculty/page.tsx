@@ -409,37 +409,37 @@ export default function FacultyStudioPage() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      {/* Institutional Header without Image Logo */}
-      <header className="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
+    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
+      {/* Institutional Top Navbar (White Theme) */}
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Link
               href="/dashboard"
-              className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+              className="p-2 text-slate-400 hover:text-adani-navy hover:bg-slate-100 rounded-lg transition-colors"
               title="Return to Student Dashboard"
             >
               <ChevronLeft className="w-5 h-5" />
             </Link>
             <Link href="/dashboard" className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 via-purple-600 to-pink-500 flex items-center justify-center text-white font-black text-xs shadow-md">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 via-purple-600 to-pink-500 flex items-center justify-center text-white font-black text-xs shadow-sm">
                 AI
               </div>
               <div>
-                <span className="text-sm font-bold tracking-tight text-white block leading-none">
+                <span className="text-sm font-bold tracking-tight text-adani-navy block leading-none">
                   Adani University
                 </span>
-                <span className="text-[10px] text-purple-400 font-medium">
+                <span className="text-[10px] text-adani-purple font-semibold">
                   Faculty Studio &amp; Curriculum Governance
                 </span>
               </div>
             </Link>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/dashboard"
-              className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-800 transition-colors border border-slate-700/60"
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-adani-navy bg-slate-100 hover:bg-slate-200/80 transition-colors border border-slate-200"
             >
               Curriculum Dashboard
             </Link>
@@ -447,16 +447,16 @@ export default function FacultyStudioPage() {
             {role === "admin" && (
               <Link
                 href="/admin"
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-purple-300 bg-purple-900/40 hover:bg-purple-800/60 border border-purple-700/50 transition-colors flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-adani-purple bg-purple-50 hover:bg-purple-100/80 border border-purple-200 transition-colors flex items-center gap-1.5"
               >
-                <Shield className="w-3.5 h-3.5" />
+                <Shield className="w-3.5 h-3.5 text-adani-purple" />
                 Admin Console
               </Link>
             )}
 
             <button
               onClick={() => signOut()}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-red-400 hover:bg-red-950/30 transition-colors flex items-center gap-1"
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors flex items-center gap-1"
             >
               <LogOut className="w-3.5 h-3.5" />
               Sign Out
@@ -467,57 +467,57 @@ export default function FacultyStudioPage() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        {/* Banner */}
-        <div className="bg-gradient-to-r from-slate-900 via-purple-950/40 to-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+        {/* Banner (White Theme) */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-300 text-xs font-semibold uppercase tracking-wider mb-2">
-              <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-purple-50 border border-purple-200 text-adani-purple text-xs font-bold uppercase tracking-wider mb-2">
+              <ShieldCheck className="w-3.5 h-3.5 text-adani-purple" />
               Course Instructor &amp; Content Governance Portal
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
               Faculty Workstation • AIDS 12605.1
             </h1>
-            <p className="text-xs text-slate-400 mt-1">
-              Active Instructor: <span className="text-purple-300 font-mono">{user?.email || "faculty.fet@adani.edu.in"}</span>.
-              Manage curriculum structure, track cohort mastery, and maintain strict &gt;75.0% pass remediation.
+            <p className="text-xs text-slate-600 mt-1">
+              Active Instructor: <span className="text-adani-purple font-mono font-bold">{user?.email || "faculty.fet@adani.edu.in"}</span>.
+              Manage curriculum structure, add/delete topics, track cohort mastery, and monitor strict &gt;75.0% pass remediation.
             </p>
           </div>
 
           {/* Quick Metrics */}
-          <div className="flex items-center gap-4 bg-slate-950/80 border border-slate-800 p-3 rounded-xl">
+          <div className="flex items-center gap-4 bg-slate-50 border border-slate-200 p-3.5 rounded-xl shadow-inner">
             <div className="text-center px-2">
-              <span className="text-xs text-slate-400 block">Class Avg</span>
-              <span className="text-base font-bold text-white">{avgClassMastery}%</span>
+              <span className="text-xs font-bold text-slate-500 block">Class Avg</span>
+              <span className="text-base font-black text-slate-900">{avgClassMastery}%</span>
             </div>
-            <div className="h-6 w-px bg-slate-800" />
+            <div className="h-6 w-px bg-slate-200" />
             <div className="text-center px-2">
-              <span className="text-xs text-slate-400 block">Passed (&gt;75%)</span>
-              <span className="text-base font-bold text-emerald-400">{clearedStudents}</span>
+              <span className="text-xs font-bold text-slate-500 block">Passed (&gt;75%)</span>
+              <span className="text-base font-black text-emerald-600">{clearedStudents}</span>
             </div>
-            <div className="h-6 w-px bg-slate-800" />
+            <div className="h-6 w-px bg-slate-200" />
             <div className="text-center px-2">
-              <span className="text-xs text-slate-400 block">Remediation</span>
-              <span className="text-base font-bold text-amber-400">{remediationStudents}</span>
+              <span className="text-xs font-bold text-slate-500 block">Remediation</span>
+              <span className="text-base font-black text-amber-600">{remediationStudents}</span>
             </div>
           </div>
         </div>
 
         {/* Success Alert */}
         {successAlert && (
-          <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-800/80 text-emerald-300 text-xs font-semibold flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+          <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
             {successAlert}
           </div>
         )}
 
         {/* Primary Tabs */}
-        <div className="flex border-b border-slate-800 space-x-1">
+        <div className="flex border-b border-slate-200 space-x-1">
           <button
             onClick={() => setActiveTab("curriculum")}
             className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${
               activeTab === "curriculum"
-                ? "border-sky-500 text-sky-400 bg-sky-950/20"
-                : "border-transparent text-slate-400 hover:text-slate-200"
+                ? "border-adani-cyan text-adani-cyan bg-sky-50/50"
+                : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
             <BookOpen className="w-4 h-4" />
@@ -528,8 +528,8 @@ export default function FacultyStudioPage() {
             onClick={() => setActiveTab("students")}
             className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${
               activeTab === "students"
-                ? "border-purple-500 text-purple-400 bg-purple-950/20"
-                : "border-transparent text-slate-400 hover:text-slate-200"
+                ? "border-adani-purple text-adani-purple bg-purple-50/50"
+                : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
             <Users className="w-4 h-4" />
@@ -540,8 +540,8 @@ export default function FacultyStudioPage() {
             onClick={() => setActiveTab("visuals")}
             className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${
               activeTab === "visuals"
-                ? "border-emerald-500 text-emerald-400 bg-emerald-950/20"
-                : "border-transparent text-slate-400 hover:text-slate-200"
+                ? "border-emerald-600 text-emerald-600 bg-emerald-50/50"
+                : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
             <Sparkles className="w-4 h-4" />
@@ -551,21 +551,21 @@ export default function FacultyStudioPage() {
 
         {/* TAB 1: CURRICULUM MANAGEMENT (ADD / DELETE CURRICULUM) */}
         {activeTab === "curriculum" && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base font-bold text-white flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-sky-400" />
+                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-adani-cyan" />
                   Course Syllabus &amp; Module Directory
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Add new accredited modules, configure theory hours, assign NBA Course Outcomes, and delete obsolete content.
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Add new accredited modules, configure theory hours, assign NBA Course Outcomes, and delete modules.
                 </p>
               </div>
 
               <button
                 onClick={() => setIsAddingModule(!isAddingModule)}
-                className="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-md shadow-sky-600/20"
+                className="px-3.5 py-2 rounded-xl bg-adani-cyan hover:bg-sky-600 text-white text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm"
               >
                 <PlusCircle className="w-4 h-4" />
                 {isAddingModule ? "Cancel" : "Add New Module"}
@@ -574,14 +574,14 @@ export default function FacultyStudioPage() {
 
             {/* Add Module Inline Form */}
             {isAddingModule && (
-              <form onSubmit={handleAddModule} className="bg-slate-900 border border-sky-500/30 rounded-2xl p-5 space-y-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-sky-400">
+              <form onSubmit={handleAddModule} className="bg-white border border-sky-200 rounded-2xl p-5 space-y-4 shadow-sm">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-adani-cyan">
                   Provision New Curriculum Module
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
                       Module Code
                     </label>
                     <input
@@ -590,12 +590,12 @@ export default function FacultyStudioPage() {
                       placeholder="e.g. MODULE 07"
                       value={newModCode}
                       onChange={(e) => setNewModCode(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-adani-cyan"
                     />
                   </div>
 
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
                       Module Title
                     </label>
                     <input
@@ -604,12 +604,12 @@ export default function FacultyStudioPage() {
                       placeholder="e.g. Diffusion Tensor Imaging & Tractography"
                       value={newModTitle}
                       onChange={(e) => setNewModTitle(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
+                      className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-adani-cyan"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
                       Theory Hours &amp; CO Target
                     </label>
                     <div className="flex gap-2">
@@ -619,7 +619,7 @@ export default function FacultyStudioPage() {
                         max={30}
                         value={newModHours}
                         onChange={(e) => setNewModHours(Number(e.target.value))}
-                        className="w-16 bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs text-white text-center"
+                        className="w-16 bg-slate-50 border border-slate-300 rounded-lg px-2 py-2 text-xs text-slate-900 text-center font-bold"
                         title="Theory Hours"
                       />
                       <input
@@ -627,7 +627,7 @@ export default function FacultyStudioPage() {
                         placeholder="CO5, CO6"
                         value={newModCO}
                         onChange={(e) => setNewModCO(e.target.value)}
-                        className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-2 py-2 text-xs text-white"
+                        className="flex-1 bg-slate-50 border border-slate-300 rounded-lg px-2 py-2 text-xs text-slate-900"
                         title="Course Outcome Tag"
                       />
                     </div>
@@ -635,7 +635,7 @@ export default function FacultyStudioPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
                     Curriculum Description &amp; Scope
                   </label>
                   <textarea
@@ -643,21 +643,21 @@ export default function FacultyStudioPage() {
                     placeholder="Describe clinical topics, mathematical algorithms, and diagnostic modalities covered in this module..."
                     value={newModDesc}
                     onChange={(e) => setNewModDesc(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-adani-cyan"
                   />
                 </div>
 
-                <div className="flex justify-end gap-2 pt-2">
+                <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                   <button
                     type="button"
                     onClick={() => setIsAddingModule(false)}
-                    className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white"
+                    className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-1.5 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-bold transition-colors"
+                    className="px-4 py-1.5 bg-adani-cyan hover:bg-sky-600 text-white text-xs font-bold rounded-lg shadow-sm"
                   >
                     Save &amp; Publish Module
                   </button>
@@ -668,24 +668,24 @@ export default function FacultyStudioPage() {
             {/* Modules List */}
             <div className="space-y-4">
               {modules.map((m) => (
-                <div key={m.id} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
+                <div key={m.id} className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
                     <div className="flex items-start gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-slate-950 border border-slate-800 flex flex-col items-center justify-center flex-shrink-0">
-                        <span className="text-[10px] font-bold text-sky-400">MOD</span>
-                        <span className="text-sm font-black text-white">{m.moduleCode.replace("MODULE ", "")}</span>
+                      <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex flex-col items-center justify-center flex-shrink-0">
+                        <span className="text-[10px] font-bold text-adani-cyan">MOD</span>
+                        <span className="text-sm font-black text-slate-900">{m.moduleCode.replace("MODULE ", "")}</span>
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <h3 className="text-sm font-bold text-white">{m.title}</h3>
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-sky-400">
+                          <h3 className="text-sm font-bold text-slate-900">{m.title}</h3>
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-sky-50 text-adani-cyan border border-sky-100">
                             {m.coTarget}
                           </span>
-                          <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+                          <span className="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-medium">
                             {m.theoryHours} Hours
                           </span>
                         </div>
-                        <p className="text-xs text-slate-400 mt-1 max-w-3xl leading-relaxed">
+                        <p className="text-xs text-slate-600 mt-1 max-w-3xl leading-relaxed">
                           {m.description}
                         </p>
                       </div>
@@ -694,15 +694,15 @@ export default function FacultyStudioPage() {
                     <div className="flex items-center gap-2 self-end sm:self-center">
                       <button
                         onClick={() => setActiveModForTopic(activeModForTopic === m.id ? null : m.id)}
-                        className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition-colors flex items-center gap-1 border border-slate-700/60"
+                        className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 transition-colors flex items-center gap-1 border border-slate-200"
                       >
-                        <PlusCircle className="w-3.5 h-3.5 text-sky-400" />
+                        <PlusCircle className="w-3.5 h-3.5 text-adani-cyan" />
                         Add Topic
                       </button>
 
                       <button
                         onClick={() => handleDeleteModule(m.id, m.moduleCode)}
-                        className="px-3 py-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/60 text-xs font-semibold text-red-400 transition-colors flex items-center gap-1 border border-red-800/50"
+                        className="px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-xs font-semibold text-red-600 transition-colors flex items-center gap-1 border border-red-200"
                         title="Delete this entire module"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -713,13 +713,13 @@ export default function FacultyStudioPage() {
 
                   {/* Add Topic Inline Form */}
                   {activeModForTopic === m.id && (
-                    <form onSubmit={handleAddTopic} className="bg-slate-950 border border-sky-500/30 rounded-xl p-4 space-y-3">
-                      <h4 className="text-xs font-bold text-sky-400">
+                    <form onSubmit={handleAddTopic} className="bg-slate-50 border border-sky-200 rounded-xl p-4 space-y-3">
+                      <h4 className="text-xs font-bold text-adani-cyan">
                         Add Topic to {m.moduleCode}
                       </h4>
                       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                         <div className="sm:col-span-2">
-                          <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
                             Topic Title
                           </label>
                           <input
@@ -728,11 +728,11 @@ export default function FacultyStudioPage() {
                             placeholder="e.g. Clinical Diffusion Anisotropy"
                             value={newTopicTitle}
                             onChange={(e) => setNewTopicTitle(e.target.value)}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                            className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-adani-cyan"
                           />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
                             Read Time (mins)
                           </label>
                           <input
@@ -741,11 +741,11 @@ export default function FacultyStudioPage() {
                             max={120}
                             value={newTopicTime}
                             onChange={(e) => setNewTopicTime(Number(e.target.value))}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white text-center"
+                            className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900 text-center font-bold"
                           />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
                             CO Tag
                           </label>
                           <input
@@ -753,7 +753,7 @@ export default function FacultyStudioPage() {
                             placeholder="CO3"
                             value={newTopicCO}
                             onChange={(e) => setNewTopicCO(e.target.value)}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white"
+                            className="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-900"
                           />
                         </div>
                       </div>
@@ -762,13 +762,13 @@ export default function FacultyStudioPage() {
                         <button
                           type="button"
                           onClick={() => setActiveModForTopic(null)}
-                          className="px-2.5 py-1 text-xs text-slate-400 hover:text-white"
+                          className="px-2.5 py-1 text-xs text-slate-500 hover:text-slate-800"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
-                          className="px-3 py-1 bg-sky-500 text-slate-950 text-xs font-bold rounded-lg hover:bg-sky-400"
+                          className="px-3.5 py-1 bg-adani-cyan text-white text-xs font-bold rounded-lg hover:bg-sky-600 shadow-sm"
                         >
                           Add Topic
                         </button>
@@ -777,13 +777,13 @@ export default function FacultyStudioPage() {
                   )}
 
                   {/* Topics List */}
-                  <div className="space-y-1.5">
-                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                  <div className="space-y-2">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
                       Enrolled Topics ({m.topics.length})
                     </span>
 
                     {m.topics.length === 0 ? (
-                      <p className="text-xs text-slate-500 italic py-2">
+                      <p className="text-xs text-slate-400 italic py-2">
                         No topics added to this module yet. Click &quot;Add Topic&quot; to author content.
                       </p>
                     ) : (
@@ -791,13 +791,13 @@ export default function FacultyStudioPage() {
                         {m.topics.map((t) => (
                           <div
                             key={t.id}
-                            className="bg-slate-950/70 border border-slate-800/80 rounded-xl px-3 py-2 flex items-center justify-between group hover:border-slate-700 transition-colors"
+                            className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 flex items-center justify-between group hover:border-slate-300 transition-colors"
                           >
                             <div className="flex items-center gap-2 overflow-hidden">
-                              <span className="text-[10px] font-mono font-bold text-sky-400 px-1.5 py-0.5 rounded bg-sky-950/40 border border-sky-800/40">
+                              <span className="text-[10px] font-mono font-bold text-adani-cyan px-1.5 py-0.5 rounded bg-sky-50 border border-sky-200">
                                 {t.coTag}
                               </span>
-                              <span className="text-xs text-slate-200 font-medium truncate" title={t.title}>
+                              <span className="text-xs text-slate-800 font-semibold truncate" title={t.title}>
                                 {t.title}
                               </span>
                             </div>
@@ -809,7 +809,7 @@ export default function FacultyStudioPage() {
                               </span>
                               <button
                                 onClick={() => handleDeleteTopic(m.id, t.id, t.title)}
-                                className="p-1 text-slate-500 hover:text-red-400 transition-colors"
+                                className="p-1 text-slate-400 hover:text-red-600 transition-colors"
                                 title="Delete topic"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -828,14 +828,14 @@ export default function FacultyStudioPage() {
 
         {/* TAB 2: STUDENT PROGRESS MONITOR */}
         {activeTab === "students" && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h2 className="text-base font-bold text-white flex items-center gap-2">
-                  <Users className="w-4 h-4 text-purple-400" />
+                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-adani-purple" />
                   Cohort Performance &amp; Remediation Tracker
                 </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Monitor individual student module clearances. Strict pass rule requires &gt;75.0% on each module assessment.
                 </p>
               </div>
@@ -849,14 +849,14 @@ export default function FacultyStudioPage() {
                     placeholder="Search name or roll no..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-8 pr-3 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                    className="pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-adani-purple"
                   />
                 </div>
 
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as any)}
-                  className="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-purple-500"
+                  className="bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-adani-purple"
                 >
                   <option value="all">All Statuses</option>
                   <option value="cleared">Cleared (&gt;75%)</option>
@@ -866,10 +866,10 @@ export default function FacultyStudioPage() {
             </div>
 
             {/* Student Directory Table */}
-            <div className="bg-slate-900/60 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-slate-300">
-                  <thead className="bg-slate-950/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800">
+                <table className="w-full text-left text-xs text-slate-700">
+                  <thead className="bg-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
                     <tr>
                       <th className="px-5 py-3.5">Student</th>
                       <th className="px-5 py-3.5">Roll No</th>
@@ -880,29 +880,29 @@ export default function FacultyStudioPage() {
                       <th className="px-5 py-3.5 text-right">Details</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60">
+                  <tbody className="divide-y divide-slate-100">
                     {filteredStudents.map((st) => {
                       const isExpanded = expandedStudentId === st.id;
                       return (
                         <React.Fragment key={st.id}>
-                          <tr className="hover:bg-slate-800/30 transition-colors">
+                          <tr className="hover:bg-slate-50/80 transition-colors">
                             <td className="px-5 py-3.5">
-                              <span className="font-bold text-white block">{st.fullName}</span>
+                              <span className="font-bold text-slate-900 block">{st.fullName}</span>
                               <span className="text-[11px] text-slate-500 font-mono">{st.email}</span>
                             </td>
-                            <td className="px-5 py-3.5 font-mono text-slate-300">
+                            <td className="px-5 py-3.5 font-mono text-slate-700">
                               {st.rollNo}
                             </td>
                             <td className="px-5 py-3.5">
-                              <span className="font-bold text-white">{st.clearedModules}</span>
+                              <span className="font-bold text-slate-900">{st.clearedModules}</span>
                               <span className="text-slate-500"> / {st.totalModules}</span>
                             </td>
                             <td className="px-5 py-3.5">
                               <div className="flex items-center gap-2">
-                                <span className={`font-bold font-mono ${st.averageScorePct > 75 ? "text-emerald-400" : "text-amber-400"}`}>
+                                <span className={`font-bold font-mono ${st.averageScorePct > 75 ? "text-emerald-700" : "text-amber-700"}`}>
                                   {st.averageScorePct}%
                                 </span>
-                                <div className="w-16 bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                <div className="w-16 bg-slate-100 h-1.5 rounded-full overflow-hidden border border-slate-200">
                                   <div
                                     className={`h-full ${st.averageScorePct > 75 ? "bg-emerald-500" : "bg-amber-500"}`}
                                     style={{ width: `${Math.min(st.averageScorePct, 100)}%` }}
@@ -912,13 +912,13 @@ export default function FacultyStudioPage() {
                             </td>
                             <td className="px-5 py-3.5">
                               {st.status === "cleared" ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[11px] font-semibold border border-emerald-500/20">
-                                  <CheckCircle2 className="w-3 h-3" />
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-bold border border-emerald-200">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                                   Cleared (&gt;75%)
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 text-[11px] font-semibold border border-amber-500/20">
-                                  <AlertCircle className="w-3 h-3" />
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-[11px] font-bold border border-amber-200">
+                                  <AlertCircle className="w-3 h-3 text-amber-600" />
                                   Needs Remediation
                                 </span>
                               )}
@@ -929,7 +929,7 @@ export default function FacultyStudioPage() {
                             <td className="px-5 py-3.5 text-right">
                               <button
                                 onClick={() => setExpandedStudentId(isExpanded ? null : st.id)}
-                                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors inline-flex items-center gap-1 text-xs"
+                                className="p-1.5 text-slate-500 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition-colors inline-flex items-center gap-1 text-xs"
                               >
                                 {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                               </button>
@@ -938,34 +938,34 @@ export default function FacultyStudioPage() {
 
                           {/* Expanded Module-by-Module Scores */}
                           {isExpanded && (
-                            <tr className="bg-slate-950/90">
-                              <td colSpan={7} className="px-5 py-4 border-b border-slate-800">
+                            <tr className="bg-slate-50/70">
+                              <td colSpan={7} className="px-5 py-4 border-b border-slate-200">
                                 <div className="space-y-2">
-                                  <span className="text-[11px] font-bold uppercase tracking-wider text-purple-400 block">
+                                  <span className="text-[11px] font-bold uppercase tracking-wider text-adani-purple block">
                                     Module Assessment Performance Breakdown
                                   </span>
                                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
                                     {st.moduleBreakdown.map((mb) => (
                                       <div
                                         key={mb.moduleCode}
-                                        className={`p-2.5 rounded-xl border ${
+                                        className={`p-2.5 rounded-xl border bg-white ${
                                           mb.isPassed
-                                            ? "bg-slate-900 border-emerald-500/30"
-                                            : "bg-slate-900 border-amber-500/30"
+                                            ? "border-emerald-200 shadow-sm"
+                                            : "border-amber-200 shadow-sm"
                                         }`}
                                       >
-                                        <span className="text-[10px] font-bold text-slate-400 block">
+                                        <span className="text-[10px] font-bold text-slate-500 block">
                                           {mb.moduleCode}
                                         </span>
                                         <div className="flex items-baseline justify-between mt-1">
                                           <span
                                             className={`text-sm font-bold font-mono ${
-                                              mb.isPassed ? "text-emerald-400" : "text-amber-400"
+                                              mb.isPassed ? "text-emerald-700" : "text-amber-700"
                                             }`}
                                           >
                                             {mb.scorePct > 0 ? `${mb.scorePct}%` : "Not Taken"}
                                           </span>
-                                          <span className="text-[10px] text-slate-500">
+                                          <span className="text-[10px] text-slate-400">
                                             {mb.attempts} att
                                           </span>
                                         </div>
@@ -988,55 +988,55 @@ export default function FacultyStudioPage() {
 
         {/* TAB 3: VISUAL & SCHEMATIC APPROVALS */}
         {activeTab === "visuals" && (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-emerald-400" />
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-emerald-600" />
                 AI-Synthesized Clinical Schematics &amp; Approvals
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Review and approve clinical visual models generated for course theory modules. Approved assets are automatically published to the live Dual-Panel Theory workstation.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {visuals.map((vis) => (
-                <div key={vis.id} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-4">
+                <div key={vis.id} className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-white">{vis.title}</h3>
+                    <h3 className="text-sm font-bold text-slate-900">{vis.title}</h3>
                     <span
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded capitalize ${
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded capitalize ${
                         vis.status === "approved"
-                          ? "bg-emerald-500/10 text-emerald-400"
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                           : vis.status === "rejected"
-                          ? "bg-red-500/10 text-red-400"
-                          : "bg-amber-500/10 text-amber-400"
+                          ? "bg-red-50 text-red-700 border border-red-200"
+                          : "bg-amber-50 text-amber-700 border border-amber-200"
                       }`}
                     >
                       {vis.status}
                     </span>
                   </div>
 
-                  <div className="relative h-48 w-full rounded-xl overflow-hidden bg-slate-950 border border-slate-800">
+                  <div className="relative h-48 w-full rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
                     <img
                       src={vis.storage_url}
                       alt={vis.alt_text}
-                      className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity"
+                      className="w-full h-full object-cover"
                     />
                   </div>
 
-                  <div className="text-xs space-y-1 text-slate-400">
-                    <p><strong className="text-slate-300">Alt Text:</strong> {vis.alt_text}</p>
-                    <p><strong className="text-slate-300">License:</strong> {vis.license}</p>
+                  <div className="text-xs space-y-1 text-slate-600">
+                    <p><strong className="text-slate-800">Alt Text:</strong> {vis.alt_text}</p>
+                    <p><strong className="text-slate-800">License:</strong> {vis.license}</p>
                   </div>
 
-                  <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
+                  <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                     <button
                       onClick={() => {
                         handleRejectVisual(vis.id);
                         showAlert(`Visual "${vis.title}" rejected.`);
                       }}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold text-red-400 hover:bg-red-950/40 border border-red-800/40"
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold text-red-700 hover:bg-red-50 border border-red-200 transition-colors"
                     >
                       Reject
                     </button>
@@ -1045,7 +1045,7 @@ export default function FacultyStudioPage() {
                         handleApproveVisual(vis.id);
                         showAlert(`Visual "${vis.title}" approved and published to course workstation.`);
                       }}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white"
+                      className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition-colors"
                     >
                       Approve &amp; Publish
                     </button>

@@ -100,29 +100,29 @@ export default function UnifiedCurriculumDashboard() {
       id: "mod-2",
       moduleCode: "MODULE 02",
       title: "Image Processing in Clinical Practice",
-      description: "Clinical image databases, Hospital Information Systems (HIS), PACS infrastructure, intensity operations, contrast stretching, and clinical workflow.",
+      description: "Fourier transforms, 2D FFT, contrast enhancement, histogram equalization, spatial vs frequency filtering, and clinical artifact reduction.",
       theoryHours: 8,
-      coTarget: "CO2",
-      bestScorePct: 78.0,
-      latestScorePct: 78.0,
+      coTarget: "CO2, CO3",
+      bestScorePct: 79.0,
+      latestScorePct: 79.0,
       attemptsCount: 1,
       isPassed: true,
       status: "cleared",
       topics: [
         {
           id: "m2-t1",
-          slug: "dicom-standards",
-          title: "Clinical Image Databases & PACS Architecture",
-          readTime: 18,
+          slug: "fourier-transform-medical-imaging",
+          title: "2D Discrete Fourier Transform & k-Space Principles",
+          readTime: 20,
           coTag: "CO2",
           isCompleted: true
         },
         {
           id: "m2-t2",
-          slug: "intensity-windowing",
-          title: "Radiographic Contrast Transformations & Transfer Curves",
-          readTime: 22,
-          coTag: "CO2",
+          slug: "contrast-enhancement-clahe",
+          title: "Histogram Equalization & Contrast Limited Adaptive HE (CLAHE)",
+          readTime: 18,
+          coTag: "CO3",
           isCompleted: false
         }
       ]
@@ -131,27 +131,27 @@ export default function UnifiedCurriculumDashboard() {
       id: "mod-3",
       moduleCode: "MODULE 03",
       title: "Image Representation & DICOM Standards",
-      description: "Pixels and voxels, standardized Hounsfield Units (HU), DICOM Part 10 tag structures, transfer syntaxes, and window width/level (WW/WL) calibration.",
+      description: "Pixel representation, bit depth, photometric interpretation, DICOM header data elements, VRs, Transfer Syntaxes, and HIPAA Safe Harbor de-identification.",
       theoryHours: 8,
-      coTarget: "CO2, CO4",
-      bestScorePct: 72.0,
-      latestScorePct: 72.0,
-      attemptsCount: 1,
+      coTarget: "CO2",
+      bestScorePct: 62.0,
+      latestScorePct: 62.0,
+      attemptsCount: 2,
       isPassed: false,
       status: "needs_remediation",
       topics: [
         {
           id: "m3-t1",
-          slug: "pixel-voxel-standards",
-          title: "Spatial Sampling, Grayscale Depth & HU Calibration",
+          slug: "dicom-data-structure-vr",
+          title: "DICOM File Format, Value Representations (VR) & Tag Elements",
           readTime: 20,
           coTag: "CO2",
           isCompleted: true
         },
         {
           id: "m3-t2",
-          slug: "dicom-metadata-parsing",
-          title: "DICOM Tag Dictionaries & HIPAA De-Identification",
+          slug: "hipaa-deidentification-sanitization",
+          title: "HIPAA Safe Harbor De-Identification & Clinical Data Privacy",
           readTime: 25,
           coTag: "CO2",
           isCompleted: false
@@ -162,9 +162,9 @@ export default function UnifiedCurriculumDashboard() {
       id: "mod-4",
       moduleCode: "MODULE 04",
       title: "Tomographic Reconstruction & Radon Transform",
-      description: "Parallel & fan-beam projections, continuous Radon transform, projection slice theorem, sinograms, and Filtered Backprojection (FBP) with Ram-Lak kernels.",
-      theoryHours: 8,
-      coTarget: "CO3, CO4",
+      description: "Radon transform, sinogram formation, projection geometry, Central Slice Theorem, Backprojection, and Filtered Backprojection (Ram-Lak / Shepp-Logan).",
+      theoryHours: 9,
+      coTarget: "CO4",
       bestScorePct: 0.0,
       latestScorePct: 0.0,
       attemptsCount: 0,
@@ -174,15 +174,15 @@ export default function UnifiedCurriculumDashboard() {
         {
           id: "m4-t1",
           slug: "radon-transform-sinogram",
-          title: "Line Integrals, Projection Geometry & Sinograms",
+          title: "Radon Transform Geometry & Sinogram Projection Mapping",
           readTime: 25,
-          coTag: "CO3",
+          coTag: "CO4",
           isCompleted: false
         },
         {
           id: "m4-t2",
-          slug: "filtered-backprojection",
-          title: "Projection Slice Theorem & Frequency Ramp Filtering",
+          slug: "filtered-backprojection-algorithm",
+          title: "Filtered Backprojection (FBP) & Ram-Lak Ramp Filtering",
           readTime: 30,
           coTag: "CO4",
           isCompleted: false
@@ -193,8 +193,8 @@ export default function UnifiedCurriculumDashboard() {
       id: "mod-5",
       moduleCode: "MODULE 05",
       title: "Medical Image Segmentation & 2D Spatial Filtering",
-      description: "2D spatial convolutions (Sobel, Laplacian, Gaussian), histogram equalization, Otsu thresholding, morphological operations, and U-Net architectures.",
-      theoryHours: 8,
+      description: "2D spatial kernels, Sobel/Laplacian operators, Gaussian blurring, Otsu automated thresholding, and semantic U-Net segmentation architectures.",
+      theoryHours: 9,
       coTarget: "CO3, CO4",
       bestScorePct: 0.0,
       latestScorePct: 0.0,
@@ -236,7 +236,7 @@ export default function UnifiedCurriculumDashboard() {
         {
           id: "m6-t1",
           slug: "radiology-nlp-biobert",
-          title: "Biomedical Named Entity Recognition (NER) & Report Summarization",
+          title: "Biomedical Named Entity Recognition & Report Summarization",
           readTime: 25,
           coTag: "CO5",
           isCompleted: false
@@ -279,37 +279,37 @@ export default function UnifiedCurriculumDashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col">
-      {/* Institutional Top Navbar without image logo */}
-      <header className="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col">
+      {/* Institutional Top Navbar (White Theme) */}
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 via-purple-600 to-pink-500 flex items-center justify-center text-white font-black text-sm shadow-md">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 via-purple-600 to-pink-500 flex items-center justify-center text-white font-black text-sm shadow-sm">
               AI
             </div>
             <div>
-              <span className="text-sm font-bold tracking-wide text-white block">
+              <span className="text-sm font-bold tracking-wide text-adani-navy block">
                 Adani Institute of Higher Education and Research
               </span>
-              <span className="text-xs text-sky-400 font-medium">
-                Faculty of Engineering & Technology • AIDS 12605.1
+              <span className="text-xs text-adani-cyan font-semibold">
+                Faculty of Engineering &amp; Technology • AIDS 12605.1
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/playground"
-              className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-800 transition-colors flex items-center gap-1.5 border border-slate-700/60"
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-adani-navy bg-slate-100 hover:bg-slate-200/80 transition-colors flex items-center gap-1.5 border border-slate-200"
             >
-              <Layers className="w-3.5 h-3.5 text-purple-400" />
+              <Layers className="w-3.5 h-3.5 text-adani-purple" />
               Playgrounds
             </Link>
 
             {role && ["admin", "faculty"].includes(role) && (
               <Link
                 href="/faculty"
-                className="px-3 py-1.5 rounded-lg text-xs font-medium text-purple-300 bg-purple-950/60 hover:bg-purple-900/60 border border-purple-800/50 transition-colors flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-adani-purple bg-purple-50 hover:bg-purple-100/80 border border-purple-200 transition-colors flex items-center gap-1.5"
               >
                 <Sparkles className="w-3.5 h-3.5" />
                 Faculty Studio
@@ -319,17 +319,17 @@ export default function UnifiedCurriculumDashboard() {
             {role === "admin" && (
               <Link
                 href="/admin"
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-purple-300 bg-purple-900/40 hover:bg-purple-800/60 border border-purple-700/50 transition-colors flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-adani-purple bg-purple-50 hover:bg-purple-100/80 border border-purple-200 transition-colors flex items-center gap-1.5"
               >
                 <Shield className="w-3.5 h-3.5" />
                 Admin Console
               </Link>
             )}
 
-            <div className="h-4 w-px bg-slate-800" />
+            <div className="h-4 w-px bg-slate-200" />
             <button
               onClick={() => signOut()}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-red-400 hover:bg-red-950/30 transition-colors flex items-center gap-1"
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors flex items-center gap-1"
             >
               <LogOut className="w-3.5 h-3.5" />
               Sign Out
@@ -339,37 +339,37 @@ export default function UnifiedCurriculumDashboard() {
       </header>
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Banner with Progress Dial */}
-        <section className="bg-gradient-to-r from-slate-900 via-slate-900 to-sky-950/40 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {/* Banner with Progress Dial (White Theme) */}
+        <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm relative overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
             <div>
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-semibold uppercase tracking-wider mb-2">
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-sky-50 border border-sky-200 text-adani-cyan text-xs font-bold uppercase tracking-wider mb-2">
                 <Activity className="w-3.5 h-3.5" />
                 B.Tech Semester VI • Comprehensive Course Dashboard
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                 Medical Text and Image Processing
               </h1>
-              <p className="text-slate-400 text-sm mt-1 max-w-2xl leading-relaxed">
-                Candidate: <span className="text-sky-300 font-mono font-medium">{user?.email || "student.fet@adani.edu.in"}</span>.
+              <p className="text-slate-600 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
+                Candidate: <span className="text-adani-cyan font-mono font-bold">{user?.email || "student.fet@adani.edu.in"}</span>.
                 Master all 6 clinical modules through interactive dual-panel theory, in-browser code sandbox, and strict &gt;75.0% pass rule assessments.
               </p>
             </div>
 
             {/* Dial & Stats */}
-            <div className="flex items-center gap-6 bg-slate-950/80 border border-slate-800 p-4 rounded-2xl">
+            <div className="flex items-center gap-6 bg-slate-50 border border-slate-200 p-4 rounded-2xl shadow-inner">
               <div className="relative w-16 h-16 flex items-center justify-center">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                   <path
-                    className="text-slate-800"
+                    className="text-slate-200"
                     strokeWidth="3.5"
                     stroke="currentColor"
                     fill="none"
                     d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                   />
                   <path
-                    className="text-sky-500 transition-all duration-1000 ease-out"
+                    className="text-adani-cyan transition-all duration-1000 ease-out"
                     strokeDasharray={`${completionPct}, 100`}
                     strokeWidth="3.5"
                     strokeLinecap="round"
@@ -379,17 +379,17 @@ export default function UnifiedCurriculumDashboard() {
                   />
                 </svg>
                 <div className="absolute text-center">
-                  <span className="text-sm font-bold text-white">{completionPct}%</span>
+                  <span className="text-sm font-black text-slate-900">{completionPct}%</span>
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <span className="text-xs text-slate-400 font-medium block">Mastery Clearance</span>
-                <span className="text-sm font-bold text-white block">
+              <div className="space-y-0.5">
+                <span className="text-xs text-slate-500 font-bold block">Mastery Clearance</span>
+                <span className="text-sm font-black text-slate-900 block">
                   {clearedModules} of {totalModules} Modules Cleared
                 </span>
-                <span className="text-[11px] text-amber-400 flex items-center gap-1">
-                  <TrendingUp className="w-3 h-3" /> Pass Rule: &gt; 75.00%
+                <span className="text-[11px] text-amber-700 font-semibold flex items-center gap-1">
+                  <TrendingUp className="w-3 h-3 text-amber-600" /> Pass Rule: &gt; 75.00%
                 </span>
               </div>
             </div>
@@ -399,13 +399,13 @@ export default function UnifiedCurriculumDashboard() {
         {/* 2-Column: Course Outcome Meters & Quick Workstations */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left: NBA Tier-1 CO Attainment */}
-          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 space-y-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-sky-400" />
+              <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-adani-cyan" />
                 Course Outcome (CO) Metrics
               </h2>
-              <span className="text-[10px] font-semibold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded">
+              <span className="text-[10px] font-bold text-adani-cyan bg-sky-50 px-2 py-0.5 rounded border border-sky-100">
                 NBA Tier-1
               </span>
             </div>
@@ -414,29 +414,29 @@ export default function UnifiedCurriculumDashboard() {
               {coAttainments.map((co) => (
                 <div key={co.code} className="space-y-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-300">
-                      {co.code}: <span className="font-normal text-slate-400">{co.title}</span>
+                    <span className="font-bold text-slate-700">
+                      {co.code}: <span className="font-normal text-slate-500">{co.title}</span>
                     </span>
                     <span
-                      className={`font-mono text-xs font-semibold ${
+                      className={`font-mono text-xs font-bold ${
                         co.score > co.target
-                          ? "text-emerald-400"
+                          ? "text-emerald-700"
                           : co.score > 0
-                          ? "text-amber-400"
-                          : "text-slate-600"
+                          ? "text-amber-700"
+                          : "text-slate-400"
                       }`}
                     >
                       {co.score > 0 ? `${co.score}%` : "Pending"}
                     </span>
                   </div>
-                  <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${
                         co.score > co.target
                           ? "bg-emerald-500"
                           : co.score > 0
                           ? "bg-amber-500"
-                          : "bg-slate-700"
+                          : "bg-slate-300"
                       }`}
                       style={{ width: `${Math.min(co.score, 100)}%` }}
                     />
@@ -446,64 +446,64 @@ export default function UnifiedCurriculumDashboard() {
             </div>
           </div>
 
-          {/* Right: Quick Interactive Workstations (2 Cols) */}
+          {/* Right: Quick Interactive Workstations */}
           <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
             <Link
               href="/playground"
-              className="bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-purple-500/40 rounded-2xl p-4 transition-all flex flex-col justify-between group"
+              className="bg-white hover:bg-slate-50/80 border border-slate-200 hover:border-purple-300 rounded-2xl p-4 transition-all flex flex-col justify-between shadow-sm group"
             >
               <div>
-                <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center mb-3">
+                <div className="w-9 h-9 rounded-xl bg-purple-50 text-adani-purple border border-purple-100 flex items-center justify-center mb-3">
                   <Sliders className="w-4 h-4" />
                 </div>
-                <h3 className="text-xs font-bold text-white group-hover:text-purple-300 transition-colors">
+                <h3 className="text-xs font-bold text-slate-900 group-hover:text-adani-purple transition-colors">
                   CT Windowing (WW/WL)
                 </h3>
-                <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                  Real-time 60 FPS client canvas transfer curves: Brain, Bone, Lung & Soft Tissue.
+                <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                  Real-time 60 FPS client canvas transfer curves: Brain, Bone, Lung &amp; Soft Tissue.
                 </p>
               </div>
-              <span className="text-[11px] font-semibold text-purple-400 flex items-center gap-1 mt-4">
+              <span className="text-[11px] font-bold text-adani-purple flex items-center gap-1 mt-4">
                 Open Canvas <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
               </span>
             </Link>
 
             <Link
               href="/playground"
-              className="bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-sky-500/40 rounded-2xl p-4 transition-all flex flex-col justify-between group"
+              className="bg-white hover:bg-slate-50/80 border border-slate-200 hover:border-sky-300 rounded-2xl p-4 transition-all flex flex-col justify-between shadow-sm group"
             >
               <div>
-                <div className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center mb-3">
+                <div className="w-9 h-9 rounded-xl bg-sky-50 text-adani-cyan border border-sky-100 flex items-center justify-center mb-3">
                   <Code className="w-4 h-4" />
                 </div>
-                <h3 className="text-xs font-bold text-white group-hover:text-sky-300 transition-colors">
-                  Spatial Convolution & FFT
+                <h3 className="text-xs font-bold text-slate-900 group-hover:text-adani-cyan transition-colors">
+                  Spatial Convolution &amp; FFT
                 </h3>
-                <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                  Interactive $3 \times 3$ kernel grid: Sobel, Laplacian, Gaussian & Fourier filtering.
+                <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                  Interactive 3x3 kernel grid: Sobel, Laplacian, Gaussian &amp; Fourier filtering.
                 </p>
               </div>
-              <span className="text-[11px] font-semibold text-sky-400 flex items-center gap-1 mt-4">
+              <span className="text-[11px] font-bold text-adani-cyan flex items-center gap-1 mt-4">
                 Test Kernels <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
               </span>
             </Link>
 
             <Link
               href="/playground"
-              className="bg-slate-900/60 hover:bg-slate-900 border border-slate-800 hover:border-emerald-500/40 rounded-2xl p-4 transition-all flex flex-col justify-between group"
+              className="bg-white hover:bg-slate-50/80 border border-slate-200 hover:border-emerald-300 rounded-2xl p-4 transition-all flex flex-col justify-between shadow-sm group"
             >
               <div>
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center mb-3">
                   <FileText className="w-4 h-4" />
                 </div>
-                <h3 className="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors">
+                <h3 className="text-xs font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
                   DICOM Tag Explorer
                 </h3>
-                <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                  Searchable tag tree & HIPAA de-identification sandbox with clinical TCIA sample scans.
+                <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                  Searchable tag tree &amp; HIPAA de-identification sandbox with clinical sample scans.
                 </p>
               </div>
-              <span className="text-[11px] font-semibold text-emerald-400 flex items-center gap-1 mt-4">
+              <span className="text-[11px] font-bold text-emerald-600 flex items-center gap-1 mt-4">
                 Inspect Tags <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
               </span>
             </Link>
@@ -514,49 +514,49 @@ export default function UnifiedCurriculumDashboard() {
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-sky-400" />
-                Course Curriculum & Module Directory
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-adani-cyan" />
+                Course Curriculum &amp; Module Directory
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Select any module below to view topics, open the Dual-Panel Workstation, or launch the Mastery Assessment.
               </p>
             </div>
-            <span className="text-xs text-slate-400 font-mono">
-              Completed Topics: <strong className="text-sky-400">{completedTopics}</strong> / {totalTopics}
+            <span className="text-xs text-slate-600 font-mono">
+              Completed Topics: <strong className="text-adani-cyan font-bold">{completedTopics}</strong> / {totalTopics}
             </span>
           </div>
 
-          {/* Module Cards Accordion */}
+          {/* Module Cards Accordion (White Theme) */}
           <div className="space-y-3">
             {modules.map((m) => {
               const isExpanded = expandedModule === m.id;
               return (
                 <div
                   key={m.id}
-                  className="bg-slate-900/60 border border-slate-800/80 rounded-2xl overflow-hidden transition-all"
+                  className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm transition-all"
                 >
                   {/* Module Header Bar */}
                   <div
                     onClick={() => setExpandedModule(isExpanded ? "" : m.id)}
-                    className="p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-slate-800/40 transition-colors"
+                    className="p-4 sm:p-5 flex items-center justify-between cursor-pointer hover:bg-slate-50/80 transition-colors"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-slate-950 border border-slate-800 flex-shrink-0">
-                        <span className="text-[10px] font-bold text-sky-400">MOD</span>
-                        <span className="text-base font-extrabold text-white">
+                      <div className="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 flex-shrink-0">
+                        <span className="text-[10px] font-bold text-adani-cyan">MOD</span>
+                        <span className="text-base font-black text-slate-900">
                           {m.moduleCode.replace("MODULE ", "")}
                         </span>
                       </div>
 
                       <div>
                         <div className="flex items-center gap-2">
-                          <h3 className="text-sm sm:text-base font-bold text-white">{m.title}</h3>
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300">
+                          <h3 className="text-sm sm:text-base font-bold text-slate-900">{m.title}</h3>
+                          <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-sky-50 text-adani-cyan border border-sky-100">
                             {m.coTarget}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-400 mt-0.5 line-clamp-1 max-w-2xl">
+                        <p className="text-xs text-slate-600 mt-0.5 line-clamp-1 max-w-2xl">
                           {m.description}
                         </p>
                       </div>
@@ -566,23 +566,23 @@ export default function UnifiedCurriculumDashboard() {
                       {/* Status Badge */}
                       <div className="text-right hidden sm:block">
                         {m.status === "cleared" && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Cleared ({m.bestScorePct}%)
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Cleared ({m.bestScorePct}%)
                           </span>
                         )}
                         {m.status === "needs_remediation" && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                            <AlertTriangle className="w-3.5 h-3.5" /> Retake Req ({m.bestScorePct}%)
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                            <AlertTriangle className="w-3.5 h-3.5 text-amber-600" /> Retake Req ({m.bestScorePct}%)
                           </span>
                         )}
                         {m.status === "not_started" && (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500 border border-slate-200">
                             Not Attempted
                           </span>
                         )}
                       </div>
 
-                      <div className="w-7 h-7 rounded-lg bg-slate-800 flex items-center justify-center text-slate-400">
+                      <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
                         {isExpanded ? (
                           <ChevronDown className="w-4 h-4" />
                         ) : (
@@ -594,10 +594,10 @@ export default function UnifiedCurriculumDashboard() {
 
                   {/* Expanded Topics & Action Controls */}
                   {isExpanded && (
-                    <div className="px-5 pb-5 pt-2 border-t border-slate-800/60 bg-slate-950/40 space-y-4">
+                    <div className="px-5 pb-5 pt-3 border-t border-slate-100 bg-slate-50/60 space-y-4">
                       {/* Topics List */}
                       <div className="space-y-2">
-                        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                           Syllabus Topic Sections:
                         </span>
 
@@ -606,16 +606,16 @@ export default function UnifiedCurriculumDashboard() {
                             <Link
                               key={t.id}
                               href={`/course/${m.id}/${t.slug}`}
-                              className="p-3 bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-sky-500/40 rounded-xl flex items-center justify-between group transition-all"
+                              className="p-3 bg-white hover:bg-slate-50 border border-slate-200 hover:border-adani-cyan rounded-xl flex items-center justify-between group transition-all shadow-sm"
                             >
                               <div className="flex items-center gap-3">
                                 {t.isCompleted ? (
-                                  <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                                 ) : (
-                                  <Circle className="w-4 h-4 text-slate-600 flex-shrink-0" />
+                                  <Circle className="w-4 h-4 text-slate-300 flex-shrink-0" />
                                 )}
                                 <div>
-                                  <span className="text-xs font-medium text-slate-200 group-hover:text-white transition-colors block">
+                                  <span className="text-xs font-bold text-slate-800 group-hover:text-adani-cyan transition-colors block">
                                     {t.title}
                                   </span>
                                   <span className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
@@ -623,20 +623,20 @@ export default function UnifiedCurriculumDashboard() {
                                   </span>
                                 </div>
                               </div>
-                              <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-sky-400 group-hover:translate-x-1 transition-all" />
+                              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-adani-cyan group-hover:translate-x-1 transition-all" />
                             </Link>
                           ))}
                         </div>
                       </div>
 
                       {/* Module Assessment Trigger Bar */}
-                      <div className="pt-3 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/60 p-3.5 rounded-xl border border-slate-800/80">
+                      <div className="pt-3 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm">
                         <div>
-                          <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                            <Award className="w-4 h-4 text-purple-400" />
+                          <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                            <Award className="w-4 h-4 text-adani-purple" />
                             Mastery Assessment Clearance (&gt;75.0% Rule)
                           </span>
-                          <span className="text-[11px] text-slate-400 block mt-0.5">
+                          <span className="text-[11px] text-slate-500 block mt-0.5">
                             {m.attemptsCount > 0
                               ? `Attempts Recorded: ${m.attemptsCount} • Best Score: ${m.bestScorePct}%`
                               : "No assessment attempts recorded yet."}
@@ -646,13 +646,13 @@ export default function UnifiedCurriculumDashboard() {
                         <div className="flex items-center gap-2">
                           <Link
                             href={`/course/${m.id}/${m.topics[0]?.slug || "topic-1"}`}
-                            className="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition-colors"
+                            className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 transition-colors border border-slate-200"
                           >
                             Open Dual-Panel Theory
                           </Link>
                           <Link
                             href={`/course/${m.id}/quiz`}
-                            className="px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-sky-500 to-purple-600 hover:opacity-95 shadow-md transition-all flex items-center gap-1.5"
+                            className="px-4 py-1.5 rounded-lg text-xs font-bold text-white bg-gradient-to-r from-adani-cyan to-adani-purple hover:opacity-95 shadow-sm transition-all flex items-center gap-1.5"
                           >
                             <Award className="w-3.5 h-3.5" />
                             Take Assessment Quiz
@@ -668,12 +668,12 @@ export default function UnifiedCurriculumDashboard() {
         </section>
 
         {/* Footer with No Image Logo */}
-        <footer className="border-t border-slate-800 pt-6 text-center text-xs text-slate-500 space-y-1">
+        <footer className="border-t border-slate-200 pt-6 text-center text-xs text-slate-500 space-y-1">
           <p>
             AIDS 12605.1 Medical Text and Image Processing • Faculty of Engineering and Technology
           </p>
-          <p className="text-[11px] text-slate-600">
-            Adani Institute of Higher Education and Research (Deemed to be University), Shantigram, Ahmedabad, Gujarat 382421.
+          <p className="text-[11px] text-slate-400">
+            Adani Institute of Higher Education and Research, Shantigram, Ahmedabad, Gujarat 382421.
           </p>
         </footer>
       </main>

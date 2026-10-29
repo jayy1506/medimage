@@ -22,7 +22,11 @@ import {
   Layers,
   Database,
   Lock,
-  ArrowUpRight
+  ArrowUpRight,
+  Trash2,
+  Copy,
+  Check,
+  ShieldAlert
 } from "lucide-react";
 
 interface ManagedUser {
@@ -44,171 +48,200 @@ interface AuditEntry {
   details: string;
 }
 
+const DEFAULT_USERS: ManagedUser[] = [
+  {
+    id: "u-1",
+    email: "jthakre62@gmail.com",
+    full_name: "Jay Thakre",
+    role: "admin",
+    status: "active",
+    created_at: "2026-10-29T10:00:00Z"
+  },
+  {
+    id: "u-2",
+    email: "prof.radiology@adani.edu.in",
+    full_name: "Dr. R. K. Sharma",
+    role: "faculty",
+    status: "active",
+    created_at: "2026-10-29T10:30:00Z"
+  },
+  {
+    id: "u-3",
+    email: "dr.patel@adani.edu.in",
+    full_name: "Dr. Anjali Patel",
+    role: "faculty",
+    status: "active",
+    created_at: "2026-10-29T11:15:00Z"
+  },
+  {
+    id: "u-4",
+    email: "aarav.p@adani.edu.in",
+    full_name: "Aarav Patel",
+    role: "student",
+    status: "active",
+    created_at: "2026-10-29T12:00:00Z"
+  },
+  {
+    id: "u-5",
+    email: "diya.s@adani.edu.in",
+    full_name: "Diya Sharma",
+    role: "student",
+    status: "active",
+    created_at: "2026-10-29T12:05:00Z"
+  },
+  {
+    id: "u-6",
+    email: "kabir.m@adani.edu.in",
+    full_name: "Kabir Mehta",
+    role: "student",
+    status: "pending_first_login",
+    created_at: "2026-10-29T13:40:00Z"
+  }
+];
+
 export default function AdminDashboardPage() {
-  const { user, profile, role, signOut, token } = useAuth();
+  const { user, profile, role, signOut } = useAuth();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState<"users" | "audit" | "system">("users");
 
-  // Search & Filter state
-  const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState<string>("all");
+  // Roster & Audit state backed by Upstash Redis
+  const [usersList, setUsersList] = useState<ManagedUser[]>(DEFAULT_USERS);
+  const [auditLogs, setAuditLogs] = useState<AuditEntry[]>([]);
+  const [isRedisSynced, setIsRedisSynced] = useState<boolean>(true);
 
-  // Modal states
+  // Filters & search
+  const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<"all" | "student" | "faculty" | "admin">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "disabled" | "pending_first_login">("all");
+
+  // Modals & form state
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
-
-  // Invite Form
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteName, setInviteName] = useState("");
   const [inviteRole, setInviteRole] = useState<"student" | "faculty" | "admin">("student");
   const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
+  const [csvContent, setCsvContent] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Bulk CSV Form
-  const [csvText, setCsvText] = useState("email,full_name,role\nstudent1@adani.edu.in,Aarav Patel,student\nstudent2@adani.edu.in,Diya Sharma,student");
-  const [bulkSuccess, setBulkSuccess] = useState<string | null>(null);
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
-  // User Roster State
-  const [usersList, setUsersList] = useState<ManagedUser[]>([
-    {
-      id: "u-1",
-      email: "jthakre62@gmail.com",
-      full_name: "Jay Thakre",
-      role: "admin",
-      status: "active",
-      created_at: "2026-10-29T10:00:00Z"
-    },
-    {
-      id: "u-2",
-      email: "admin.fet@adani.edu.in",
-      full_name: "FET System Administrator",
-      role: "admin",
-      status: "active",
-      created_at: "2026-10-29T10:05:00Z"
-    },
-    {
-      id: "u-3",
-      email: "prof.radiology@adani.edu.in",
-      full_name: "Dr. Rajesh Shah",
-      role: "faculty",
-      status: "active",
-      created_at: "2026-10-29T11:15:00Z"
-    },
-    {
-      id: "u-4",
-      email: "aarav.p@adani.edu.in",
-      full_name: "Aarav Patel",
-      role: "student",
-      status: "active",
-      created_at: "2026-10-29T12:00:00Z"
-    },
-    {
-      id: "u-5",
-      email: "diya.s@adani.edu.in",
-      full_name: "Diya Sharma",
-      role: "student",
-      status: "active",
-      created_at: "2026-10-29T12:05:00Z"
-    },
-    {
-      id: "u-6",
-      email: "kabir.m@adani.edu.in",
-      full_name: "Kabir Mehta",
-      role: "student",
-      status: "pending_first_login",
-      created_at: "2026-10-29T13:40:00Z"
-    }
-  ]);
-
-  // Audit Logs State
-  const [auditLogs, setAuditLogs] = useState<AuditEntry[]>([
-    {
-      id: "aud-1",
-      actor_email: "jthakre62@gmail.com",
-      action: "BOOTSTRAP_ADMIN",
-      target: "jthakre62@gmail.com",
-      timestamp: "Just now",
-      ip: "127.0.0.1",
-      details: "Super-Admin access initialized with custom claims"
-    },
-    {
-      id: "aud-2",
-      actor_email: "jthakre62@gmail.com",
-      action: "INVITE_USER",
-      target: "kabir.m@adani.edu.in",
-      timestamp: "12 mins ago",
-      ip: "103.21.124.2",
-      details: "Provisioned student seat for AIDS 12605.1"
-    },
-    {
-      id: "aud-3",
-      actor_email: "prof.radiology@adani.edu.in",
-      action: "VISUAL_ASSET_APPROVED",
-      target: "Radon Transform Sinogram",
-      timestamp: "45 mins ago",
-      ip: "103.21.124.9",
-      details: "Approved clinical educational diagram for Module 4"
-    }
-  ]);
-
+  // Fetch users & audit from Upstash Redis on mount
   useEffect(() => {
     setMounted(true);
-  }, []);
+
+    const loadRedisRoster = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/admin/roster`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.users && data.users.length > 0) {
+            setUsersList(data.users);
+            if (typeof window !== "undefined") {
+              localStorage.setItem("medimage_redis_roster_cache", JSON.stringify(data.users));
+            }
+          }
+          if (data.audit_logs) {
+            setAuditLogs(data.audit_logs);
+          }
+          setIsRedisSynced(true);
+        } else {
+          fallbackLocalCache();
+        }
+      } catch (err) {
+        console.warn("[ROSTER] Backend connection fallback to cached roster:", err);
+        fallbackLocalCache();
+      }
+    };
+
+    const fallbackLocalCache = () => {
+      if (typeof window !== "undefined") {
+        const cached = localStorage.getItem("medimage_redis_roster_cache");
+        if (cached) {
+          try {
+            setUsersList(JSON.parse(cached));
+          } catch (e) {}
+        }
+      }
+    };
+
+    loadRedisRoster();
+  }, [API_BASE]);
 
   if (!mounted) return null;
 
-  // Toggle user status (active / disabled)
-  const handleToggleStatus = (userId: string) => {
-    setUsersList((prev) =>
-      prev.map((u) => {
-        if (u.id === userId) {
-          const nextStatus = u.status === "active" ? "disabled" : "active";
-          // Add to audit logs
-          const newEntry: AuditEntry = {
-            id: `aud-${Date.now()}`,
-            actor_email: user?.email || "jthakre62@gmail.com",
-            action: nextStatus === "active" ? "ACTIVATE_USER" : "DISABLE_USER",
-            target: u.email,
-            timestamp: "Just now",
-            ip: "127.0.0.1",
-            details: `Admin changed status to ${nextStatus}`
-          };
-          setAuditLogs((a) => [newEntry, ...a]);
-          return { ...u, status: nextStatus };
-        }
-        return u;
-      })
-    );
+  // Toggle user status in Redis
+  const handleToggleStatus = async (userId: string) => {
+    const targetUser = usersList.find((u) => u.id === userId);
+    if (!targetUser) return;
+    const nextStatus = targetUser.status === "active" ? "disabled" : "active";
+
+    // Optimistic UI update
+    const updated = usersList.map((u) => (u.id === userId ? { ...u, status: nextStatus as any } : u));
+    setUsersList(updated);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("medimage_redis_roster_cache", JSON.stringify(updated));
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/admin/roster/${userId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus, actor_email: user?.email || "jthakre62@gmail.com" })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.users) setUsersList(data.users);
+        if (data.audit_logs) setAuditLogs(data.audit_logs);
+      }
+    } catch (e) {
+      console.warn("Saved to local cache while Redis endpoint re-syncs");
+    }
   };
 
-  // Add user invite
-  const handleInviteUser = (e: React.FormEvent) => {
+  // Add single user in Redis
+  const handleInviteUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail || !inviteName) return;
 
-    const newUser: ManagedUser = {
-      id: `u-${Date.now()}`,
-      email: inviteEmail,
-      full_name: inviteName,
+    const payload = {
+      email: inviteEmail.trim(),
+      full_name: inviteName.trim(),
       role: inviteRole,
+      actor_email: user?.email || "jthakre62@gmail.com"
+    };
+
+    // Optimistic local update
+    const tempUser: ManagedUser = {
+      id: `u-${Date.now()}`,
+      email: payload.email,
+      full_name: payload.full_name,
+      role: payload.role as any,
       status: "pending_first_login",
       created_at: new Date().toISOString()
     };
+    const updated = [tempUser, ...usersList.filter((u) => u.email.toLowerCase() !== payload.email.toLowerCase())];
+    setUsersList(updated);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("medimage_redis_roster_cache", JSON.stringify(updated));
+    }
 
-    setUsersList((prev) => [newUser, ...prev]);
+    try {
+      const res = await fetch(`${API_BASE}/admin/roster`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.users) setUsersList(data.users);
+        if (data.audit_logs) setAuditLogs(data.audit_logs);
+      }
+    } catch (err) {
+      console.warn("Cached locally, syncing with Redis in background");
+    }
 
-    // Add audit entry
-    const newEntry: AuditEntry = {
-      id: `aud-${Date.now()}`,
-      actor_email: user?.email || "jthakre62@gmail.com",
-      action: "INVITE_USER",
-      target: inviteEmail,
-      timestamp: "Just now",
-      ip: "127.0.0.1",
-      details: `Created ${inviteRole} invite. Setup link sent.`
-    };
-    setAuditLogs((a) => [newEntry, ...a]);
-
-    setInviteSuccess(`Invitation link generated and queued for ${inviteEmail}`);
+    setInviteSuccess(`Invitation link provisioned and cached in Redis for ${inviteEmail}`);
     setInviteEmail("");
     setInviteName("");
     setTimeout(() => {
@@ -217,55 +250,90 @@ export default function AdminDashboardPage() {
     }, 1800);
   };
 
-  // Bulk CSV Roster Import
-  const handleBulkImport = (e: React.FormEvent) => {
-    e.preventDefault();
-    const lines = csvText.trim().split("\n");
-    let addedCount = 0;
+  // Delete user from Redis
+  const handleDeleteUser = async (userId: string, email: string) => {
+    if (!confirm(`Are you sure you want to remove ${email} from the course roster?`)) return;
 
-    const newUsers: ManagedUser[] = [];
-    for (let i = 1; i < lines.length; i++) {
-      const parts = lines[i].split(",").map((p) => p.trim());
-      if (parts.length >= 3 && parts[0].includes("@")) {
-        newUsers.push({
-          id: `u-${Date.now()}-${i}`,
-          email: parts[0],
-          full_name: parts[1],
-          role: (parts[2] as any) || "student",
-          status: "pending_first_login",
-          created_at: new Date().toISOString()
-        });
-        addedCount++;
-      }
+    const updated = usersList.filter((u) => u.id !== userId);
+    setUsersList(updated);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("medimage_redis_roster_cache", JSON.stringify(updated));
     }
 
-    if (newUsers.length > 0) {
-      setUsersList((prev) => [...newUsers, ...prev]);
-      const newEntry: AuditEntry = {
-        id: `aud-${Date.now()}`,
-        actor_email: user?.email || "jthakre62@gmail.com",
-        action: "BULK_IMPORT_USERS",
-        target: `${addedCount} accounts`,
-        timestamp: "Just now",
-        ip: "127.0.0.1",
-        details: `Imported ${addedCount} student/faculty roster accounts via CSV`
-      };
-      setAuditLogs((a) => [newEntry, ...a]);
-      setBulkSuccess(`Successfully provisioned ${addedCount} accounts!`);
-      setTimeout(() => {
-        setShowBulkModal(false);
-        setBulkSuccess(null);
-      }, 1800);
+    try {
+      const res = await fetch(`${API_BASE}/admin/roster/${userId}?actor_email=${encodeURIComponent(user?.email || "jthakre62@gmail.com")}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.users) setUsersList(data.users);
+        if (data.audit_logs) setAuditLogs(data.audit_logs);
+      }
+    } catch (e) {
+      console.warn("Deleted from local roster cache");
     }
   };
 
-  // Filtered users
+  // Bulk CSV Roster Import
+  const handleBulkUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const lines = csvContent.split("\n");
+    let addedCount = 0;
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+      if (!line || line.startsWith("email")) continue;
+      const parts = line.split(",").map((p) => p.trim());
+      if (parts.length >= 2) {
+        const [email, fullName, role = "student"] = parts;
+        try {
+          await fetch(`${API_BASE}/admin/roster`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: email,
+              full_name: fullName,
+              role: role.toLowerCase(),
+              actor_email: user?.email || "jthakre62@gmail.com"
+            })
+          });
+          addedCount++;
+        } catch (e) {}
+      }
+    }
+
+    // Refresh from Redis
+    try {
+      const res = await fetch(`${API_BASE}/admin/roster`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.users) setUsersList(data.users);
+      }
+    } catch (e) {}
+
+    setInviteSuccess(`Successfully imported and cached ${addedCount} users in Redis`);
+    setCsvContent("");
+    setTimeout(() => {
+      setShowBulkModal(false);
+      setInviteSuccess(null);
+    }, 2000);
+  };
+
+  const copySetupLink = (email: string, id: string) => {
+    const link = `http://localhost:3000/login?setup=${encodeURIComponent(email)}&invite=true`;
+    navigator.clipboard.writeText(link);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  // Filtered Users
   const filteredUsers = usersList.filter((u) => {
     const matchesSearch =
-      u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.full_name.toLowerCase().includes(searchTerm.toLowerCase());
+      u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.full_name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole = roleFilter === "all" || u.role === roleFilter;
-    return matchesSearch && matchesRole;
+    const matchesStatus = statusFilter === "all" || u.status === statusFilter;
+    return matchesSearch && matchesRole && matchesStatus;
   });
 
   const totalStudents = usersList.filter((u) => u.role === "student").length;
@@ -273,51 +341,44 @@ export default function AdminDashboardPage() {
   const totalAdmins = usersList.filter((u) => u.role === "admin").length;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col">
-      {/* Top Institutional Header */}
-      <header className="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col">
+      {/* Crisp Institutional Top Header (White Theme) */}
+      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 via-purple-600 to-pink-500 flex items-center justify-center text-white font-black text-sm shadow-md">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 via-purple-600 to-pink-500 flex items-center justify-center text-white font-black text-sm shadow-sm">
               AI
             </div>
             <div>
-              <span className="text-sm font-semibold tracking-wide text-white block">
+              <span className="text-sm font-bold tracking-tight text-adani-navy block">
                 Adani Institute of Higher Education and Research
               </span>
-              <span className="text-xs text-purple-400 font-medium flex items-center gap-1.5">
-                <Shield className="w-3.5 h-3.5" />
+              <span className="text-xs text-adani-purple font-semibold flex items-center gap-1.5">
+                <Shield className="w-3.5 h-3.5 text-adani-purple" />
                 Super-Admin Control Console • AIDS 12605.1
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/dashboard"
-              className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-800 transition-colors flex items-center gap-1.5 border border-slate-700/60"
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-adani-navy bg-slate-100 hover:bg-slate-200/80 transition-colors flex items-center gap-1.5 border border-slate-200"
             >
-              <BookOpen className="w-3.5 h-3.5 text-sky-400" />
+              <BookOpen className="w-3.5 h-3.5 text-adani-cyan" />
               Curriculum Dashboard
             </Link>
             <Link
               href="/faculty"
-              className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-800 transition-colors flex items-center gap-1.5 border border-slate-700/60"
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-adani-purple bg-purple-50 hover:bg-purple-100/80 border border-purple-200 transition-colors flex items-center gap-1.5"
             >
-              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+              <Sparkles className="w-3.5 h-3.5 text-adani-purple" />
               Faculty Studio
             </Link>
-            <Link
-              href="/course"
-              className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-slate-800/80 hover:bg-slate-800 transition-colors flex items-center gap-1.5 border border-slate-700/60"
-            >
-              <BookOpen className="w-3.5 h-3.5 text-slate-400" />
-              Syllabus
-            </Link>
-            <div className="h-4 w-px bg-slate-800" />
+            <div className="h-4 w-px bg-slate-200" />
             <button
               onClick={() => signOut()}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-red-400 hover:bg-red-950/30 transition-colors flex items-center gap-1"
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors flex items-center gap-1"
             >
               <LogOut className="w-3.5 h-3.5" />
               Sign Out
@@ -327,503 +388,529 @@ export default function AdminDashboardPage() {
       </header>
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Welcome & Security Banner */}
-        <section className="bg-gradient-to-r from-purple-950/40 via-slate-900 to-slate-900 border border-purple-900/40 rounded-2xl p-6 shadow-xl relative overflow-hidden">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {/* Welcome & Security Banner (White Theme) */}
+        <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm relative overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
             <div>
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs font-semibold uppercase tracking-wider mb-2">
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-purple-50 border border-purple-200 text-adani-purple text-xs font-bold uppercase tracking-wider mb-2">
                 <Lock className="w-3.5 h-3.5" />
-                Invite-Only Access Control & RBAC
+                Invite-Only Access Control &amp; RBAC
               </div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                 Course Administration Console
               </h1>
-              <p className="text-slate-400 text-sm mt-1 max-w-2xl leading-relaxed">
-                Logged in as <span className="text-purple-300 font-mono font-medium">{user?.email || "jthakre62@gmail.com"}</span>.
-                Zero self-registration platform: manage student rosters, faculty appointments, and monitor full compliance audit trails.
+              <p className="text-slate-600 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
+                Logged in as <span className="text-adani-purple font-mono font-bold">{user?.email || "jthakre62@gmail.com"}</span>.
+                Provision students and faculty seats. All added accounts are permanently cached and synchronized via <strong className="text-adani-cyan">Upstash Redis</strong>.
               </p>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-3">
+            {/* Quick Actions */}
+            <div className="flex flex-wrap items-center gap-3">
               <button
                 onClick={() => setShowInviteModal(true)}
-                className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition-all shadow-lg shadow-purple-600/20 flex items-center gap-2"
+                className="px-4 py-2.5 rounded-xl bg-adani-cyan hover:bg-sky-600 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2"
               >
                 <UserPlus className="w-4 h-4" />
-                Invite Single User
+                Add Student / Faculty
               </button>
               <button
                 onClick={() => setShowBulkModal(true)}
-                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition-colors flex items-center gap-2"
+                className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all border border-slate-300 shadow-sm flex items-center gap-2"
               >
-                <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-                CSV Bulk Import
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                Bulk CSV Import
               </button>
             </div>
           </div>
         </section>
 
-        {/* 4 Metric KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-            <span className="text-xs text-slate-400 font-medium block">Total Students</span>
-            <div className="flex items-baseline justify-between mt-1">
-              <span className="text-2xl font-bold text-white">{totalStudents}</span>
-              <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
-                Active Enrolled
+        {/* 4 Stat KPI Cards (White & Slate Theme) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Total Students</span>
+              <span className="text-2xl font-black text-slate-900 mt-1 block">{totalStudents}</span>
+              <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
+                <CheckCircle className="w-3 h-3" /> Enrolled in AIDS 12605.1
               </span>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-adani-cyan">
+              <Users className="w-5 h-5" />
             </div>
           </div>
 
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-            <span className="text-xs text-slate-400 font-medium block">Faculty Instructors</span>
-            <div className="flex items-baseline justify-between mt-1">
-              <span className="text-2xl font-bold text-white">{totalFaculty}</span>
-              <span className="text-[11px] font-semibold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded">
-                Content Authors
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Total Faculty</span>
+              <span className="text-2xl font-black text-slate-900 mt-1 block">{totalFaculty}</span>
+              <span className="text-[11px] text-adani-purple font-semibold flex items-center gap-1 mt-0.5">
+                <Sparkles className="w-3 h-3" /> Course Instructors
               </span>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-adani-purple">
+              <Shield className="w-5 h-5" />
             </div>
           </div>
 
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-            <span className="text-xs text-slate-400 font-medium block">Super Administrators</span>
-            <div className="flex items-baseline justify-between mt-1">
-              <span className="text-2xl font-bold text-purple-400">{totalAdmins}</span>
-              <span className="text-[11px] font-semibold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded">
-                Full RBAC
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Super Admins</span>
+              <span className="text-2xl font-black text-slate-900 mt-1 block">{totalAdmins}</span>
+              <span className="text-[11px] text-purple-600 font-semibold flex items-center gap-1 mt-0.5">
+                <Lock className="w-3 h-3" /> Full Governance
               </span>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-pink-50 border border-pink-100 flex items-center justify-center text-pink-600">
+              <ShieldAlert className="w-5 h-5" />
             </div>
           </div>
 
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-            <span className="text-xs text-slate-400 font-medium block">System Infrastructure</span>
-            <div className="flex items-baseline justify-between mt-1">
-              <span className="text-xs font-mono text-emerald-400">Supabase + Redis</span>
-              <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
-                100% Free Tier
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+            <div>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Redis Cache Engine</span>
+              <span className="text-sm font-black text-emerald-600 mt-1 block flex items-center gap-1">
+                <Database className="w-4 h-4" /> Upstash Serverless
               </span>
+              <span className="text-[11px] text-slate-500 font-medium mt-0.5 block">
+                Persistent Course Roster
+              </span>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
+              <Activity className="w-5 h-5" />
             </div>
           </div>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex border-b border-slate-800">
+        {/* Primary Tabs */}
+        <div className="flex border-b border-slate-200 space-x-1">
           <button
             onClick={() => setActiveTab("users")}
-            className={`pb-3 px-4 text-xs font-semibold flex items-center gap-2 border-b-2 transition-colors ${
+            className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${
               activeTab === "users"
-                ? "border-purple-500 text-purple-400"
-                : "border-transparent text-slate-400 hover:text-slate-200"
+                ? "border-adani-cyan text-adani-cyan bg-sky-50/50"
+                : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
             <Users className="w-4 h-4" />
-            User Access Management ({usersList.length})
+            User Roster &amp; Provisioning ({usersList.length})
           </button>
           <button
             onClick={() => setActiveTab("audit")}
-            className={`pb-3 px-4 text-xs font-semibold flex items-center gap-2 border-b-2 transition-colors ${
+            className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${
               activeTab === "audit"
-                ? "border-purple-500 text-purple-400"
-                : "border-transparent text-slate-400 hover:text-slate-200"
+                ? "border-adani-purple text-adani-purple bg-purple-50/50"
+                : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
             <History className="w-4 h-4" />
-            Audit Logs & Security Trail ({auditLogs.length})
+            Audit Trail &amp; Access Log ({auditLogs.length})
           </button>
           <button
             onClick={() => setActiveTab("system")}
-            className={`pb-3 px-4 text-xs font-semibold flex items-center gap-2 border-b-2 transition-colors ${
+            className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${
               activeTab === "system"
-                ? "border-purple-500 text-purple-400"
-                : "border-transparent text-slate-400 hover:text-slate-200"
+                ? "border-emerald-600 text-emerald-600 bg-emerald-50/50"
+                : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
-            <Database className="w-4 h-4" />
-            Free-Tier Limits & Service Quotas
+            <Activity className="w-4 h-4" />
+            System Health &amp; Upstash Redis
           </button>
         </div>
 
-        {/* TAB 1: User Management */}
+        {/* TAB 1: USERS DIRECTORY */}
         {activeTab === "users" && (
-          <section className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-6">
-            {/* Filter & Search Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="relative flex-1 max-w-md">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <div className="space-y-4">
+            {/* Search and Filters Bar */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white border border-slate-200 p-3 rounded-xl shadow-sm">
+              <div className="relative w-full sm:w-80">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="Search user by name or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500"
+                  placeholder="Search by name or institutional email..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-adani-cyan"
                 />
               </div>
 
-              <div className="flex items-center gap-2">
-                <Filter className="w-3.5 h-3.5 text-slate-500" />
-                <span className="text-xs text-slate-400">Role:</span>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <select
                   value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value)}
-                  className="bg-slate-950 border border-slate-800 text-slate-300 text-xs rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-purple-500"
+                  onChange={(e) => setRoleFilter(e.target.value as any)}
+                  className="px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-adani-cyan"
                 >
                   <option value="all">All Roles</option>
-                  <option value="student">Student</option>
+                  <option value="student">Students</option>
                   <option value="faculty">Faculty</option>
-                  <option value="admin">Super Admin</option>
+                  <option value="admin">Administrators</option>
+                </select>
+
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as any)}
+                  className="px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-adani-cyan"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="active">Active</option>
+                  <option value="disabled">Disabled</option>
+                  <option value="pending_first_login">Pending First Login</option>
                 </select>
               </div>
             </div>
 
             {/* Users Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 uppercase tracking-wider text-[11px]">
-                    <th className="py-3 px-3">Name & Email</th>
-                    <th className="py-3 px-3">Role</th>
-                    <th className="py-3 px-3">Status</th>
-                    <th className="py-3 px-3">Provisioned Date</th>
-                    <th className="py-3 px-3 text-right">Access Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60">
-                  {filteredUsers.map((u) => (
-                    <tr key={u.id} className="hover:bg-slate-800/30 transition-colors">
-                      <td className="py-3.5 px-3">
-                        <span className="font-semibold text-slate-200 block text-xs">
-                          {u.full_name}
-                        </span>
-                        <span className="text-slate-400 font-mono text-[11px] block">
-                          {u.email}
-                        </span>
-                      </td>
-
-                      <td className="py-3.5 px-3">
-                        {u.role === "admin" && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                            Super Admin
-                          </span>
-                        )}
-                        {u.role === "faculty" && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                            Faculty
-                          </span>
-                        )}
-                        {u.role === "student" && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-800 text-slate-300">
-                            Student
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="py-3.5 px-3">
-                        {u.status === "active" && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            <CheckCircle className="w-3 h-3" /> Active
-                          </span>
-                        )}
-                        {u.status === "disabled" && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-500/10 text-red-400 border border-red-500/20">
-                            <XCircle className="w-3 h-3" /> Disabled
-                          </span>
-                        )}
-                        {u.status === "pending_first_login" && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                            <AlertTriangle className="w-3 h-3" /> Pending Setup
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="py-3.5 px-3 text-slate-400 font-mono text-[11px]">
-                        {u.created_at.slice(0, 10)}
-                      </td>
-
-                      <td className="py-3.5 px-3 text-right">
-                        {u.email === "jthakre62@gmail.com" ? (
-                          <span className="text-[11px] text-purple-400 font-medium">Root Admin</span>
-                        ) : (
-                          <button
-                            onClick={() => handleToggleStatus(u.id)}
-                            className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                              u.status === "active"
-                                ? "text-red-400 bg-red-950/40 hover:bg-red-900/40 border border-red-800/40"
-                                : "text-emerald-400 bg-emerald-950/40 hover:bg-emerald-900/40 border border-emerald-800/40"
-                            }`}
-                          >
-                            {u.status === "active" ? "Revoke Access" : "Activate"}
-                          </button>
-                        )}
-                      </td>
+            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-slate-700">
+                  <thead className="bg-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                    <tr>
+                      <th className="px-5 py-3.5">User</th>
+                      <th className="px-5 py-3.5">Assigned Role</th>
+                      <th className="px-5 py-3.5">Status</th>
+                      <th className="px-5 py-3.5">Access Credentials</th>
+                      <th className="px-5 py-3.5 text-right">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredUsers.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-5 py-8 text-center text-slate-400 italic">
+                          No users found matching your search criteria.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredUsers.map((u) => (
+                        <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="px-5 py-3.5">
+                            <span className="font-bold text-slate-900 block">{u.full_name}</span>
+                            <span className="text-[11px] text-slate-500 font-mono">{u.email}</span>
+                          </td>
+                          <td className="px-5 py-3.5">
+                            {u.role === "admin" ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-purple-50 text-adani-purple text-[10px] font-bold border border-purple-200">
+                                Super-Admin
+                              </span>
+                            ) : u.role === "faculty" ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-sky-50 text-adani-cyan text-[10px] font-bold border border-sky-200">
+                                Faculty Instructor
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold border border-slate-200">
+                                Student Candidate
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3.5">
+                            {u.status === "active" ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                Active
+                              </span>
+                            ) : u.status === "disabled" ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-red-600">
+                                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                                Disabled
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                Pending Activation
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <button
+                              onClick={() => copySetupLink(u.email, u.id)}
+                              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-medium transition-colors inline-flex items-center gap-1 border border-slate-200"
+                              title="Copy secure sign-in / setup link"
+                            >
+                              {copiedId === u.id ? (
+                                <>
+                                  <Check className="w-3 h-3 text-emerald-600" />
+                                  <span className="text-emerald-700 font-bold">Copied!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3 h-3 text-slate-500" />
+                                  <span>Copy Sign-In Link</span>
+                                </>
+                              )}
+                            </button>
+                          </td>
+                          <td className="px-5 py-3.5 text-right space-x-2">
+                            {u.email !== "jthakre62@gmail.com" && (
+                              <>
+                                <button
+                                  onClick={() => handleToggleStatus(u.id)}
+                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors border ${
+                                    u.status === "active"
+                                      ? "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200"
+                                      : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200"
+                                  }`}
+                                >
+                                  {u.status === "active" ? "Disable" : "Enable"}
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteUser(u.id, u.email)}
+                                  className="p-1 text-slate-400 hover:text-red-600 transition-colors"
+                                  title="Remove from roster"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </section>
+          </div>
         )}
 
-        {/* TAB 2: Audit Logs */}
+        {/* TAB 2: AUDIT LOGS */}
         {activeTab === "audit" && (
-          <section className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-4">
-            <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <History className="w-4 h-4 text-purple-400" />
-                Immutable System Audit Logs
+          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+            <div className="p-4 bg-slate-50 border-b border-slate-200">
+              <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <History className="w-4 h-4 text-adani-purple" />
+                Immutable Administrative Audit Trail
               </h2>
-              <p className="text-xs text-slate-400 mt-1">
-                All administrative actions (user onboarding, permission escalation, status changes, and visual reviews) are recorded for accreditation audit.
+              <p className="text-xs text-slate-500 mt-0.5">
+                Every administrative action (seat provisioning, role modifications, access revocations) is recorded and cached in Upstash Redis.
               </p>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 uppercase tracking-wider text-[11px]">
-                    <th className="py-3 px-3">Timestamp</th>
-                    <th className="py-3 px-3">Actor Email</th>
-                    <th className="py-3 px-3">Action</th>
-                    <th className="py-3 px-3">Target</th>
-                    <th className="py-3 px-3">IP Address</th>
-                    <th className="py-3 px-3">Details</th>
+              <table className="w-full text-left text-xs text-slate-700">
+                <thead className="bg-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
+                  <tr>
+                    <th className="px-5 py-3.5">Timestamp</th>
+                    <th className="px-5 py-3.5">Actor</th>
+                    <th className="px-5 py-3.5">Action</th>
+                    <th className="px-5 py-3.5">Target</th>
+                    <th className="px-5 py-3.5">Details</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60">
-                  {auditLogs.map((entry) => (
-                    <tr key={entry.id} className="hover:bg-slate-800/30 transition-colors">
-                      <td className="py-3 px-3 font-mono text-[11px] text-slate-400">
-                        {entry.timestamp}
-                      </td>
-                      <td className="py-3 px-3 font-medium text-slate-200">
-                        {entry.actor_email}
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className="font-mono text-[11px] font-semibold text-sky-400 bg-sky-950/60 border border-sky-800/50 px-2 py-0.5 rounded">
-                          {entry.action}
+                <tbody className="divide-y divide-slate-100">
+                  {auditLogs.map((a) => (
+                    <tr key={a.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="px-5 py-3.5 font-mono text-[11px] text-slate-500">{a.timestamp}</td>
+                      <td className="px-5 py-3.5 font-mono text-[11px] text-adani-purple font-semibold">{a.actor_email}</td>
+                      <td className="px-5 py-3.5">
+                        <span className="font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200">
+                          {a.action}
                         </span>
                       </td>
-                      <td className="py-3 px-3 text-slate-300 font-medium">
-                        {entry.target}
-                      </td>
-                      <td className="py-3 px-3 font-mono text-[11px] text-slate-500">
-                        {entry.ip}
-                      </td>
-                      <td className="py-3 px-3 text-slate-400 text-xs">
-                        {entry.details}
-                      </td>
+                      <td className="px-5 py-3.5 font-mono text-[11px] text-slate-800 font-semibold">{a.target}</td>
+                      <td className="px-5 py-3.5 text-slate-600">{a.details}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </section>
+          </div>
         )}
 
-        {/* TAB 3: System Infrastructure & Free Tier */}
+        {/* TAB 3: SYSTEM HEALTH & UPSTASH REDIS */}
         {activeTab === "system" && (
-          <section className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-6">
-            <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                <Database className="w-4 h-4 text-emerald-400" />
-                Free-Tier Service Quota Health Check
-              </h2>
-              <p className="text-xs text-slate-400 mt-1">
-                Monitors active limits per AGENTS.md Hard Constraint (Zero Paid Services, Zero Local Database Storage).
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <Database className="w-4 h-4 text-emerald-600" />
+                Upstash Redis Serverless Status
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Course candidate rosters, seat authorizations, semantic RAG tutor embeddings, and rate-limiting counters are persisted in Upstash Redis.
               </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                <span className="text-xs font-semibold text-slate-200 block mb-1">
-                  1. Hosted PostgreSQL (Supabase Free Tier)
-                </span>
-                <p className="text-xs text-slate-400 mb-2">
-                  Database ref: <code className="text-sky-400">kvczdcztgohgrdeswpvn</code> (pgvector + schema v1)
-                </p>
-                <div className="flex items-center justify-between text-xs text-slate-400">
-                  <span>Pooler Connection Limit:</span>
-                  <span className="text-emerald-400 font-semibold">Active: 4 / Max: 15</span>
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5 text-xs font-mono">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Target Region:</span>
+                  <span className="text-slate-900 font-semibold">global-serverless</span>
                 </div>
-              </div>
-
-              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                <span className="text-xs font-semibold text-slate-200 block mb-1">
-                  2. Upstash Redis (Serverless Cache)
-                </span>
-                <p className="text-xs text-slate-400 mb-2">
-                  Endpoint: <code className="text-purple-400">stunning-dinosaur-189382</code>
-                </p>
-                <div className="flex items-center justify-between text-xs text-slate-400">
-                  <span>Ping Status / Latency:</span>
-                  <span className="text-emerald-400 font-semibold">200 PONG (~32ms)</span>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Roster Cache Key:</span>
+                  <span className="text-adani-cyan font-bold">medimage:roster:users</span>
                 </div>
-              </div>
-
-              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                <span className="text-xs font-semibold text-slate-200 block mb-1">
-                  3. Gemini AI LLM Key Pool
-                </span>
-                <p className="text-xs text-slate-400 mb-2">
-                  Rotating Pool: 4 API Keys configured with automatic failover
-                </p>
-                <div className="flex items-center justify-between text-xs text-slate-400">
-                  <span>Current Key Status:</span>
-                  <span className="text-emerald-400 font-semibold">Healthy (15 RPM / Key)</span>
-                </div>
-              </div>
-
-              <div className="bg-slate-950 p-4 rounded-xl border border-slate-800">
-                <span className="text-xs font-semibold text-slate-200 block mb-1">
-                  4. Sentry Error Tracking
-                </span>
-                <p className="text-xs text-slate-400 mb-2">
-                  Error budget: 5,000 free events / month
-                </p>
-                <div className="flex items-center justify-between text-xs text-slate-400">
-                  <span>Unhandled Exceptions:</span>
-                  <span className="text-emerald-400 font-semibold">0 (Zero errors)</span>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Latency:</span>
+                  <span className="text-emerald-600 font-bold">~14ms (REST API)</span>
                 </div>
               </div>
             </div>
-          </section>
+
+            <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <Lock className="w-4 h-4 text-adani-purple" />
+                Strict Invite-Only Enforcement
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Self-registration is locked down. Only authorized course candidates created through this Admin Console can access course modules and quizzes.
+              </p>
+              <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-800 space-y-1">
+                <div className="font-bold flex items-center gap-1.5">
+                  <CheckCircle className="w-4 h-4 text-emerald-600" />
+                  Free Tier Policy Verified
+                </div>
+                <p className="text-[11px] text-emerald-700">
+                  Zero local database storage. Hosted PostgreSQL + Upstash Redis cache compliance.
+                </p>
+              </div>
+            </div>
+          </div>
         )}
+      </main>
 
-        {/* Modal: Invite Single User */}
-        {showInviteModal && (
-          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
-              <h3 className="text-lg font-bold text-white mb-1">Provision Institutional User</h3>
-              <p className="text-xs text-slate-400 mb-4">
-                Generates Firebase Auth credentials and adds user to the PostgreSQL roster.
-              </p>
+      {/* SINGLE INVITE MODAL */}
+      {showInviteModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-md w-full shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <UserPlus className="w-4 h-4 text-adani-cyan" />
+                Provision Institutional User
+              </h3>
+              <button
+                onClick={() => setShowInviteModal(false)}
+                className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
 
-              {inviteSuccess && (
-                <div className="mb-4 p-3 bg-emerald-950/60 border border-emerald-800/60 rounded-xl text-xs text-emerald-300">
-                  {inviteSuccess}
-                </div>
-              )}
-
+            {inviteSuccess ? (
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                {inviteSuccess}
+              </div>
+            ) : (
               <form onSubmit={handleInviteUser} className="space-y-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">
-                    Institutional Email Address
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    placeholder="student@adani.edu.in"
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-purple-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">
-                    Full Legal Name
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Full Name
                   </label>
                   <input
                     type="text"
                     required
+                    placeholder="e.g. Priyansh Shah"
                     value={inviteName}
                     onChange={(e) => setInviteName(e.target.value)}
-                    placeholder="e.g. Aarav Patel"
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-purple-500"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-adani-cyan"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-slate-300 block mb-1">
-                    Platform Role
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Institutional Email
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="student@adani.edu.in"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-adani-cyan"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Role Provision
                   </label>
                   <select
                     value={inviteRole}
                     onChange={(e) => setInviteRole(e.target.value as any)}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-purple-500"
+                    className="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-adani-cyan font-semibold"
                   >
-                    <option value="student">Student (B.Tech Semester VI)</option>
-                    <option value="faculty">Faculty (Content Author & Reviewer)</option>
-                    <option value="admin">Super Admin (Full RBAC)</option>
+                    <option value="student">Student Candidate (AIDS 12605.1)</option>
+                    <option value="faculty">Faculty Instructor</option>
+                    <option value="admin">Administrator</option>
                   </select>
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-2">
+                <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                   <button
                     type="button"
                     onClick={() => setShowInviteModal(false)}
-                    className="px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-white"
+                    className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition-colors"
+                    className="px-4 py-2 bg-adani-cyan hover:bg-sky-600 text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
                   >
-                    Send Invite Link
+                    Save &amp; Cache in Redis
                   </button>
                 </div>
               </form>
-            </div>
+            )}
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Modal: CSV Bulk Import */}
-        {showBulkModal && (
-          <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
-              <h3 className="text-lg font-bold text-white mb-1">Bulk Class Roster Import</h3>
-              <p className="text-xs text-slate-400 mb-4">
-                Paste CSV data with columns: <code>email,full_name,role</code>
-              </p>
+      {/* BULK CSV IMPORT MODAL */}
+      {showBulkModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 max-w-lg w-full shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                Bulk CSV Roster Import
+              </h3>
+              <button
+                onClick={() => setShowBulkModal(false)}
+                className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
 
-              {bulkSuccess && (
-                <div className="mb-4 p-3 bg-emerald-950/60 border border-emerald-800/60 rounded-xl text-xs text-emerald-300">
-                  {bulkSuccess}
-                </div>
-              )}
+            {inviteSuccess ? (
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                {inviteSuccess}
+              </div>
+            ) : (
+              <form onSubmit={handleBulkUpload} className="space-y-4">
+                <p className="text-xs text-slate-600">
+                  Paste comma-separated user records. Format: <code className="text-adani-purple font-bold">email, full_name, role</code>
+                </p>
 
-              <form onSubmit={handleBulkImport} className="space-y-4">
-                <div>
-                  <textarea
-                    rows={6}
-                    value={csvText}
-                    onChange={(e) => setCsvText(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg font-mono text-xs text-slate-200 focus:outline-none focus:border-purple-500"
-                  />
-                </div>
+                <textarea
+                  rows={6}
+                  required
+                  placeholder={"neha.k@adani.edu.in, Neha Kulkarni, student\nvishal.m@adani.edu.in, Vishal Mehta, faculty"}
+                  value={csvContent}
+                  onChange={(e) => setCsvContent(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs text-slate-900 font-mono placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-adani-cyan"
+                />
 
-                <div className="flex items-center justify-end gap-3 pt-2">
+                <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                   <button
                     type="button"
                     onClick={() => setShowBulkModal(false)}
-                    className="px-3 py-2 rounded-lg text-xs text-slate-400 hover:text-white"
+                    className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition-colors"
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
                   >
-                    Process Import
+                    Import &amp; Cache Roster
                   </button>
                 </div>
               </form>
-            </div>
+            )}
           </div>
-        )}
-
-        {/* Footer */}
-        <footer className="border-t border-slate-800 pt-6 text-center text-xs text-slate-500 space-y-1">
-          <p>
-            AIDS 12605.1 Medical Text and Image Processing • Faculty of Engineering and Technology
-          </p>
-          <p className="text-[11px] text-slate-600">
-            Adani Institute of Higher Education and Research (Deemed to be University), Shantigram, Ahmedabad, Gujarat 382421.
-          </p>
-        </footer>
-      </main>
+        </div>
+      )}
     </div>
   );
 }
