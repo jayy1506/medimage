@@ -19,6 +19,9 @@ import MermaidDiagram from "@/components/diagrams/MermaidDiagram";
 import QuickCheckQuiz, { QuickCheckQuestion } from "@/components/topic/QuickCheckQuiz";
 import TopicAiTutor from "@/components/tutor/TopicAiTutor";
 import { UserNav } from "@/components/UserNav";
+import { useProgress } from "@/context/ProgressContext";
+import { RichContentRenderer } from "@/components/ui/RichContentRenderer";
+import { EquationCard } from "@/components/ui/MathView";
 
 export interface SectionData {
   id: string;
@@ -74,12 +77,14 @@ interface DualPanelViewerProps {
 }
 
 export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
+  const { isTopicCompleted, toggleTopicCompletion } = useProgress();
   const [activeSectionId, setActiveSectionId] = useState<string>(
     topic.sections[0]?.id || ""
   );
-  const [isCompleted, setIsCompleted] = useState<boolean>(topic.is_completed);
+  const isCompleted = isTopicCompleted(topic.slug);
   const [highlightedNode, setHighlightedNode] = useState<string | undefined>(undefined);
   const [visualTab, setVisualTab] = useState<"diagram" | "scan" | "interactive">("diagram");
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
   // IntersectionObserver for scroll-synchronization
   useEffect(() => {
@@ -125,18 +130,9 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
   };
 
   const toggleComplete = async () => {
-    const nextState = !isCompleted;
-    setIsCompleted(nextState);
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
-      await fetch(`${apiUrl}/course/topics/${topic.id}/progress`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_completed: nextState, time_spent_seconds: 60 })
-      });
-    } catch (e) {
-      console.error("Failed to update progress:", e);
-    }
+    setIsUpdating(true);
+    await toggleTopicCompletion(topic.slug);
+    setIsUpdating(false);
   };
 
   return (
@@ -244,23 +240,17 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
                     </h2>
                   </div>
 
-                  {/* Text Content */}
-                  <div className="prose prose-slate max-w-none text-sm text-slate-700 leading-relaxed space-y-4">
-                    {sec.content_markdown.split("\n\n").map((para, pIdx) => (
-                      <p key={pIdx}>{para}</p>
-                    ))}
+                  {/* Rich Formatted Text Content & Responsive Clinical Tables */}
+                  <div className="my-3">
+                    <RichContentRenderer content={sec.content_markdown} />
                   </div>
 
-                  {/* Mathematical Formulation (KaTeX / Formula Box) */}
+                  {/* Mathematical Formulation (KaTeX Academic White Equation Card) */}
                   {sec.formula_latex && (
-                    <div className="my-5 p-4 rounded-xl bg-slate-900 text-white font-mono text-sm shadow-inner border border-slate-800 flex items-center justify-between">
-                      <div className="overflow-x-auto py-1">
-                        <code>{sec.formula_latex}</code>
-                      </div>
-                      <span className="text-[10px] uppercase font-bold text-slate-400 ml-4 flex-shrink-0">
-                        Equation {sec.section_number}.1
-                      </span>
-                    </div>
+                    <EquationCard
+                      formula={sec.formula_latex}
+                      equationNumber={`Equation ${sec.section_number}.1`}
+                    />
                   )}
 
                   {/* Inline visual on Mobile devices */}
@@ -281,6 +271,49 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
             {topic.quick_checks && topic.quick_checks.length > 0 && (
               <QuickCheckQuiz questions={topic.quick_checks} />
             )}
+
+            {/* Topic Mastery & Completion Card */}
+            <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                  isCompleted ? "bg-emerald-100 text-emerald-700" : "bg-sky-100 text-adani-cyan"
+                }`}>
+                  {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900">
+                    {isCompleted ? "Topic Completed & Cleared" : "Finished reading this topic?"}
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    {isCompleted
+                      ? "Great job! This topic has been marked complete and reflected on your dashboard."
+                      : "Mark this study unit as complete to update your Course Outcome and curriculum progress."}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={toggleComplete}
+                disabled={isUpdating}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 flex-shrink-0 ${
+                  isCompleted
+                    ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                    : "bg-adani-cyan hover:bg-sky-600 text-white shadow-md shadow-sky-600/20"
+                }`}
+              >
+                {isCompleted ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    Completed (Click to Undo)
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="w-4 h-4" />
+                    Mark as Completed
+                  </>
+                )}
+              </button>
+            </div>
 
             {/* Navigation Bar (Previous / Next Topic) */}
             <div className="pt-8 border-t border-slate-200 flex items-center justify-between">

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { UserNav } from "@/components/UserNav";
+import { useProgress } from "@/context/ProgressContext";
 import { 
   ALL_MODULES, 
   QUICK_FORMULAS, 
@@ -25,11 +26,10 @@ import {
 
 export default function CourseDashboardPage() {
   const { user, profile } = useAuth();
+  const { isTopicCompleted, completedTopicsCount, totalTopicsCount } = useProgress();
   const [activeTab, setActiveTab] = useState<"modules" | "formulas">("modules");
 
-  const totalTopics = ALL_MODULES.reduce((sum, m) => sum + m.topics_count, 0);
-  const totalCompleted = ALL_MODULES.reduce((sum, m) => sum + m.completed_topics_count, 0);
-  const progressPct = Math.round((totalCompleted / totalTopics) * 100);
+  const progressPct = totalTopicsCount > 0 ? Math.round((completedTopicsCount / totalTopicsCount) * 100) : 0;
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
@@ -89,7 +89,7 @@ export default function CourseDashboardPage() {
             </div>
             <div className="h-10 w-px bg-white/20" />
             <div className="text-xs space-y-1">
-              <div className="text-slate-200"><span className="font-bold text-white">{totalCompleted}</span> of {totalTopics} Topics</div>
+              <div className="text-slate-200"><span className="font-bold text-white">{completedTopicsCount}</span> of {totalTopicsCount} Topics</div>
               <div className="text-[10px] text-emerald-400 font-semibold">&gt;75% Pass Condition Active</div>
             </div>
           </div>
@@ -106,7 +106,7 @@ export default function CourseDashboardPage() {
             }`}
           >
             <BookOpen className="w-3.5 h-3.5" />
-            6 Curriculum Modules ({totalTopics} Topics)
+            6 Curriculum Modules ({totalTopicsCount} Topics)
           </button>
 
           <button
@@ -120,6 +120,14 @@ export default function CourseDashboardPage() {
             <Calculator className="w-3.5 h-3.5" />
             Quick Formula Sheet ({QUICK_FORMULAS.length} Equations)
           </button>
+
+          <Link
+            href="/course/capstone"
+            className="ml-auto px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-adani-cyan via-adani-purple to-adani-magenta hover:opacity-95 shadow-sm transition-all flex items-center gap-2"
+          >
+            <Award className="w-3.5 h-3.5" />
+            Final Capstone Assessment (40 MCQs)
+          </Link>
         </div>
 
         {/* TAB 1: 6 CURRICULUM MODULES */}
@@ -163,7 +171,7 @@ export default function CourseDashboardPage() {
                         className="group p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-white hover:border-adani-cyan hover:shadow-md transition-all flex items-center justify-between"
                       >
                         <div className="flex items-center space-x-2.5 min-w-0">
-                          {t.is_completed ? (
+                          {isTopicCompleted(t.slug) ? (
                             <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                           ) : (
                             <Circle className="w-4 h-4 text-slate-300 group-hover:text-adani-cyan flex-shrink-0" />

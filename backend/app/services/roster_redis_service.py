@@ -330,11 +330,87 @@ class RosterRedisService:
             return INITIAL_AUDIT_LOGS
         return INITIAL_AUDIT_LOGS
 
-    async def add_audit_log(self, entry: Dict[str, Any]) -> List[Dict[str, Any]]:
-        logs = await self.get_audit_logs()
-        logs.insert(0, entry)
-        logs = logs[:50]
-        await self._redis_set(self.audit_key, logs)
-        return logs
+    async def get_user_progress(self, email: str) -> Dict[str, Any]:
+        """
+        Retrieves user-specific dynamic progress from Upstash Redis.
+        If a new user logs in, returns a fresh progress state initialized to ZERO.
+        """
+        clean_email = email.strip().lower()
+        key = f"medimage:progress:{clean_email}"
+        success, data, key_exists = await self._redis_get_safe(key)
+        if success and key_exists and isinstance(data, dict):
+            return data
+        
+        # Default fresh state: 0% completion for new users
+        default_progress = {
+            "email": clean_email,
+            "completed_topics": [],
+            "module_scores": {},
+            "attempts": {},
+            "cleared_modules": [],
+            "last_updated": "2026-10-30T00:00:00Z"
+        }
+        return default_progress
+
+    async def update_user_progress(
+        self,
+        email: str,
+        topic_slug: Optional[str] = None,
+        is_completed: Optional[bool] = None,
+        module_id: Optional[str] = None,
+        score_pct: Optional[float] = None
+    ) -> Dict[str, Any]:
+        """
+        Dynamically updates user progress for topics and module assessments.
+        """
+        clean_email = email.strip().lower()
+        key = f"medimage:progress:{clean_email}"
+        progress = await self.get_user_progress(clean_email)
+
+        completed_topics = set(progress.get("completed_topics", []))
+        module_scores = dict(progress.get("module_scores", {}))
+        attempts = dict(progress.get("attempts", {}))
+        cleared_modules = set(progress.get("cleared_modules", []))
+
+        # 1. Topic completion update
+        if topic_slug:
+            if is_completed is None or is_completed:
+                completed_topics.add(topic_slug)
+            else:
+                completed_topics.discard(topic_slug)
+
+        # 2. Module assessment update (>75.0% Pass Rule)
+        if module_id is not None and score_pct is not None:
+            attempts[module_id] = attempts.get(module_id, 0) + 1
+            prev_best = module_scores.get(module_id, 0.0)
+            module_scores[module_id] = max(prev_best, float(score_pct))
+            if float(score_pct) > 75.0:
+                cleared_modules.add(module_id)
+
+        updated_data = {
+            "email": clean_email,
+            "completed_topics": list(completed_topics),
+            "module_scores": module_scores,
+            "attempts": attempts,
+            "cleared_modules": list(cleared_modules),
+            "last_updated": httpx.Response(200).headers.get("date", "Just now")
+        }
+
+        await self._redis_set(key, updated_data)
+        return updated_data
+
+    async def reset_user_progress(self, email: str) -> Dict[str, Any]:
+        clean_email = email.strip().lower()
+        key = f"medimage:progress:{clean_email}"
+        reset_data = {
+            "email": clean_email,
+            "completed_topics": [],
+            "module_scores": {},
+            "attempts": {},
+            "cleared_modules": [],
+            "last_updated": "2026-10-30T00:00:00Z"
+        }
+        await self._redis_set(key, reset_data)
+        return reset_data
 
 roster_redis_service = RosterRedisService()

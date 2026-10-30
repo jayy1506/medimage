@@ -140,6 +140,7 @@ export default function AdminDashboardPage() {
   const [inviteRole, setInviteRole] = useState<"student" | "faculty" | "admin">("student");
   const [invitePassword, setInvitePassword] = useState("Feat@123");
   const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
+  const [inviteAgeConsent, setInviteAgeConsent] = useState(false);
   const [csvContent, setCsvContent] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
@@ -300,6 +301,11 @@ export default function AdminDashboardPage() {
   const handleInviteUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteEmail || !inviteName) return;
+
+    if (inviteRole === "student" && !inviteAgeConsent) {
+      alert("Under the Digital Personal Data Protection Act, 2023 (DPDP Act Sec 9), you must confirm that the student is 18+ or has verifiable institutional guardian consent.");
+      return;
+    }
 
     const payload = {
       email: inviteEmail.trim(),
@@ -1015,6 +1021,23 @@ export default function AdminDashboardPage() {
                     Standard institutional default is <strong className="font-mono text-slate-800">Feat@123</strong>. Password remains visible to admin in console.
                   </p>
                 </div>
+
+                {inviteRole === "student" && (
+                  <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-xl space-y-1.5">
+                    <label className="flex items-start gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={inviteAgeConsent}
+                        onChange={(e) => setInviteAgeConsent(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-slate-300 text-adani-cyan focus:ring-adani-cyan"
+                        required
+                      />
+                      <span className="text-[11px] text-amber-950 font-medium leading-tight">
+                        <strong className="font-bold">DPDP Act 2023 Age &amp; Consent Compliance:</strong> I verify that this student candidate is 18+ years of age, or is enrolled under verified institutional parental/guardian consent as required by Section 9 of the Digital Personal Data Protection Act, 2023.
+                      </span>
+                    </label>
+                  </div>
+                )}
 
                 <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                   <button

@@ -14,77 +14,19 @@ import {
   HelpCircle
 } from "lucide-react";
 import { UserNav } from "@/components/UserNav";
-
-interface QuizQuestion {
-  id: string;
-  co_tag: string;
-  question_text: string;
-  options: { id: string; text: string }[];
-}
-
-const SAMPLE_QUIZ_QUESTIONS: QuizQuestion[] = [
-  {
-    id: "q-1",
-    co_tag: "CO1",
-    question_text: "What phenomenon causes beam hardening when a polychromatic X-ray beam traverses biological tissues?",
-    options: [
-      { id: "A", text: "Preferential absorption of lower-energy photons, shifting the mean energy higher" },
-      { id: "B", text: "Incoherent pair production in alveolar air spaces" },
-      { id: "C", text: "Linear acceleration of photons in muscle tissue" },
-      { id: "D", text: "Detector pixel gain saturation" }
-    ]
-  },
-  {
-    id: "q-2",
-    co_tag: "CO1",
-    question_text: "On the standardized Hounsfield scale, what is the defined attenuation value of pure distilled water?",
-    options: [
-      { id: "A", text: "-1000 HU" },
-      { id: "B", text: "0 HU" },
-      { id: "C", text: "+100 HU" },
-      { id: "D", text: "+1000 HU" }
-    ]
-  },
-  {
-    id: "q-3",
-    co_tag: "CO1",
-    question_text: "If a biological tissue exhibits a linear attenuation coefficient μ = 0.693 cm^-1, what is its Half-Value Layer (HVL)?",
-    options: [
-      { id: "A", text: "0.5 cm" },
-      { id: "B", text: "1.0 cm" },
-      { id: "C", text: "2.0 cm" },
-      { id: "D", text: "4.0 cm" }
-    ]
-  },
-  {
-    id: "q-4",
-    co_tag: "CO2",
-    question_text: "In the DICOM Part 10 medical standard, which Group/Element tag identifies the Patient's Name?",
-    options: [
-      { id: "A", text: "(0010,0010)" },
-      { id: "B", text: "(0028,0010)" },
-      { id: "C", text: "(0028,1050)" },
-      { id: "D", text: "(0020,0032)" }
-    ]
-  },
-  {
-    id: "q-5",
-    co_tag: "CO3",
-    question_text: "Which standard 2D convolution kernel is engineered to detect vertical edges and high-contrast boundaries?",
-    options: [
-      { id: "A", text: "Sobel Horizontal (Gx): [[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]]" },
-      { id: "B", text: "Gaussian Smoothing: [[1, 2, 1], [2, 4, 2], [1, 2, 1]] / 16" },
-      { id: "C", text: "Laplacian: [[0, 1, 0], [1, -4, 1], [0, 1, 0]]" },
-      { id: "D", text: "Mean Box Filter" }
-    ]
-  }
-];
+import { useProgress } from "@/context/ProgressContext";
+import { MODULE_QUIZ_REGISTRY, QuizQuestionItem } from "@/data/quizDatabase";
+import { ALL_MODULES } from "@/data/curriculumData";
 
 export default function ModuleQuizPage({
   params
 }: {
   params: { moduleId: string };
 }) {
+  const { recordAssessmentScore, moduleScores } = useProgress();
+  const currentQuestions: QuizQuestionItem[] = MODULE_QUIZ_REGISTRY[params.moduleId] || MODULE_QUIZ_REGISTRY["mod-1"];
+  const currentModule = ALL_MODULES.find((m) => m.id === params.moduleId) || ALL_MODULES[0];
+
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [result, setResult] = useState<{
@@ -102,31 +44,26 @@ export default function ModuleQuizPage({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Answer keys: q-1: A, q-2: B, q-3: B, q-4: A, q-5: A
-    const keys: Record<string, string> = {
-      "q-1": "A",
-      "q-2": "B",
-      "q-3": "B",
-      "q-4": "A",
-      "q-5": "A"
-    };
-
     let correct = 0;
-    SAMPLE_QUIZ_QUESTIONS.forEach((q) => {
-      if (selectedAnswers[q.id] === keys[q.id]) {
+    currentQuestions.forEach((q) => {
+      if (selectedAnswers[q.id] === q.correct_option_id) {
         correct += 1;
       }
     });
 
-    const scorePct = Math.round((correct / SAMPLE_QUIZ_QUESTIONS.length) * 100);
+    const scorePct = Math.round((correct / currentQuestions.length) * 100);
     // Strict >75.0% Pass Rule
     const isPassed = scorePct > 75;
 
+    // Record score dynamically
+    recordAssessmentScore(params.moduleId, scorePct);
+
+    const prevBest = moduleScores[params.moduleId] || 0;
     setResult({
       scorePct,
       isPassed,
       correctCount: correct,
-      bestScore: Math.max(scorePct, 80)
+      bestScore: Math.max(scorePct, prevBest)
     });
     setIsSubmitted(true);
   };
@@ -162,13 +99,13 @@ export default function ModuleQuizPage({
         {/* Quiz Header */}
         <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-2">
           <span className="text-xs font-bold uppercase tracking-wider text-adani-cyan">
-            Accredited Formative Assessment
+            Accredited Formative Assessment • Module 0{currentModule.module_number}
           </span>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-            Module 1: Comprehensive Mastery Assessment
+            {currentModule.title}: Comprehensive Mastery Assessment
           </h1>
           <p className="text-xs text-slate-500">
-            Answer all 5 questions. In accordance with course regulations, clearing this module milestone requires strictly scoring above 75.0%.
+            Answer all {currentQuestions.length} clinical MCQs. In accordance with course regulations, clearing this module milestone requires strictly scoring above 75.0% (at least {Math.ceil(currentQuestions.length * 0.75)} of {currentQuestions.length} correct).
           </p>
         </div>
 
@@ -191,13 +128,13 @@ export default function ModuleQuizPage({
                 <div>
                   <h3 className="text-lg font-black">
                     {result.isPassed
-                      ? "Module Milestone Cleared!"
+                      ? `Module 0${currentModule.module_number} Cleared!`
                       : "Mastery Threshold Not Met"}
                   </h3>
                   <p className="text-xs">
                     You scored{" "}
                     <span className="font-bold text-sm">{result.scorePct}%</span> (
-                    {result.correctCount} of {SAMPLE_QUIZ_QUESTIONS.length} correct).
+                    {result.correctCount} of {currentQuestions.length} correct).
                   </p>
                 </div>
               </div>
@@ -210,39 +147,50 @@ export default function ModuleQuizPage({
 
             <p className="text-xs leading-relaxed">
               {result.isPassed
-                ? "Excellent mastery of X-ray physics, Hounsfield units, and attenuation laws. This module is officially recorded as cleared in the platform database."
-                : "You did not achieve the required >75.0% threshold. Review the worked examples in Module 1 Topic 2 (HVL calculations) and retake the randomized assessment."}
+                ? `Excellent performance on ${currentModule.title}. Your mastery clearance (>75% rule) has been recorded in the platform database.`
+                : `You scored ${result.scorePct}%. Review the worked clinical examples and theory sections in this module, then retake the assessment to clear this module milestone.`}
             </p>
 
-            <div className="pt-4 border-t border-slate-200/60 flex items-center justify-between">
+            <div className="pt-4 border-t border-slate-200/60 flex flex-wrap items-center justify-between gap-2">
               <button
                 onClick={handleRetake}
                 className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold bg-white text-slate-800 border border-slate-300 hover:bg-slate-100 shadow-sm transition-all"
               >
                 <RotateCcw className="w-4 h-4" />
-                <span>Retake Assessment (Randomized Pool)</span>
+                <span>Retake Assessment</span>
               </button>
 
-              <Link
-                href="/course"
-                className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-adani-navy hover:bg-adani-dark shadow-sm transition-all"
-              >
-                <span>Return to Syllabus</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/course"
+                  className="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 shadow-sm transition-all"
+                >
+                  <span>Syllabus</span>
+                </Link>
+
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-adani-cyan to-adani-purple hover:opacity-95 shadow-sm transition-all"
+                >
+                  <span>View Updated Dashboard</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Questions Form */}
+        {/* 15 Questions Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          {SAMPLE_QUIZ_QUESTIONS.map((q, idx) => (
+          {currentQuestions.map((q, idx) => (
             <div
               key={q.id}
               className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4"
             >
               <div className="flex items-start justify-between gap-3">
-                <span className="text-xs font-black text-slate-400">0{idx + 1}.</span>
+                <span className="text-xs font-black text-slate-400">
+                  {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}.
+                </span>
                 <p className="flex-1 text-sm font-bold text-slate-900 leading-snug">
                   {q.question_text}
                 </p>
@@ -254,6 +202,9 @@ export default function ModuleQuizPage({
               <div className="space-y-2 mt-4">
                 {q.options.map((opt) => {
                   const isSelected = selectedAnswers[q.id] === opt.id;
+                  const isCorrect = isSubmitted && opt.id === q.correct_option_id;
+                  const isWrongSelected = isSubmitted && isSelected && opt.id !== q.correct_option_id;
+
                   return (
                     <button
                       type="button"
@@ -261,14 +212,22 @@ export default function ModuleQuizPage({
                       disabled={isSubmitted}
                       onClick={() => handleSelect(q.id, opt.id)}
                       className={`w-full text-left p-3.5 rounded-xl border text-xs transition-all flex items-start space-x-3 ${
-                        isSelected
+                        isCorrect
+                          ? "border-emerald-500 bg-emerald-50/80 text-emerald-950 font-bold shadow-sm"
+                          : isWrongSelected
+                          ? "border-red-400 bg-red-50 text-red-950 font-medium"
+                          : isSelected
                           ? "border-adani-cyan bg-adani-cyan/5 text-adani-navy font-bold shadow-sm"
                           : "border-slate-200 hover:border-slate-300 text-slate-700 bg-white"
                       }`}
                     >
                       <span
                         className={`h-5 w-5 rounded-md flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${
-                          isSelected
+                          isCorrect
+                            ? "bg-emerald-600 text-white"
+                            : isWrongSelected
+                            ? "bg-red-600 text-white"
+                            : isSelected
                             ? "bg-adani-cyan text-white"
                             : "bg-slate-100 text-slate-600"
                         }`}
@@ -280,17 +239,32 @@ export default function ModuleQuizPage({
                   );
                 })}
               </div>
+
+              {/* Verified Explanation upon submission */}
+              {isSubmitted && q.explanation && (
+                <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold text-slate-800">Verified Answer: Option {q.correct_option_id}</span>
+                    <p className="mt-0.5 text-slate-600 text-[11px] leading-relaxed">{q.explanation}</p>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
 
           {!isSubmitted && (
-            <div className="flex justify-end pt-4">
+            <div className="flex items-center justify-between pt-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm sticky bottom-4 z-20">
+              <span className="text-xs text-slate-500 font-medium">
+                Answered: <strong className="text-adani-cyan font-bold">{Object.keys(selectedAnswers).length}</strong> of {currentQuestions.length} Questions
+              </span>
+
               <button
                 type="submit"
-                disabled={Object.keys(selectedAnswers).length < SAMPLE_QUIZ_QUESTIONS.length}
-                className="px-6 py-3 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-adani-cyan via-adani-purple to-adani-magenta hover:opacity-95 disabled:opacity-40 shadow-md transition-all flex items-center space-x-2"
+                disabled={Object.keys(selectedAnswers).length < currentQuestions.length}
+                className="px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-adani-cyan via-adani-purple to-adani-magenta hover:opacity-95 disabled:opacity-40 shadow-md transition-all flex items-center space-x-2"
               >
-                <span>Submit for Evaluation (&gt;75% Rule)</span>
+                <span>Submit Evaluation (&gt;75% Rule)</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>

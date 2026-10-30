@@ -1,4 +1,8 @@
 import { TopicPayload } from "@/components/topic/DualPanelViewer";
+import { MODULES_2_TO_6_DATA } from "./modules2to6Data";
+import { MODULES_4_TO_6_DATA } from "./modules4to6Data";
+import { MODULES_5_TO_6_DATA } from "./modules5to6Data";
+import { MODULES_6_DATA } from "./modules6Data";
 
 export interface CurriculumTopic {
   id: string;
@@ -51,10 +55,10 @@ export const ALL_MODULES: CurriculumModule[] = [
     theory_hours: 8,
     co_tags: ["CO1"],
     topics_count: 8,
-    completed_topics_count: 2,
+    completed_topics_count: 0,
     topics: [
-      { id: "m1-1", slug: "m1-t1-radiology", title: "1. Radiology Modalities & Physics", order_index: 1, co_tags: ["CO1"], read_time_minutes: 15, is_completed: true },
-      { id: "m1-2", slug: "m1-t2-electromagnetic-spectrum", title: "2. The Electromagnetic Spectrum in Medicine", order_index: 2, co_tags: ["CO1"], read_time_minutes: 12, is_completed: true },
+      { id: "m1-1", slug: "m1-t1-radiology", title: "1. Radiology Modalities & Physics", order_index: 1, co_tags: ["CO1"], read_time_minutes: 15, is_completed: false },
+      { id: "m1-2", slug: "m1-t2-electromagnetic-spectrum", title: "2. The Electromagnetic Spectrum in Medicine", order_index: 2, co_tags: ["CO1"], read_time_minutes: 12, is_completed: false },
       { id: "m1-3", slug: "m1-t3-xray-physics", title: "3. Basic X-Ray Physics (Bremsstrahlung & Compton)", order_index: 3, co_tags: ["CO1"], read_time_minutes: 18, is_completed: false },
       { id: "m1-4", slug: "m1-t4-attenuation-imaging", title: "4. Attenuation & Exponential Imaging Laws", order_index: 4, co_tags: ["CO1"], read_time_minutes: 15, is_completed: false },
       { id: "m1-5", slug: "m1-t5-computed-tomography", title: "5. Computed Tomography (CT & Sinograms)", order_index: 5, co_tags: ["CO1", "CO4"], read_time_minutes: 22, is_completed: false },
@@ -71,9 +75,9 @@ export const ALL_MODULES: CurriculumModule[] = [
     theory_hours: 8,
     co_tags: ["CO2"],
     topics_count: 5,
-    completed_topics_count: 1,
+    completed_topics_count: 0,
     topics: [
-      { id: "m2-1", slug: "m2-t1-image-databases", title: "1. Image Databases & Clinical PACS Archiving", order_index: 1, co_tags: ["CO2"], read_time_minutes: 16, is_completed: true },
+      { id: "m2-1", slug: "m2-t1-image-databases", title: "1. Image Databases & Clinical PACS Archiving", order_index: 1, co_tags: ["CO2"], read_time_minutes: 16, is_completed: false },
       { id: "m2-2", slug: "m2-t2-intensity-operations", title: "2. Point & Intensity Operations (LUTs & Gamma)", order_index: 2, co_tags: ["CO2"], read_time_minutes: 14, is_completed: false },
       { id: "m2-3", slug: "m2-t3-filter-operations", title: "3. Spatial Filter Operations & Convolution Kernels", order_index: 3, co_tags: ["CO2"], read_time_minutes: 20, is_completed: false },
       { id: "m2-4", slug: "m2-t4-clinical-segmentation", title: "4. Clinical Segmentation Strategies & U-Net", order_index: 4, co_tags: ["CO2"], read_time_minutes: 22, is_completed: false },
@@ -88,9 +92,9 @@ export const ALL_MODULES: CurriculumModule[] = [
     theory_hours: 8,
     co_tags: ["CO2", "CO4"],
     topics_count: 5,
-    completed_topics_count: 1,
+    completed_topics_count: 0,
     topics: [
-      { id: "m3-1", slug: "m3-t1-pixels-voxels", title: "1. Pixels, Voxels & Partial Volume Averaging", order_index: 1, co_tags: ["CO2"], read_time_minutes: 15, is_completed: true },
+      { id: "m3-1", slug: "m3-t1-pixels-voxels", title: "1. Pixels, Voxels & Partial Volume Averaging", order_index: 1, co_tags: ["CO2"], read_time_minutes: 15, is_completed: false },
       { id: "m3-2", slug: "m3-t2-grayscale-color", title: "2. Gray Scale & Color Representation (Pseudo-Color)", order_index: 2, co_tags: ["CO2"], read_time_minutes: 14, is_completed: false },
       { id: "m3-3", slug: "m3-t3-file-formats", title: "3. Medical File Formats (DICOM vs NIfTI vs PNG)", order_index: 3, co_tags: ["CO4"], read_time_minutes: 16, is_completed: false },
       { id: "m3-4", slug: "m3-t4-dicom-standard", title: "4. The DICOM Standard & Tag Dictionaries", order_index: 4, co_tags: ["CO2", "CO4"], read_time_minutes: 22, is_completed: false },
@@ -162,7 +166,7 @@ export const TOPICS_DATA_REGISTRY: Record<string, TopicPayload> = {
     order_index: 1,
     co_tags: ["CO1"],
     read_time_minutes: 15,
-    is_completed: true,
+    is_completed: false,
     module: { id: "mod-1", module_number: 1, title: "Medical Image Sources" },
     sections: [
       {
@@ -251,7 +255,7 @@ export const TOPICS_DATA_REGISTRY: Record<string, TopicPayload> = {
     order_index: 2,
     co_tags: ["CO1"],
     read_time_minutes: 12,
-    is_completed: true,
+    is_completed: false,
     module: { id: "mod-1", module_number: 1, title: "Medical Image Sources" },
     sections: [
       {
@@ -865,5 +869,9 @@ export const TOPICS_DATA_REGISTRY: Record<string, TopicPayload> = {
     ],
     previous_topic_slug: "m1-t7-ultrasound",
     next_topic_slug: "m2-t1-image-databases"
-  }
+  },
+  ...MODULES_2_TO_6_DATA,
+  ...MODULES_4_TO_6_DATA,
+  ...MODULES_5_TO_6_DATA,
+  ...MODULES_6_DATA
 };

@@ -10,6 +10,7 @@ from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models.user import User
 from app.models.course import Module, Topic, TopicSection, Diagram, VisualAsset, UserProgress
+from app.services.roster_redis_service import roster_redis_service
 
 router = APIRouter(prefix="/course", tags=["Curriculum & Topic Viewer"])
 
@@ -17,6 +18,14 @@ router = APIRouter(prefix="/course", tags=["Curriculum & Topic Viewer"])
 class ProgressUpdateRequest(BaseModel):
     is_completed: bool = True
     time_spent_seconds: int = 0
+
+
+class UserProgressSyncRequest(BaseModel):
+    email: str
+    topic_slug: Optional[str] = None
+    is_completed: Optional[bool] = None
+    module_id: Optional[str] = None
+    score_pct: Optional[float] = None
 
 
 @router.get("/modules")
@@ -218,3 +227,43 @@ async def update_topic_progress(
 
     await db.commit()
     return {"status": "success", "is_completed": prog.is_completed}
+
+
+@router.get("/user-progress")
+async def get_dynamic_user_progress(email: str):
+    """
+    Returns user's real progress stored in Upstash Redis.
+    Brand new users always start at 0% (zero completed topics).
+    """
+    if not email:
+        raise HTTPException(status_code=400, detail="User email is required.")
+    data = await roster_redis_service.get_user_progress(email)
+    return data
+
+
+@router.post("/user-progress")
+async def update_dynamic_user_progress(payload: UserProgressSyncRequest):
+    """
+    Updates completion of a topic or assessment score for a specific user.
+    """
+    if not payload.email:
+        raise HTTPException(status_code=400, detail="User email is required.")
+    updated = await roster_redis_service.update_user_progress(
+        email=payload.email,
+        topic_slug=payload.topic_slug,
+        is_completed=payload.is_completed,
+        module_id=payload.module_id,
+        score_pct=payload.score_pct
+    )
+    return updated
+
+
+@router.post("/user-progress/reset")
+async def reset_dynamic_user_progress(payload: UserProgressSyncRequest):
+    """
+    Resets progress to 0% for the given user.
+    """
+    if not payload.email:
+        raise HTTPException(status_code=400, detail="User email is required.")
+    reset_data = await roster_redis_service.reset_user_progress(payload.email)
+    return reset_data

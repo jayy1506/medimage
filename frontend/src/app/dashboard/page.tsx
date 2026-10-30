@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { UserNav } from "@/components/UserNav";
+import { useProgress } from "@/context/ProgressContext";
+import { ALL_MODULES } from "@/data/curriculumData";
 import {
   Award,
   CheckCircle2,
@@ -36,7 +38,7 @@ interface TopicItem {
   isCompleted: boolean;
 }
 
-interface CurriculumModule {
+interface CurriculumModuleItem {
   id: string;
   moduleCode: string;
   title: string;
@@ -52,232 +54,68 @@ interface CurriculumModule {
 }
 
 export default function UnifiedCurriculumDashboard() {
-  const { user, role, signOut } = useAuth();
+  const { user, profile, role, signOut } = useAuth();
+  const {
+    completedTopics,
+    moduleScores,
+    attempts,
+    clearedModules,
+    isTopicCompleted,
+    totalTopicsCount,
+    completedTopicsCount,
+    clearedModulesCount,
+    completionPct,
+    coAttainments,
+    resetProgress
+  } = useProgress();
+
   const [mounted, setMounted] = useState(false);
   const [expandedModule, setExpandedModule] = useState<string>("mod-1");
-
-  // Full accredited curriculum data for AIDS 12605.1
-  const [modules, setModules] = useState<CurriculumModule[]>([
-    {
-      id: "mod-1",
-      moduleCode: "MODULE 01",
-      title: "Medical Image Sources & Physics",
-      description: "Radiology, electromagnetic spectrum, basic X-ray physics, differential photon attenuation, Beer-Lambert formulation, CT, MRI, ultrasound, and nuclear medicine.",
-      theoryHours: 8,
-      coTarget: "CO1, CO2",
-      bestScorePct: 84.5,
-      latestScorePct: 84.5,
-      attemptsCount: 2,
-      isPassed: true,
-      status: "cleared",
-      topics: [
-        {
-          id: "m1-t1",
-          slug: "m1-t1-radiology-spectrum",
-          title: "Radiology & The Diagnostic Electromagnetic Spectrum",
-          readTime: 15,
-          coTag: "CO1",
-          isCompleted: true
-        },
-        {
-          id: "m1-t2",
-          slug: "xray-ct-physics",
-          title: "X-Ray Physics, Attenuation & Half-Value Layer (HVL)",
-          readTime: 20,
-          coTag: "CO1",
-          isCompleted: true
-        },
-        {
-          id: "m1-t3",
-          slug: "computed-tomography-intro",
-          title: "Computed Tomography (CT) Principles & Projection Geometry",
-          readTime: 25,
-          coTag: "CO1, CO4",
-          isCompleted: false
-        }
-      ]
-    },
-    {
-      id: "mod-2",
-      moduleCode: "MODULE 02",
-      title: "Image Processing in Clinical Practice",
-      description: "Fourier transforms, 2D FFT, contrast enhancement, histogram equalization, spatial vs frequency filtering, and clinical artifact reduction.",
-      theoryHours: 8,
-      coTarget: "CO2, CO3",
-      bestScorePct: 79.0,
-      latestScorePct: 79.0,
-      attemptsCount: 1,
-      isPassed: true,
-      status: "cleared",
-      topics: [
-        {
-          id: "m2-t1",
-          slug: "fourier-transform-medical-imaging",
-          title: "2D Discrete Fourier Transform & k-Space Principles",
-          readTime: 20,
-          coTag: "CO2",
-          isCompleted: true
-        },
-        {
-          id: "m2-t2",
-          slug: "contrast-enhancement-clahe",
-          title: "Histogram Equalization & Contrast Limited Adaptive HE (CLAHE)",
-          readTime: 18,
-          coTag: "CO3",
-          isCompleted: false
-        }
-      ]
-    },
-    {
-      id: "mod-3",
-      moduleCode: "MODULE 03",
-      title: "Image Representation & DICOM Standards",
-      description: "Pixel representation, bit depth, photometric interpretation, DICOM header data elements, VRs, Transfer Syntaxes, and HIPAA Safe Harbor de-identification.",
-      theoryHours: 8,
-      coTarget: "CO2",
-      bestScorePct: 62.0,
-      latestScorePct: 62.0,
-      attemptsCount: 2,
-      isPassed: false,
-      status: "needs_remediation",
-      topics: [
-        {
-          id: "m3-t1",
-          slug: "dicom-data-structure-vr",
-          title: "DICOM File Format, Value Representations (VR) & Tag Elements",
-          readTime: 20,
-          coTag: "CO2",
-          isCompleted: true
-        },
-        {
-          id: "m3-t2",
-          slug: "hipaa-deidentification-sanitization",
-          title: "HIPAA Safe Harbor De-Identification & Clinical Data Privacy",
-          readTime: 25,
-          coTag: "CO2",
-          isCompleted: false
-        }
-      ]
-    },
-    {
-      id: "mod-4",
-      moduleCode: "MODULE 04",
-      title: "Tomographic Reconstruction & Radon Transform",
-      description: "Radon transform, sinogram formation, projection geometry, Central Slice Theorem, Backprojection, and Filtered Backprojection (Ram-Lak / Shepp-Logan).",
-      theoryHours: 9,
-      coTarget: "CO4",
-      bestScorePct: 0.0,
-      latestScorePct: 0.0,
-      attemptsCount: 0,
-      isPassed: false,
-      status: "not_started",
-      topics: [
-        {
-          id: "m4-t1",
-          slug: "radon-transform-sinogram",
-          title: "Radon Transform Geometry & Sinogram Projection Mapping",
-          readTime: 25,
-          coTag: "CO4",
-          isCompleted: false
-        },
-        {
-          id: "m4-t2",
-          slug: "filtered-backprojection-algorithm",
-          title: "Filtered Backprojection (FBP) & Ram-Lak Ramp Filtering",
-          readTime: 30,
-          coTag: "CO4",
-          isCompleted: false
-        }
-      ]
-    },
-    {
-      id: "mod-5",
-      moduleCode: "MODULE 05",
-      title: "Medical Image Segmentation & 2D Spatial Filtering",
-      description: "2D spatial kernels, Sobel/Laplacian operators, Gaussian blurring, Otsu automated thresholding, and semantic U-Net segmentation architectures.",
-      theoryHours: 9,
-      coTarget: "CO3, CO4",
-      bestScorePct: 0.0,
-      latestScorePct: 0.0,
-      attemptsCount: 0,
-      isPassed: false,
-      status: "not_started",
-      topics: [
-        {
-          id: "m5-t1",
-          slug: "spatial-convolution",
-          title: "2D Spatial Kernels, Edge Enhancement & High-Pass Filters",
-          readTime: 20,
-          coTag: "CO3",
-          isCompleted: false
-        },
-        {
-          id: "m5-t2",
-          slug: "clinical-segmentation-unet",
-          title: "Otsu Adaptive Thresholding & Semantic U-Net Models",
-          readTime: 25,
-          coTag: "CO4",
-          isCompleted: false
-        }
-      ]
-    },
-    {
-      id: "mod-6",
-      moduleCode: "MODULE 06",
-      title: "Clinical NLP & Multimodal Medical AI",
-      description: "Biomedical entity extraction, BioBERT/ClinicalBERT, structured radiology report summarization, and multimodal image-text clinical diagnostic pipelines.",
-      theoryHours: 8,
-      coTarget: "CO5",
-      bestScorePct: 0.0,
-      latestScorePct: 0.0,
-      attemptsCount: 0,
-      isPassed: false,
-      status: "not_started",
-      topics: [
-        {
-          id: "m6-t1",
-          slug: "radiology-nlp-biobert",
-          title: "Biomedical Named Entity Recognition & Report Summarization",
-          readTime: 25,
-          coTag: "CO5",
-          isCompleted: false
-        },
-        {
-          id: "m6-t2",
-          slug: "multimodal-clinical-ai",
-          title: "Vision-Language Grounding in Diagnostic Imaging",
-          readTime: 30,
-          coTag: "CO5",
-          isCompleted: false
-        }
-      ]
-    }
-  ]);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Dynamically map all 6 accredited curriculum modules from live progress
+  const modules: CurriculumModuleItem[] = useMemo(() => {
+    return ALL_MODULES.map((m) => {
+      const score = moduleScores[m.id] || 0.0;
+      const attemptCount = attempts[m.id] || 0;
+      const isPassed = clearedModules.includes(m.id) || score > 75.0;
+      const status: "cleared" | "needs_remediation" | "not_started" = isPassed
+        ? "cleared"
+        : attemptCount > 0
+        ? "needs_remediation"
+        : "not_started";
+
+      return {
+        id: m.id,
+        moduleCode: `MODULE 0${m.module_number}`,
+        title: m.title,
+        description: m.description,
+        theoryHours: m.theory_hours,
+        coTarget: (m.co_tags || []).join(", "),
+        bestScorePct: score,
+        latestScorePct: score,
+        attemptsCount: attemptCount,
+        isPassed,
+        status,
+        topics: m.topics.map((t) => ({
+          id: t.id,
+          slug: t.slug,
+          title: t.title,
+          readTime: t.read_time_minutes,
+          coTag: (t.co_tags || []).join(", "),
+          isCompleted: isTopicCompleted(t.slug)
+        }))
+      };
+    });
+  }, [moduleScores, attempts, clearedModules, isTopicCompleted]);
+
   if (!mounted) return null;
 
-  // Key KPI Aggregations
   const totalModules = modules.length;
-  const clearedModules = modules.filter((m) => m.isPassed).length;
-  const completionPct = Math.round((clearedModules / totalModules) * 100);
-
-  const totalTopics = modules.reduce((acc, m) => acc + m.topics.length, 0);
-  const completedTopics = modules.reduce(
-    (acc, m) => acc + m.topics.filter((t) => t.isCompleted).length,
-    0
-  );
-
-  const coAttainments = [
-    { code: "CO1", title: "Medical Image Sources & Physics", score: 84.5, target: 75.0, status: "Met" },
-    { code: "CO2", title: "DICOM Standards & Protocols", score: 81.2, target: 75.0, status: "Met" },
-    { code: "CO3", title: "2D Filtering & Transforms", score: 72.0, target: 75.0, status: "In Progress" },
-    { code: "CO4", title: "3D Reconstruction & Segmentation", score: 0.0, target: 75.0, status: "Pending" },
-    { code: "CO5", title: "Clinical NLP & Diagnostics", score: 0.0, target: 75.0, status: "Pending" }
-  ];
+  const candidateEmail = profile?.email || user?.email || "student@adani.edu.in";
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col">
@@ -353,7 +191,7 @@ export default function UnifiedCurriculumDashboard() {
                 Medical Text and Image Processing
               </h1>
               <p className="text-slate-600 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
-                Candidate: <span className="text-adani-cyan font-mono font-bold">{user?.email || "student.fet@adani.edu.in"}</span>.
+                Candidate: <span className="text-adani-cyan font-mono font-bold">{candidateEmail}</span>.
                 Concept → Example → Application question methodology active across all 6 foundational modules with strict &gt;75.0% pass rule.
               </p>
             </div>
@@ -387,7 +225,7 @@ export default function UnifiedCurriculumDashboard() {
               <div className="space-y-0.5">
                 <span className="text-xs text-slate-500 font-bold block">Mastery Clearance</span>
                 <span className="text-sm font-black text-slate-900 block">
-                  {clearedModules} of {totalModules} Modules Cleared
+                  {clearedModulesCount} of {totalModules} Modules Cleared
                 </span>
                 <span className="text-[11px] text-amber-700 font-semibold flex items-center gap-1">
                   <TrendingUp className="w-3 h-3 text-amber-600" /> Pass Rule: &gt; 75.00%
@@ -523,9 +361,24 @@ export default function UnifiedCurriculumDashboard() {
                 Select any module below to view topics, open the Dual-Panel Workstation, or launch the Mastery Assessment.
               </p>
             </div>
-            <span className="text-xs text-slate-600 font-mono">
-              Completed Topics: <strong className="text-adani-cyan font-bold">{completedTopics}</strong> / {totalTopics}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-slate-600 font-mono">
+                Completed Topics: <strong className="text-adani-cyan font-bold">{completedTopicsCount}</strong> / {totalTopicsCount}
+              </span>
+              {completedTopicsCount > 0 && (
+                <button
+                  onClick={async () => {
+                    if (confirm("Reset all topic completions and test scores for your account?")) {
+                      await resetProgress();
+                    }
+                  }}
+                  className="px-2 py-1 rounded-md text-[11px] font-semibold text-slate-500 hover:text-rose-600 bg-slate-100 hover:bg-rose-50 border border-slate-200 transition-colors flex items-center gap-1"
+                  title="Reset your learning progress to 0"
+                >
+                  <RotateCcw className="w-3 h-3" /> Reset
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Module Cards Accordion (White Theme) */}
@@ -665,6 +518,39 @@ export default function UnifiedCurriculumDashboard() {
                 </div>
               );
             })}
+          </div>
+
+          {/* FINAL GRAND CAPSTONE EXAMINATION (40 MCQS ACROSS ALL MODULES) */}
+          <div className="p-6 rounded-3xl bg-gradient-to-r from-adani-navy via-slate-900 to-slate-950 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden mt-6">
+            <div className="space-y-2 max-w-2xl relative z-10">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/30 text-adani-cyan text-[11px] font-bold uppercase tracking-wider">
+                  <Award className="w-3.5 h-3.5" />
+                  Course Completion Milestone
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-500/20 border border-purple-400/30 text-purple-300 text-[10px] font-bold">
+                  <Sparkles className="w-3 h-3" />
+                  Comprehensive Capstone • 40 MCQs
+                </span>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                Final Course Mastery Assessment (All 6 Modules)
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Comprehensive 40-question exit examination evaluating all accredited Course Outcomes (CO1-CO5). Strict &gt;75.0% pass criteria applies for institutional clearance.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 relative z-10">
+              <Link
+                href="/course/capstone"
+                className="px-6 py-3 rounded-xl text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-adani-cyan via-adani-purple to-adani-magenta hover:opacity-95 shadow-md transition-all flex items-center gap-2"
+              >
+                <Award className="w-4 h-4" />
+                Launch 40-MCQ Final Assessment
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
         </section>
 

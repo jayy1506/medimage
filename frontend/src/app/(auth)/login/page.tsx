@@ -244,14 +244,24 @@ export default function LoginPage() {
                   Cancel and return to sign in
                 </button>
               )}
+
+              {/* DPDP Act 2023 Statutory Privacy & Age Confirmation */}
+              <div className="pt-3 border-t border-slate-100 text-[10px] text-slate-500 text-center leading-relaxed">
+                By accessing this portal, you affirm you are 18+ or enrolled with verified institutional guardian consent under the <strong>DPDP Act, 2023 (Sec 9)</strong>. Telemetry is processed solely for academic grading with zero keystroke recording or commercial tracking.
+              </div>
             </form>
           )}
         </div>
 
-        <p className="mt-6 text-center text-xs text-slate-500">
-          Enrolled in Course AIDS 12605.1 without access?{" "}
-          <span className="font-semibold text-slate-700">Contact Course Faculty or Dept Admin</span>
-        </p>
+        <div className="mt-6 text-center space-y-1 text-xs text-slate-500">
+          <p>
+            Enrolled in Course AIDS 12605.1 without access?{" "}
+            <span className="font-semibold text-slate-700">Contact Course Faculty or Dept Admin</span>
+          </p>
+          <p className="text-[10px] text-slate-400">
+            Adani University (AIHER) • 100% Free Accredited Non-Commercial Academic Platform
+          </p>
+        </div>
       </div>
 
       {/* FIRST TIME LOGIN PASSWORD CHANGE MODAL */}
