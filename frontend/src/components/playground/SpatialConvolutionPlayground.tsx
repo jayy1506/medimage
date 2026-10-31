@@ -1,8 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Grid, Sparkles, RefreshCw, Layers, Eye, HelpCircle, Info } from "lucide-react";
+import { Grid, Sparkles, RefreshCw, Layers, Eye, HelpCircle, Info, Sliders } from "lucide-react";
 import { MathView, EquationCard } from "@/components/ui/MathView";
+import CurtainCompareSlider from "./CurtainCompareSlider";
+import LiveHistogramView from "./LiveHistogramView";
+import { computeHistogram, HistogramData } from "@/lib/imagingEngine";
 
 interface FilterPreset {
   name: string;
@@ -84,6 +87,8 @@ export default function SpatialConvolutionPlayground() {
   const [divisor, setDivisor] = useState<number>(FILTER_PRESETS[0].divisor);
   const [bias, setBias] = useState<number>(FILTER_PRESETS[0].bias);
   const [activePreset, setActivePreset] = useState<string>("Sobel Horizontal (Gx)");
+  const [viewMode, setViewMode] = useState<"side" | "curtain">("side");
+  const [histogram, setHistogram] = useState<HistogramData | null>(null);
 
   // Interactive Inspector state
   const [inspectedCoord, setInspectedCoord] = useState<{ x: number; y: number } | null>({ x: 100, y: 100 });
@@ -201,6 +206,7 @@ export default function SpatialConvolutionPlayground() {
     }
 
     ctx.putImageData(imgData, 0, 0);
+    setHistogram(computeHistogram(imgData));
 
     if (inspectedCoord) {
       ctx.strokeStyle = "#8B5CF6";
@@ -305,45 +311,93 @@ export default function SpatialConvolutionPlayground() {
         </div>
       </div>
 
+      {/* View Mode Selector */}
+      <div className="flex items-center justify-between bg-white p-3 rounded-2xl border border-slate-200 shadow-sm">
+        <span className="text-xs font-bold text-slate-800">Inspection Display Mode:</span>
+        <div className="flex rounded-xl bg-slate-100 p-1 space-x-1 text-xs font-bold text-slate-600">
+          <button
+            onClick={() => setViewMode("side")}
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              viewMode === "side"
+                ? "bg-white text-adani-purple shadow-sm font-extrabold"
+                : "hover:text-slate-900"
+            }`}
+          >
+            Side-by-Side (Pixel Hover)
+          </button>
+          <button
+            onClick={() => setViewMode("curtain")}
+            className={`px-3 py-1.5 rounded-lg transition-all ${
+              viewMode === "curtain"
+                ? "bg-white text-adani-purple shadow-sm font-extrabold"
+                : "hover:text-slate-900"
+            }`}
+          >
+            Curtain Compare Slider
+          </button>
+        </div>
+      </div>
+
       {/* Main Dual Stage */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Canvases: Before & After */}
         <div className="lg:col-span-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col items-center">
-              <span className="text-xs font-bold text-slate-700 mb-2 flex items-center gap-1">
-                <Layers className="w-3.5 h-3.5 text-slate-500" />
-                Original Anatomical Scan
-              </span>
-              <div className="p-2 bg-slate-950 rounded-2xl border border-slate-800 shadow-md">
-                <canvas
-                  ref={origCanvasRef}
-                  width={200}
-                  height={200}
-                  onMouseMove={handleCanvasMouseMove}
-                  className="rounded-xl w-44 h-44 cursor-crosshair [image-rendering:pixelated]"
-                />
+          {viewMode === "side" ? (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col items-center">
+                <span className="text-xs font-bold text-slate-700 mb-2 flex items-center gap-1">
+                  <Layers className="w-3.5 h-3.5 text-slate-500" />
+                  Original Scan
+                </span>
+                <div className="p-2 bg-slate-950 rounded-2xl border border-slate-800 shadow-md">
+                  <canvas
+                    ref={origCanvasRef}
+                    width={200}
+                    height={200}
+                    onMouseMove={handleCanvasMouseMove}
+                    className="rounded-xl w-44 h-44 cursor-crosshair [image-rendering:pixelated]"
+                  />
+                </div>
+                <span className="text-[10px] text-slate-400 mt-1.5">Hover to inspect 3×3 patch</span>
               </div>
-              <span className="text-[10px] text-slate-400 mt-1.5">Synthetic Rib/Spine Thorax</span>
-            </div>
 
-            <div className="flex flex-col items-center">
-              <span className="text-xs font-bold text-adani-purple mb-2 flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5 text-adani-purple" />
-                Filtered Output
-              </span>
-              <div className="p-2 bg-slate-950 rounded-2xl border border-slate-800 shadow-md">
-                <canvas
-                  ref={filteredCanvasRef}
-                  width={200}
-                  height={200}
-                  onMouseMove={handleCanvasMouseMove}
-                  className="rounded-xl w-44 h-44 cursor-crosshair [image-rendering:pixelated]"
-                />
+              <div className="flex flex-col items-center">
+                <span className="text-xs font-bold text-adani-purple mb-2 flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-adani-purple" />
+                  Filtered Output
+                </span>
+                <div className="p-2 bg-slate-950 rounded-2xl border border-slate-800 shadow-md">
+                  <canvas
+                    ref={filteredCanvasRef}
+                    width={200}
+                    height={200}
+                    onMouseMove={handleCanvasMouseMove}
+                    className="rounded-xl w-44 h-44 cursor-crosshair [image-rendering:pixelated]"
+                  />
+                </div>
+                <span className="text-[10px] text-slate-400 mt-1.5">Convolved response</span>
               </div>
-              <span className="text-[10px] text-slate-400 mt-1.5">Real-time Convolved Response</span>
             </div>
-          </div>
+          ) : (
+            <div className="flex flex-col items-center">
+              <CurtainCompareSlider
+                beforeCanvasRef={origCanvasRef}
+                afterCanvasRef={filteredCanvasRef}
+                beforeLabel="Original Scan"
+                afterLabel={activePreset}
+                width={360}
+                height={360}
+              />
+              {/* Hidden canvases for rendering source */}
+              <div className="hidden">
+                <canvas ref={origCanvasRef} width={200} height={200} />
+                <canvas ref={filteredCanvasRef} width={200} height={200} />
+              </div>
+            </div>
+          )}
+
+          {/* Live Intensity Histogram */}
+          <LiveHistogramView histogram={histogram} title="Convolved Intensity Histogram" />
 
           {/* Interactive Voxel 3x3 Neighborhood Math Inspector */}
           {currentPatch && (

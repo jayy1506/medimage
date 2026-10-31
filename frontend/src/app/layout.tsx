@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProgressProvider } from "@/context/ProgressContext";
+import { GamificationProvider } from "@/context/GamificationContext";
 import FloatingAiTutorModal from "@/components/tutor/FloatingAiTutorModal";
 
 export const metadata: Metadata = {
@@ -22,8 +23,10 @@ export default function RootLayout({
       <body className="min-h-screen antialiased flex flex-col">
         <AuthProvider>
           <ProgressProvider>
-            {children}
-            <FloatingAiTutorModal />
+            <GamificationProvider>
+              {children}
+              <FloatingAiTutorModal />
+            </GamificationProvider>
           </ProgressProvider>
         </AuthProvider>
       </body>

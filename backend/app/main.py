@@ -9,6 +9,7 @@ from app.api.v1.tutor import router as tutor_router
 from app.api.v1.faculty import router as faculty_router
 from app.api.v1.roster import router as roster_router
 from app.api.v1.curriculum import router as curriculum_router
+from app.api.v1.missions import router as missions_router
 
 # Initialize Sentry Monitoring (Free Tier)
 if settings.SENTRY_DSN:
@@ -46,6 +47,7 @@ app.include_router(tutor_router, prefix="/api/v1")
 app.include_router(faculty_router, prefix="/api/v1")
 app.include_router(roster_router, prefix="/api/v1")
 app.include_router(curriculum_router, prefix="/api/v1")
+app.include_router(missions_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["System"])
