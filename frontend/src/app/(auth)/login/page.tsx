@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Lock, Mail, ArrowRight, ShieldAlert, CheckCircle2, Eye, EyeOff, KeyRound } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -111,9 +112,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-slate-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
         <div className="inline-flex items-center justify-center gap-2 mb-4">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-600 via-purple-600 to-pink-600 flex items-center justify-center text-white font-black text-base shadow-lg shadow-purple-600/30">
-            AI
-          </div>
+          <BrandLogo className="w-16 h-16" size={64} />
         </div>
         <h2 className="text-xs font-bold uppercase tracking-widest text-adani-cyan">
           Faculty of Engineering and Technology

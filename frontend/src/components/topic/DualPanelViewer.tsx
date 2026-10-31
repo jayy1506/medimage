@@ -13,7 +13,9 @@ import {
   Sparkles, 
   Layers, 
   FileCheck,
-  AlertCircle
+  AlertCircle,
+  Award,
+  ArrowRight
 } from "lucide-react";
 import MermaidDiagram from "@/components/diagrams/MermaidDiagram";
 import QuickCheckQuiz, { QuickCheckQuestion } from "@/components/topic/QuickCheckQuiz";
@@ -22,6 +24,8 @@ import { UserNav } from "@/components/UserNav";
 import { useProgress } from "@/context/ProgressContext";
 import { RichContentRenderer } from "@/components/ui/RichContentRenderer";
 import { EquationCard } from "@/components/ui/MathView";
+import { BrandLogo } from "@/components/BrandLogo";
+import { SUBTOPIC_5_MCQS_REGISTRY } from "@/data/subtopicQuizDatabase";
 
 export interface SectionData {
   id: string;
@@ -111,9 +115,9 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
   }, [topic.sections]);
 
   // Determine active visual according to current active section
-  const currentSection = topic.sections.find((s) => s.id === activeSectionId) || topic.sections[0];
-  const linkedDiagram = topic.diagrams.find((d) => d.id === currentSection?.linked_diagram_id) || topic.diagrams[0];
-  const activeAsset = topic.visual_assets[0];
+  const currentSection = (topic.sections || []).find((s) => s.id === activeSectionId) || topic.sections?.[0];
+  const linkedDiagram = (topic.diagrams || []).find((d) => d.id === currentSection?.linked_diagram_id) || topic.diagrams?.[0];
+  const activeAsset = (topic.visual_assets || [])[0];
 
   const handleNodeClick = (nodeId: string) => {
     setHighlightedNode(nodeId);
@@ -141,6 +145,9 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
+            <Link href="/dashboard" className="flex items-center mr-1" title="Adani University Dashboard">
+              <BrandLogo className="w-8 h-8" size={32} />
+            </Link>
             <Link
               href="/course"
               className="text-xs font-semibold text-slate-500 hover:text-adani-navy flex items-center"
@@ -267,10 +274,17 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
               );
             })}
 
-            {/* Quick Check Formative Quiz */}
-            {topic.quick_checks && topic.quick_checks.length > 0 && (
-              <QuickCheckQuiz questions={topic.quick_checks} />
-            )}
+            {/* Formative 5-Question Subtopic Mastery Quiz */}
+            {(() => {
+              const subtopicQuestions: QuickCheckQuestion[] = (
+                SUBTOPIC_5_MCQS_REGISTRY[topic.slug] && SUBTOPIC_5_MCQS_REGISTRY[topic.slug].length > 0
+              ) ? SUBTOPIC_5_MCQS_REGISTRY[topic.slug]
+                : (topic.quick_checks || []);
+
+              return subtopicQuestions.length > 0 ? (
+                <QuickCheckQuiz questions={subtopicQuestions} />
+              ) : null;
+            })()}
 
             {/* Topic Mastery & Completion Card */}
             <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -315,8 +329,44 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
               </button>
             </div>
 
+            {/* End of Module Assessment Redirect Card (When all subtopics in this module are reached) */}
+            {!topic.next_topic_slug && (
+              <div className="p-5 rounded-2xl bg-gradient-to-r from-adani-navy via-slate-900 to-adani-dark text-white shadow-lg border border-slate-800">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-adani-cyan/20 text-adani-cyan text-[10px] font-bold uppercase tracking-wider">
+                      <Award className="w-3 h-3 mr-1" />
+                      Module {topic.module.module_number} Complete
+                    </div>
+                    <h3 className="text-sm font-extrabold text-white">
+                      All Subtopics in Module {topic.module.module_number} Cleared!
+                    </h3>
+                    <p className="text-xs text-slate-300 max-w-xl">
+                      Proceed to the 15-MCQ Module Evaluation or test your overall mastery across the entire course with the 40-MCQ Grand Capstone Assessment.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 flex-shrink-0">
+                    <Link
+                      href={`/course/${topic.module.id}/quiz`}
+                      className="inline-flex items-center justify-center px-3.5 py-2 text-xs font-bold rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all"
+                    >
+                      Module Quiz (15 MCQs)
+                    </Link>
+                    <Link
+                      href="/course/capstone"
+                      className="inline-flex items-center justify-center px-3.5 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-adani-cyan to-adani-purple text-white shadow-md hover:opacity-95 transition-all"
+                    >
+                      <Award className="w-3.5 h-3.5 mr-1" />
+                      Final Assessment (40 MCQs)
+                      <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Navigation Bar (Previous / Next Topic) */}
-            <div className="pt-8 border-t border-slate-200 flex items-center justify-between">
+            <div className="pt-8 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
               {topic.previous_topic_slug ? (
                 <Link
                   href={`/course/${topic.module.id}/${topic.previous_topic_slug}`}
@@ -336,13 +386,23 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </Link>
               ) : (
-                <Link
-                  href={`/course/${topic.module.id}/quiz`}
-                  className="inline-flex items-center px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-adani-cyan to-adani-purple hover:opacity-95 rounded-lg shadow-sm transition-all"
-                >
-                  Take Module Quiz (&gt;75% Rule)
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </Link>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link
+                    href={`/course/${topic.module.id}/quiz`}
+                    className="inline-flex items-center px-4 py-2 text-xs font-bold text-white bg-adani-navy hover:bg-adani-dark rounded-lg shadow-sm transition-all"
+                  >
+                    Module Quiz (15 Qs)
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Link>
+                  <Link
+                    href="/course/capstone"
+                    className="inline-flex items-center px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-adani-cyan via-adani-purple to-adani-magenta hover:opacity-95 rounded-lg shadow-md transition-all"
+                  >
+                    <Award className="w-4 h-4 mr-1.5" />
+                    40-MCQ Capstone Assessment
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Link>
+                </div>
               )}
             </div>
           </div>

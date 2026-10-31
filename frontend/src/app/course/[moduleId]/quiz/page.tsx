@@ -14,6 +14,7 @@ import {
   HelpCircle
 } from "lucide-react";
 import { UserNav } from "@/components/UserNav";
+import { BrandLogo } from "@/components/BrandLogo";
 import { useProgress } from "@/context/ProgressContext";
 import { MODULE_QUIZ_REGISTRY, QuizQuestionItem } from "@/data/quizDatabase";
 import { ALL_MODULES } from "@/data/curriculumData";
@@ -81,10 +82,13 @@ export default function ModuleQuizPage({
         <div className="flex items-center justify-between">
           <Link
             href="/course"
-            className="inline-flex items-center text-xs font-semibold text-slate-500 hover:text-adani-navy transition-colors"
+            className="inline-flex items-center text-xs font-semibold text-slate-500 hover:text-adani-navy transition-colors gap-2"
           >
-            <ChevronLeft className="w-4 h-4 mr-1" />
-            Back to Course Syllabus
+            <BrandLogo className="w-7 h-7" size={28} />
+            <div className="flex items-center">
+              <ChevronLeft className="w-4 h-4 mr-0.5" />
+              <span>Back to Course Syllabus</span>
+            </div>
           </Link>
 
           <div className="flex items-center space-x-3">

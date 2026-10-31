@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { UserNav } from "@/components/UserNav";
 import { useProgress } from "@/context/ProgressContext";
 import { ALL_MODULES } from "@/data/curriculumData";
+import { BrandLogo } from "@/components/BrandLogo";
 import {
   Award,
   CheckCircle2,
@@ -26,7 +27,9 @@ import {
   Code,
   Sliders,
   Shield,
-  FileText
+  FileText,
+  HelpCircle,
+  Bot
 } from "lucide-react";
 
 interface TopicItem {
@@ -71,9 +74,21 @@ export default function UnifiedCurriculumDashboard() {
 
   const [mounted, setMounted] = useState(false);
   const [expandedModule, setExpandedModule] = useState<string>("mod-1");
+  const [showResetConfirm, setShowResetConfirm] = useState<boolean>(false);
+  const [isResetting, setIsResetting] = useState<boolean>(false);
+  const [toolsDropdownOpen, setToolsDropdownOpen] = useState<boolean>(false);
+  const toolsMenuRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (toolsMenuRef.current && !toolsMenuRef.current.contains(e.target as Node)) {
+        setToolsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Dynamically map all 6 accredited curriculum modules from live progress
@@ -116,54 +131,132 @@ export default function UnifiedCurriculumDashboard() {
 
   const totalModules = modules.length;
   const candidateEmail = profile?.email || user?.email || "student@adani.edu.in";
+  const candidateName = profile?.full_name || 
+    (user?.displayName) || 
+    (candidateEmail.includes("@") 
+      ? candidateEmail.split("@")[0].replace(/[0-9]/g, "").replace(/\./g, " ").trim().split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") 
+      : "Jay Thakre") || "Jay Thakre";
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col">
-      {/* Institutional Top Navbar (White Theme) */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+      {/* Institutional Top Navbar (Classy, Spacious & Modern) */}
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 via-purple-600 to-pink-500 flex items-center justify-center text-white font-black text-sm shadow-sm">
-              AI
-            </div>
+            <BrandLogo className="w-9 h-9" size={38} />
             <div>
-              <span className="text-sm font-bold tracking-wide text-adani-navy block">
+              <span className="text-sm font-bold tracking-tight text-adani-navy block">
                 Adani Institute of Higher Education and Research
               </span>
-              <span className="text-xs text-adani-cyan font-semibold">
+              <span className="text-[11px] text-adani-cyan font-semibold">
                 Faculty of Engineering &amp; Technology • AIDS 12605.1
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Link
-              href="/playground"
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-adani-navy bg-slate-100 hover:bg-slate-200/80 transition-colors flex items-center gap-1.5 border border-slate-200"
-            >
-              <Layers className="w-3.5 h-3.5 text-adani-purple" />
-              Playgrounds
-            </Link>
-
-            {role && ["admin", "faculty"].includes(role) && (
+          {/* Clean, Classy Navigation Controls */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            <nav className="hidden md:flex items-center gap-1.5 text-xs font-semibold">
               <Link
-                href="/faculty"
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-adani-purple bg-purple-50 hover:bg-purple-100/80 border border-purple-200 transition-colors flex items-center gap-1.5"
+                href="/dashboard"
+                className="px-3 py-1.5 rounded-lg text-adani-cyan bg-sky-50 font-bold border border-sky-100 transition-colors"
               >
-                <Sparkles className="w-3.5 h-3.5" />
-                Faculty Studio
+                Curriculum
               </Link>
-            )}
-
-            {role === "admin" && (
               <Link
-                href="/admin"
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-adani-purple bg-purple-50 hover:bg-purple-100/80 border border-purple-200 transition-colors flex items-center gap-1.5"
+                href="/tutor"
+                className="px-3 py-1.5 rounded-lg text-slate-700 hover:text-adani-purple hover:bg-purple-50 transition-colors flex items-center gap-1.5"
               >
-                <Shield className="w-3.5 h-3.5" />
-                Admin Console
+                <Sparkles className="w-3.5 h-3.5 text-adani-purple" />
+                <span>AI Tutor</span>
               </Link>
-            )}
+              <Link
+                href="/help"
+                className="px-3 py-1.5 rounded-lg text-slate-700 hover:text-slate-900 hover:bg-slate-100 transition-colors flex items-center gap-1.5"
+              >
+                <HelpCircle className="w-3.5 h-3.5 text-slate-500" />
+                <span>Help &amp; Docs</span>
+              </Link>
+            </nav>
+
+            {/* Consolidated Secondary Tools Dropdown */}
+            <div className="relative" ref={toolsMenuRef}>
+              <button
+                onClick={() => setToolsDropdownOpen(!toolsDropdownOpen)}
+                className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-100 border border-slate-200/90 transition-colors flex items-center gap-1.5"
+                title="Academic Tools & Studio"
+              >
+                <Layers className="w-3.5 h-3.5 text-slate-500" />
+                <span className="hidden sm:inline">Tools</span>
+                <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${toolsDropdownOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {toolsDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-52 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100">
+                  <Link
+                    href="/playground"
+                    onClick={() => setToolsDropdownOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 text-slate-700 hover:bg-slate-50 hover:text-adani-navy transition-colors font-medium"
+                  >
+                    <Sliders className="w-3.5 h-3.5 text-adani-cyan" />
+                    Interactive Playgrounds
+                  </Link>
+
+                  <Link
+                    href="/tutor"
+                    onClick={() => setToolsDropdownOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 text-slate-700 hover:bg-slate-50 hover:text-adani-purple transition-colors font-medium"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-adani-purple" />
+                    Claude-Style AI Tutor
+                  </Link>
+
+                  <Link
+                    href="/help"
+                    onClick={() => setToolsDropdownOpen(false)}
+                    className="flex items-center gap-2 px-3 py-2 text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors font-medium"
+                  >
+                    <HelpCircle className="w-3.5 h-3.5 text-slate-500" />
+                    Help &amp; Documentation
+                  </Link>
+
+                  {role && ["admin", "faculty"].includes(role) && (
+                    <Link
+                      href="/faculty"
+                      onClick={() => setToolsDropdownOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 text-adani-purple hover:bg-purple-50 transition-colors font-medium"
+                    >
+                      <Shield className="w-3.5 h-3.5 text-adani-purple" />
+                      Faculty Studio
+                    </Link>
+                  )}
+
+                  {role === "admin" && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setToolsDropdownOpen(false)}
+                      className="flex items-center gap-2 px-3 py-2 text-adani-purple hover:bg-purple-50 transition-colors font-medium"
+                    >
+                      <Shield className="w-3.5 h-3.5 text-adani-purple" />
+                      Admin Console
+                    </Link>
+                  )}
+
+                  <div className="border-t border-slate-100 my-1" />
+
+                  <button
+                    onClick={() => {
+                      setToolsDropdownOpen(false);
+                      setShowResetConfirm(true);
+                    }}
+                    className="w-full text-left flex items-center gap-2 px-3 py-2 text-rose-600 hover:bg-rose-50 transition-colors font-medium"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-rose-500" />
+                    Reset Progress
+                  </button>
+                </div>
+              )}
+            </div>
 
             <div className="h-4 w-px bg-slate-200" />
             <UserNav />
@@ -173,7 +266,7 @@ export default function UnifiedCurriculumDashboard() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-        {/* Banner with Progress Dial (White Theme) */}
+        {/* Banner with Candidate Identity & Progress Dial */}
         <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm relative overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
             <div>
@@ -187,18 +280,43 @@ export default function UnifiedCurriculumDashboard() {
                   Accredited Study Notes • AIDS 12605.1
                 </span>
               </div>
+
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
                 Medical Text and Image Processing
               </h1>
-              <p className="text-slate-600 text-xs sm:text-sm mt-1 max-w-2xl leading-relaxed">
-                Candidate: <span className="text-adani-cyan font-mono font-bold">{candidateEmail}</span>.
+
+              {/* Attractive Scholar Profile Banner */}
+              <div className="flex flex-wrap items-center gap-2.5 mt-2.5">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/90 border border-slate-200">
+                  <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-adani-cyan to-adani-purple flex items-center justify-center text-white font-bold text-[10px] shadow-xs">
+                    {candidateName.charAt(0)}
+                  </div>
+                  <span className="text-xs font-bold text-slate-900">{candidateName}</span>
+                  <span className="text-slate-300 text-xs">•</span>
+                  <span className="text-[11px] text-slate-600 font-medium">B.Tech AI &amp; Data Science</span>
+                  <span className="text-slate-300 text-xs">•</span>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    Enrolled Scholar
+                  </span>
+                </div>
+
+                <Link
+                  href="/tutor"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-adani-purple border border-purple-200 text-xs font-bold transition-colors"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Ask MedAI Tutor</span>
+                </Link>
+              </div>
+
+              <p className="text-slate-500 text-xs mt-2.5 max-w-2xl leading-relaxed">
                 Concept → Example → Application question methodology active across all 6 foundational modules with strict &gt;75.0% pass rule.
               </p>
             </div>
 
-            {/* Dial & Stats */}
+            {/* Dynamic Progress Dial & Live Stats */}
             <div className="flex items-center gap-6 bg-slate-50 border border-slate-200 p-4 rounded-2xl shadow-inner">
-              <div className="relative w-16 h-16 flex items-center justify-center">
+              <div className="relative w-16 h-16 flex items-center justify-center flex-shrink-0">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
                   <path
                     className="text-slate-200"
@@ -223,11 +341,14 @@ export default function UnifiedCurriculumDashboard() {
               </div>
 
               <div className="space-y-0.5">
-                <span className="text-xs text-slate-500 font-bold block">Mastery Clearance</span>
-                <span className="text-sm font-black text-slate-900 block">
-                  {clearedModulesCount} of {totalModules} Modules Cleared
+                <span className="text-xs text-slate-500 font-bold block">Overall Course Progress</span>
+                <span className="text-xs font-bold text-slate-800 block">
+                  {completedTopicsCount} of {totalTopicsCount} Topics Completed
                 </span>
-                <span className="text-[11px] text-amber-700 font-semibold flex items-center gap-1">
+                <span className="text-[11px] text-slate-600 block">
+                  {clearedModulesCount} of {totalModules} Modules Cleared (&gt;75%)
+                </span>
+                <span className="text-[10px] text-amber-700 font-semibold flex items-center gap-1 pt-0.5">
                   <TrendingUp className="w-3 h-3 text-amber-600" /> Pass Rule: &gt; 75.00%
                 </span>
               </div>
@@ -460,7 +581,7 @@ export default function UnifiedCurriculumDashboard() {
                             <Link
                               key={t.id}
                               href={`/course/${m.id}/${t.slug}`}
-                              className="p-3 bg-white hover:bg-slate-50 border border-slate-200 hover:border-adani-cyan rounded-xl flex items-center justify-between group transition-all shadow-sm"
+                              className="p-3 bg-white hover:bg-slate-50 border border-slate-200 hover:border-adani-cyan active:bg-slate-100 active:border-adani-cyan rounded-xl flex items-center justify-between group transition-all shadow-sm touch-manipulation cursor-pointer select-none active:scale-[0.99]"
                             >
                               <div className="flex items-center gap-3">
                                 {t.isCompleted ? (
@@ -554,8 +675,11 @@ export default function UnifiedCurriculumDashboard() {
           </div>
         </section>
 
-        {/* Footer with No Image Logo */}
+        {/* Footer with Official Logo */}
         <footer className="border-t border-slate-200 pt-6 text-center text-xs text-slate-500 space-y-1">
+          <div className="flex justify-center mb-2">
+            <BrandLogo className="w-8 h-8" size={32} />
+          </div>
           <p>
             AIDS 12605.1 Medical Text and Image Processing • Faculty of Engineering and Technology
           </p>
@@ -564,6 +688,52 @@ export default function UnifiedCurriculumDashboard() {
           </p>
         </footer>
       </main>
+
+      {/* Curriculum Reset Confirmation Modal */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-center space-x-3 text-rose-600">
+              <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center">
+                <RotateCcw className="w-5 h-5 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Reset Curriculum Progress?</h3>
+                <p className="text-xs text-slate-500">This action will reset your progress to 0%.</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200">
+              All 36 completed topic checkmarks, module quiz scores, and course completion milestones will be reset back to zero. You will be able to retake all formative checks and quizzes from the beginning.
+            </p>
+
+            <div className="flex items-center justify-end space-x-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowResetConfirm(false)}
+                disabled={isResetting}
+                className="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isResetting}
+                onClick={async () => {
+                  setIsResetting(true);
+                  await resetProgress();
+                  setIsResetting(false);
+                  setShowResetConfirm(false);
+                }}
+                className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-sm transition-colors flex items-center space-x-1.5"
+              >
+                <RotateCcw className={`w-3.5 h-3.5 ${isResetting ? "animate-spin" : ""}`} />
+                <span>{isResetting ? "Resetting..." : "Yes, Reset Everything"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -259,7 +259,16 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
   // Derived metrics
   const completedTopicsCount = completedTopics.length;
   const clearedModulesCount = clearedModules.length;
-  const completionPct = Math.min(100, Math.round((clearedModulesCount / 6) * 100));
+  
+  // Dynamic blended course progress: reflects both topic study and assessment mastery
+  const completionPct = useMemo(() => {
+    const total = Math.max(totalTopicsCount, 36);
+    const topicRatio = completedTopicsCount / total;
+    const moduleRatio = clearedModulesCount / 6;
+    // 60% weight on completing curriculum topics + 40% weight on cleared assessments
+    const blended = Math.round(topicRatio * 60 + moduleRatio * 40);
+    return Math.min(100, Math.max(0, blended));
+  }, [completedTopicsCount, totalTopicsCount, clearedModulesCount]);
 
   // Dynamic Course Outcome (CO) Attainments calculated from user progress
   const coAttainments = useMemo((): COAttainment[] => {

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { UserNav } from "@/components/UserNav";
+import { BrandLogo } from "@/components/BrandLogo";
 import { 
   BookOpen, 
   ShieldCheck, 
@@ -71,9 +72,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 via-purple-600 to-pink-500 flex items-center justify-center text-white font-black text-sm shadow-md">
-                AI
-              </div>
+              <BrandLogo className="w-10 h-10" size={40} />
               <div>
                 <span className="text-base font-extrabold tracking-tight text-adani-navy block leading-none">
                   Adani University
@@ -236,9 +235,7 @@ export default function HomePage() {
       <footer className="bg-adani-dark text-slate-400 text-xs py-8 border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-sky-500 via-purple-600 to-pink-500 flex items-center justify-center text-white font-black text-xs shadow-sm">
-              AI
-            </div>
+            <BrandLogo className="w-7 h-7" size={28} />
             <span className="font-semibold text-slate-300">Adani University</span>
             <span>• Faculty of Engineering and Technology</span>
           </div>

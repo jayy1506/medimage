@@ -7,6 +7,7 @@ import WindowLevelPlayground from "@/components/playground/WindowLevelPlayground
 import SpatialConvolutionPlayground from "@/components/playground/SpatialConvolutionPlayground";
 import DicomExplorerPlayground from "@/components/playground/DicomExplorerPlayground";
 import { UserNav } from "@/components/UserNav";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export default function PlaygroundPage() {
   const [activeTab, setActiveTab] = useState<"windowing" | "convolution" | "dicom">("windowing");
@@ -21,9 +22,7 @@ export default function PlaygroundPage() {
               <ChevronLeft className="w-5 h-5" />
             </Link>
             <Link href="/dashboard" className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 via-purple-600 to-pink-500 flex items-center justify-center text-white font-black text-xs shadow-sm">
-                AI
-              </div>
+              <BrandLogo className="w-9 h-9" size={36} />
               <span className="text-sm font-bold tracking-tight text-adani-navy hidden sm:inline-block">
                 Adani University
               </span>

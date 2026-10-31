@@ -111,13 +111,22 @@ export function UserNav() {
                 Course Dashboard
               </Link>
 
+              <Link
+                href="/tutor"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2.5 px-4 py-2 font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                <Sparkles className="w-4 h-4 text-adani-purple" />
+                MedAI Clinical Tutor
+              </Link>
+
               {userRole === "faculty" && (
                 <Link
                   href="/faculty"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-2.5 px-4 py-2 hover:bg-slate-50 font-medium text-adani-purple transition-colors"
                 >
-                  <Sparkles className="w-4 h-4 text-adani-purple" />
+                  <Shield className="w-4 h-4 text-adani-purple" />
                   Faculty Studio
                 </Link>
               )}
@@ -136,17 +145,14 @@ export function UserNav() {
 
             {/* Help & Support Option */}
             <div className="py-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsOpen(false);
-                  setShowHelpModal(true);
-                }}
+              <Link
+                href="/help"
+                onClick={() => setIsOpen(false)}
                 className="w-full text-left flex items-center gap-2.5 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-sky-50 hover:text-adani-navy transition-colors"
               >
                 <HelpCircle className="w-4 h-4 text-adani-cyan" />
                 Help &amp; Documentation
-              </button>
+              </Link>
             </div>
 
             <div className="border-t border-slate-100 pt-1">

@@ -17,6 +17,7 @@ import {
   FileText
 } from "lucide-react";
 import { UserNav } from "@/components/UserNav";
+import { BrandLogo } from "@/components/BrandLogo";
 import { useProgress } from "@/context/ProgressContext";
 import { GRAND_CAPSTONE_40_QUESTIONS, QuizQuestionItem } from "@/data/quizDatabase";
 
@@ -79,10 +80,13 @@ export default function GrandCapstoneExamPage() {
         <div className="flex items-center justify-between">
           <Link
             href="/dashboard"
-            className="inline-flex items-center text-xs font-semibold text-slate-500 hover:text-adani-navy transition-colors"
+            className="inline-flex items-center text-xs font-semibold text-slate-500 hover:text-adani-navy transition-colors gap-2"
           >
-            <ChevronLeft className="w-4 h-4 mr-1" />
-            Back to Course Dashboard
+            <BrandLogo className="w-7 h-7" size={28} />
+            <div className="flex items-center">
+              <ChevronLeft className="w-4 h-4 mr-0.5" />
+              <span>Back to Course Dashboard</span>
+            </div>
           </Link>
 
           <div className="flex items-center space-x-3">

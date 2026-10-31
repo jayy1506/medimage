@@ -23,6 +23,7 @@ import {
   QUICK_FORMULAS, 
   STUDENT_NOTE_METADATA 
 } from "@/data/curriculumData";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export default function CourseDashboardPage() {
   const { user, profile } = useAuth();
@@ -38,9 +39,7 @@ export default function CourseDashboardPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Link href="/dashboard" className="flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 via-purple-600 to-pink-500 flex items-center justify-center text-white font-black text-xs shadow-sm">
-                AI
-              </div>
+              <BrandLogo className="w-9 h-9" size={36} />
               <span className="text-sm font-bold tracking-tight text-adani-navy hidden sm:inline-block">
                 Adani University
               </span>

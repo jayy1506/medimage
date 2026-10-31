@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { UserNav } from "@/components/UserNav";
+import { BrandLogo } from "@/components/BrandLogo";
 import {
   Users,
   Shield,
@@ -470,9 +471,7 @@ export default function AdminDashboardPage() {
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 via-purple-600 to-pink-500 flex items-center justify-center text-white font-black text-sm shadow-sm">
-              AI
-            </div>
+            <BrandLogo className="w-10 h-10" size={40} />
             <div>
               <span className="text-sm font-bold tracking-tight text-adani-navy block">
                 Adani Institute of Higher Education and Research

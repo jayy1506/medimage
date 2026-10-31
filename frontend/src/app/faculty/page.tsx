@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { UserNav } from "@/components/UserNav";
+import { BrandLogo } from "@/components/BrandLogo";
 import { 
   Sparkles, 
   CheckCircle2, 
@@ -423,9 +424,7 @@ export default function FacultyStudioPage() {
               <ChevronLeft className="w-5 h-5" />
             </Link>
             <Link href="/dashboard" className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-500 via-purple-600 to-pink-500 flex items-center justify-center text-white font-black text-xs shadow-sm">
-                AI
-              </div>
+              <BrandLogo className="w-9 h-9" size={36} />
               <div>
                 <span className="text-sm font-bold tracking-tight text-adani-navy block leading-none">
                   Adani University

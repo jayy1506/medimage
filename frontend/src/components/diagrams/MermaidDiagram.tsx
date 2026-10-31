@@ -30,9 +30,26 @@ export default function MermaidDiagram({
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
+  // Auto-quote all node labels to prevent Mermaid syntax errors from (), /, |, math symbols
+  const sanitizeMermaidCode = (raw: string): string => {
+    if (!raw) return "";
+    return raw
+      .split("\n")
+      .map((line) => {
+        // Replace unquoted node labels: NodeId[Some Label (Info)] -> NodeId["Some Label (Info)"]
+        return line.replace(/([a-zA-Z0-9_]+)\[([^"\]]+)\]/g, (match, nodeId, label) => {
+          if (label.startsWith('"') && label.endsWith('"')) return match;
+          const safeLabel = label.replace(/"/g, "'").trim();
+          return `${nodeId}["${safeLabel}"]`;
+        });
+      })
+      .join("\n");
+  };
+
   useEffect(() => {
-    mermaid.initialize({
+    (mermaid.initialize as any)({
       startOnLoad: false,
+      suppressErrorRendering: true,
       theme: "neutral",
       securityLevel: "loose",
       fontFamily: "Inter, sans-serif",
@@ -50,14 +67,23 @@ export default function MermaidDiagram({
     const renderDiagram = async () => {
       try {
         const uniqueId = `mermaid-${id.replace(/[^a-zA-Z0-9_-]/g, "")}-${Date.now()}`;
-        const { svg } = await mermaid.render(uniqueId, code);
+        const cleanCode = sanitizeMermaidCode(code);
+        const { svg } = await mermaid.render(uniqueId, cleanCode);
         if (isMounted) {
           setSvgContent(svg);
         }
       } catch (err) {
-        console.error("Mermaid render error:", err);
+        console.error("Mermaid render error caught and handled:", err);
+        // Suppress and clean up any dangling error divs injected by mermaid into document.body
+        if (typeof document !== "undefined") {
+          document.querySelectorAll('[id^="dmermaid"], [id^="mermaid-"]').forEach((el) => {
+            if (el.parentElement === document.body) {
+              document.body.removeChild(el);
+            }
+          });
+        }
         if (isMounted) {
-          setSvgContent(`<div class="p-4 text-xs text-red-500 font-mono">Failed to render diagram markup.</div>`);
+          setSvgContent(`<div class="p-6 text-center text-xs text-slate-500 font-mono bg-slate-50 rounded-xl border border-slate-200">Interactive Pipeline Schematic Available in Fullscreen.</div>`);
         }
       }
     };

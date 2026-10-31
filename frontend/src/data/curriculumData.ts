@@ -568,12 +568,12 @@ export const TOPICS_DATA_REGISTRY: Record<string, TopicPayload> = {
         title: "CT Reconstruction Pipeline: Projections to HU",
         diagram_type: "mermaid",
         code_or_markup: `graph TD
-    Rot[Rotating Tube & Detector: Projections p(s,θ)] --> Sino[Radon Transform: Sinogram Array]
-    Sino --> Ramp[Frequency Ramp Filter |ω|: Cancels 1/r Blur]
-    Ramp --> FBP[Back Projection: Angular Integration]
-    FBP --> Matrix[Attenuation Matrix μ(x,y)]
-    Matrix --> Scale[Calibrated Rescaling: HU = 1000 * (μ - μw)/μw]
-    Scale --> Vol[Volumetric CT Cross-Sections]
+    Rot["Rotating Tube & Detector: Projections p(s,θ)"] --> Sino["Radon Transform: Sinogram Array"]
+    Sino --> Ramp["Frequency Ramp Filter (High-Pass): Cancels 1/r Blur"]
+    Ramp --> FBP["Filtered Back Projection: Angular Integration"]
+    FBP --> Matrix["Attenuation Matrix μ(x,y)"]
+    Matrix --> Scale["Calibrated Rescaling: HU = 1000 * (μ - μw)/μw"]
+    Scale --> Vol["Volumetric CT Cross-Sections"]
     style Sino fill:#0077B6,color:#fff
     style Ramp fill:#662D91,color:#fff
     style Scale fill:#B82662,color:#fff`,

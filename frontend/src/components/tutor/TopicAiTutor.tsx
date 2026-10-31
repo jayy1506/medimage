@@ -49,44 +49,75 @@ export default function TopicAiTutor({
     setIsTyping(true);
 
     try {
-      // In production, queries POST /api/v1/tutor/chat
-      // Provide robust fallback response grounded in the course syllabus
-      setTimeout(() => {
-        let reply = `In accordance with the AIDS 12605.1 syllabus for ${topicTitle}, this principle relies on spatial attenuation coefficients and discrete sampling matrices.`;
-        let nodeToHighlight = undefined;
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+      const res = await fetch(`${API_BASE}/tutor/ask`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: userText,
+          topic_title: topicTitle,
+          topic_id: topicId
+        })
+      });
 
-        if (userText.toLowerCase().includes("bone") || userText.toLowerCase().includes("hu")) {
-          reply = `Dense cortical bone exhibits high linear attenuation ($\\mu$) relative to soft tissue and water. On the standardized Hounsfield scale, bone ranges from +1000 to +3000 HU, which appears bright white in standard CT windowing.`;
-          nodeToHighlight = "Tissue";
-        } else if (userText.toLowerCase().includes("sinogram") || userText.toLowerCase().includes("radon")) {
-          reply = `The Radon transform maps spatial density $f(x, y)$ into projection space $p(s, \\theta)$. Stacking these 1D projection profiles across 360 degrees forms the sinogram, which is subsequently reconstructed using filtered backprojection.`;
-          nodeToHighlight = "Sinogram";
-        } else if (userText.toLowerCase().includes("diagnose") || userText.toLowerCase().includes("cancer") || userText.toLowerCase().includes("tumor")) {
-          reply = `I am an educational AI tutor for B.Tech Medical Image Processing (AIDS 12605.1). I cannot interpret personal medical images or provide medical/diagnostic advice. Please consult a licensed medical professional.`;
+      if (res.ok) {
+        const data = await res.json();
+        if (data.highlight_diagram_node && onHighlightNode) {
+          onHighlightNode(data.highlight_diagram_node);
         }
-
-        if (nodeToHighlight && onHighlightNode) {
-          onHighlightNode(nodeToHighlight);
-        }
-
         setMessages((prev) => [
           ...prev,
           {
             sender: "tutor",
-            text: reply,
-            citations: [
+            text: data.response,
+            citations: data.citations || [
               {
                 topic_title: topicTitle,
                 section_number: 1,
                 reference_code: "AIDS-12605.1"
               }
             ],
-            highlightNode: nodeToHighlight
+            highlightNode: data.highlight_diagram_node
           }
         ]);
-        setIsTyping(false);
-      }, 700);
+      } else {
+        throw new Error("Tutor backend responded with error");
+      }
     } catch (err) {
+      // Academic syllabus-grounded fallback
+      let reply = `In accordance with the AIDS 12605.1 syllabus for ${topicTitle}, this principle relies on spatial attenuation coefficients and discrete sampling matrices.`;
+      let nodeToHighlight = undefined;
+
+      if (userText.toLowerCase().includes("bone") || userText.toLowerCase().includes("hu")) {
+        reply = `Dense cortical bone exhibits high linear attenuation ($\\mu$) relative to soft tissue and water. On the standardized Hounsfield scale, bone ranges from +1000 to +3000 HU, which appears bright white in standard CT windowing.`;
+        nodeToHighlight = "Tissue";
+      } else if (userText.toLowerCase().includes("sinogram") || userText.toLowerCase().includes("radon")) {
+        reply = `The Radon transform maps spatial density $f(x, y)$ into projection space $p(s, \\theta)$. Stacking these 1D projection profiles across 360 degrees forms the sinogram, which is subsequently reconstructed using filtered backprojection.`;
+        nodeToHighlight = "Sinogram";
+      } else if (userText.toLowerCase().includes("diagnose") || userText.toLowerCase().includes("cancer") || userText.toLowerCase().includes("tumor")) {
+        reply = `I am an educational AI tutor for B.Tech Medical Image Processing (AIDS 12605.1). I cannot interpret personal medical images or provide medical/diagnostic advice. Please consult a licensed medical professional.`;
+      }
+
+      if (nodeToHighlight && onHighlightNode) {
+        onHighlightNode(nodeToHighlight);
+      }
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: "tutor",
+          text: reply,
+          citations: [
+            {
+              topic_title: topicTitle,
+              section_number: 1,
+              reference_code: "AIDS-12605.1"
+            }
+          ],
+          highlightNode: nodeToHighlight
+        }
+      ]);
+    } finally {
       setIsTyping(false);
     }
   };
