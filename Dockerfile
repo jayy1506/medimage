@@ -42,8 +42,10 @@ COPY --from=frontend-builder /app/frontend/.next/standalone ./frontend/
 COPY --from=frontend-builder /app/frontend/.next/static ./frontend/.next/static
 COPY --from=frontend-builder /app/frontend/public ./frontend/public
 
-# 3. Copy startup script
+# 3. Copy startup scripts
 COPY start.sh /app/start.sh
+COPY start-platform.js /app/start-platform.js
+COPY package.json /app/package.json
 RUN chmod +x /app/start.sh
 
 ENV PORT=10000

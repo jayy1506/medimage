@@ -4,11 +4,10 @@
   "private": true,
   "description": "Medical Text and Image Processing (AIDS 12605.1) - Adani Institute of Higher Education and Research",
   "scripts": {
-    "postinstall": "npm --prefix frontend install",
-    "install:all": "npm --prefix frontend install",
     "dev": "npm --prefix frontend run dev",
-    "build": "npm --prefix frontend install && npm --prefix frontend run build",
-    "start": "npm --prefix frontend run start",
+    "build": "npm --prefix frontend run build",
+    "start": "node start-platform.js",
+    "start:frontend": "npm --prefix frontend run start",
     "lint": "npm --prefix frontend run lint"
   }
 }
