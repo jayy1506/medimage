@@ -103,6 +103,9 @@ export default function AdminDashboardPage() {
   const [resettingId, setResettingId] = useState<string | null>(null);
 
   const API_BASE = typeof window !== "undefined" ? "/api/v1" : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1");
+  const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "";
+  const UPSTASH_URL = process.env.NEXT_PUBLIC_UPSTASH_REDIS_REST_URL || "";
+  const UPSTASH_TOKEN = process.env.NEXT_PUBLIC_UPSTASH_REDIS_REST_TOKEN || "";
 
   const togglePasswordVisibility = (userId: string) => {
     setRevealedPasswords((prev) => ({
@@ -120,14 +123,16 @@ export default function AdminDashboardPage() {
   const handleSendSetupEmail = async (email: string, id: string) => {
     setEmailSentId(id);
     try {
-      await fetch(
-        "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=AIzaSyCQIR2rT9Qh8hAbBmde309nLeB7ZigVKqc",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ requestType: "PASSWORD_RESET", email: email })
-        }
-      );
+      if (FIREBASE_API_KEY) {
+        await fetch(
+          `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${FIREBASE_API_KEY}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ requestType: "PASSWORD_RESET", email: email })
+          }
+        );
+      }
     } catch (e) {
       console.warn("Failed to dispatch Firebase reset email", e);
     }
@@ -139,14 +144,16 @@ export default function AdminDashboardPage() {
     setResettingId(userId);
     try {
       // Trigger Firebase email
-      fetch(
-        "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=AIzaSyCQIR2rT9Qh8hAbBmde309nLeB7ZigVKqc",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ requestType: "PASSWORD_RESET", email: email })
-        }
-      ).catch(() => {});
+      if (FIREBASE_API_KEY) {
+        fetch(
+          `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${FIREBASE_API_KEY}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ requestType: "PASSWORD_RESET", email: email })
+          }
+        ).catch(() => {});
+      }
 
       const res = await fetch(`${API_BASE}/admin/roster/${userId}/reset-password`, {
         method: "POST",
@@ -213,23 +220,25 @@ export default function AdminDashboardPage() {
       }
 
       // Direct Upstash Redis REST fallback
-      try {
-        const upstashRes = await fetch("https://stunning-dinosaur-189382.upstash.io/get/medimage:roster:users", {
-          headers: { Authorization: "Bearer gQAAAAAAAuPGAAIgcDFhZjZjZTA1ZGFlMmU0MTk1ODFjMDAzNTg4NGYxYjY0MA" }
-        });
-        if (upstashRes.ok) {
-          const uJson = await upstashRes.json();
-          if (uJson.result) {
-            const parsed = JSON.parse(uJson.result);
-            if (Array.isArray(parsed)) {
-              const cleanUsers = parsed.filter((u: ManagedUser) => !DUMMY_EMAILS.has(u.email.toLowerCase()));
-              setUsersList(cleanUsers);
-              setIsRedisSynced(true);
+      if (UPSTASH_URL && UPSTASH_TOKEN) {
+        try {
+          const upstashRes = await fetch(`${UPSTASH_URL}/get/medimage:roster:users`, {
+            headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` }
+          });
+          if (upstashRes.ok) {
+            const uJson = await upstashRes.json();
+            if (uJson.result) {
+              const parsed = JSON.parse(uJson.result);
+              if (Array.isArray(parsed)) {
+                const cleanUsers = parsed.filter((u: ManagedUser) => !DUMMY_EMAILS.has(u.email.toLowerCase()));
+                setUsersList(cleanUsers);
+                setIsRedisSynced(true);
+              }
             }
           }
+        } catch (e) {
+          console.warn("[ROSTER] Upstash direct fetch error:", e);
         }
-      } catch (e) {
-        console.warn("[ROSTER] Upstash direct fetch error:", e);
       }
     };
 
@@ -338,31 +347,33 @@ export default function AdminDashboardPage() {
     setUsersList(updated);
 
     // Direct Firebase Auth Deletion Safeguard
-    try {
-      const fbKey = "AIzaSyCQIR2rT9Qh8hAbBmde309nLeB7ZigVKqc";
-      const targetUser = usersList.find((u) => u.id === userId || u.email.toLowerCase() === email.toLowerCase());
-      const candidates = [targetUser?.temporary_password, "Feat@123", "Jay1523", "Cheeku1523", "JAY!@#$"];
-      for (const pwd of candidates) {
-        if (!pwd) continue;
-        const signRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${fbKey}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: email, password: pwd, returnSecureToken: true })
-        });
-        if (signRes.ok) {
-          const sData = await signRes.json();
-          if (sData.idToken) {
-            await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:delete?key=${fbKey}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ idToken: sData.idToken })
-            });
-            break;
+    if (FIREBASE_API_KEY) {
+      try {
+        const fbKey = FIREBASE_API_KEY;
+        const targetUser = usersList.find((u) => u.id === userId || u.email.toLowerCase() === email.toLowerCase());
+        const candidates = [targetUser?.temporary_password, "Feat@123", "Jay1523", "Cheeku1523", "JAY!@#$"];
+        for (const pwd of candidates) {
+          if (!pwd) continue;
+          const signRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${fbKey}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email, password: pwd, returnSecureToken: true })
+          });
+          if (signRes.ok) {
+            const sData = await signRes.json();
+            if (sData.idToken) {
+              await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:delete?key=${fbKey}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ idToken: sData.idToken })
+              });
+              break;
+            }
           }
         }
+      } catch (fbErr) {
+        console.warn("Direct Firebase Auth delete notice:", fbErr);
       }
-    } catch (fbErr) {
-      console.warn("Direct Firebase Auth delete notice:", fbErr);
     }
 
     try {
@@ -380,17 +391,19 @@ export default function AdminDashboardPage() {
     }
 
     // Direct Upstash sync fallback
-    try {
-      await fetch("https://stunning-dinosaur-189382.upstash.io/set/medimage:roster:users", {
-        method: "POST",
-        headers: {
-          Authorization: "Bearer gQAAAAAAAuPGAAIgcDFhZjZjZTA1ZGFlMmU0MTk1ODFjMDAzNTg4NGYxYjY0MA",
-          "Content-Type": "text/plain"
-        },
-        body: JSON.stringify(updated)
-      });
-    } catch (err) {
-      console.warn("Failed direct Upstash delete", err);
+    if (UPSTASH_URL && UPSTASH_TOKEN) {
+      try {
+        await fetch(`${UPSTASH_URL}/set/medimage:roster:users`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${UPSTASH_TOKEN}`,
+            "Content-Type": "text/plain"
+          },
+          body: JSON.stringify(updated)
+        });
+      } catch (err) {
+        console.warn("Failed direct Upstash delete", err);
+      }
     }
   };
 

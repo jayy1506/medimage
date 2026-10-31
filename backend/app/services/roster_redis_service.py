@@ -186,7 +186,7 @@ class RosterRedisService:
         Provisions user into Firebase Console via Identity Toolkit API
         and immediately dispatches password setup/change link to their mailbox.
         """
-        api_key = settings.FIREBASE_API_KEY or "AIzaSyCQIR2rT9Qh8hAbBmde309nLeB7ZigVKqc"
+        api_key = settings.FIREBASE_API_KEY
         signup_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={api_key}"
         reset_url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={api_key}"
         try:
@@ -220,7 +220,7 @@ class RosterRedisService:
         """
         Syncs newly chosen password into Firebase Auth using Identity Toolkit.
         """
-        api_key = settings.FIREBASE_API_KEY or "AIzaSyCQIR2rT9Qh8hAbBmde309nLeB7ZigVKqc"
+        api_key = settings.FIREBASE_API_KEY
         login_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}"
         update_url = f"https://identitytoolkit.googleapis.com/v1/accounts:update?key={api_key}"
         try:
@@ -250,7 +250,7 @@ class RosterRedisService:
         """
         Deletes user from Firebase Auth using Identity Toolkit accounts:delete.
         """
-        api_key = settings.FIREBASE_API_KEY or "AIzaSyCQIR2rT9Qh8hAbBmde309nLeB7ZigVKqc"
+        api_key = settings.FIREBASE_API_KEY
         login_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}"
         delete_url = f"https://identitytoolkit.googleapis.com/v1/accounts:delete?key={api_key}"
         
@@ -346,7 +346,7 @@ class RosterRedisService:
         await self._redis_set(self.roster_key, roster)
         if target_email:
             # Trigger Firebase password reset email to user inbox
-            api_key = settings.FIREBASE_API_KEY or "AIzaSyCQIR2rT9Qh8hAbBmde309nLeB7ZigVKqc"
+            api_key = settings.FIREBASE_API_KEY
             reset_url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={api_key}"
             try:
                 async with httpx.AsyncClient(timeout=8.0) as client:

@@ -10,8 +10,8 @@ from app.core.config import settings
 
 router = APIRouter(prefix="/curriculum", tags=["Curriculum & Question Bank"])
 
-UPSTASH_URL = settings.UPSTASH_REDIS_REST_URL or "https://stunning-dinosaur-189382.upstash.io"
-UPSTASH_TOKEN = settings.UPSTASH_REDIS_REST_TOKEN or "gQAAAAAAAuPGAAIgcDFhZjZjZTA1ZGFlMmU0MTk1ODFjMDAzNTg4NGYxYjY0MA"
+UPSTASH_URL = settings.UPSTASH_REDIS_REST_URL
+UPSTASH_TOKEN = settings.UPSTASH_REDIS_REST_TOKEN
 
 
 async def redis_get(key: str) -> Optional[Any]:

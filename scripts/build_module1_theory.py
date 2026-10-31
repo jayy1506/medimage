@@ -8,8 +8,13 @@ import json
 import urllib.request
 import os
 
-UPSTASH_URL = os.environ.get("UPSTASH_REDIS_REST_URL") or "https://stunning-dinosaur-189382.upstash.io"
-UPSTASH_TOKEN = os.environ.get("UPSTASH_REDIS_REST_TOKEN") or "gQAAAAAAAuPGAAIgcDFhZjZjZTA1ZGFlMmU0MTk1ODFjMDAzNTg4NGYxYjY0MA"
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend", ".env"))
+load_dotenv()
+
+UPSTASH_URL = os.environ.get("UPSTASH_REDIS_REST_URL", "")
+UPSTASH_TOKEN = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "")
 
 def redis_set(key, val):
     req = urllib.request.Request(

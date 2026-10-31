@@ -21,8 +21,14 @@ from typing import Dict, List, Any
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from parse_curriculum import parse_curriculum_md, parse_eqb_excel, get_module_questions
 
-UPSTASH_URL = "https://stunning-dinosaur-189382.upstash.io"
-UPSTASH_TOKEN = "gQAAAAAAAuPGAAIgcDFhZjZjZTA1ZGFlMmU0MTk1ODFjMDAzNTg4NGYxYjY0MA"
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend", ".env"))
+load_dotenv()
+
+UPSTASH_URL = os.environ.get("UPSTASH_REDIS_REST_URL", "")
+UPSTASH_TOKEN = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "")
 
 
 def redis_set(key: str, data: Any) -> bool:

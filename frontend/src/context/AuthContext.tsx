@@ -58,6 +58,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  const UPSTASH_URL = process.env.NEXT_PUBLIC_UPSTASH_REDIS_REST_URL || "";
+  const UPSTASH_TOKEN = process.env.NEXT_PUBLIC_UPSTASH_REDIS_REST_TOKEN || "";
+  const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "";
 
   const fetchBackendProfile = async (idToken: string): Promise<UserProfile | null> => {
     try {
@@ -156,11 +159,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (e) {}
 
       // Direct Upstash Redis REST fallback if local backend is offline
-      if (backendUsers.length === 0) {
+      if (backendUsers.length === 0 && UPSTASH_URL && UPSTASH_TOKEN) {
         try {
-          const upstashRes = await fetch("https://stunning-dinosaur-189382.upstash.io/get/medimage:roster:users", {
+          const upstashRes = await fetch(`${UPSTASH_URL}/get/medimage:roster:users`, {
             headers: {
-              Authorization: "Bearer gQAAAAAAAuPGAAIgcDFhZjZjZTA1ZGFlMmU0MTk1ODFjMDAzNTg4NGYxYjY0MA"
+              Authorization: `Bearer ${UPSTASH_TOKEN}`
             }
           });
           if (upstashRes.ok) {
@@ -254,10 +257,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {}
 
     // Fallback directly to Upstash Redis REST if local backend is offline
-    if (!success) {
+    if (!success && UPSTASH_URL && UPSTASH_TOKEN) {
       try {
-        const getRes = await fetch("https://stunning-dinosaur-189382.upstash.io/get/medimage:roster:users", {
-          headers: { Authorization: "Bearer gQAAAAAAAuPGAAIgcDFhZjZjZTA1ZGFlMmU0MTk1ODFjMDAzNTg4NGYxYjY0MA" }
+        const getRes = await fetch(`${UPSTASH_URL}/get/medimage:roster:users`, {
+          headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` }
         });
         if (getRes.ok) {
           const getData = await getRes.json();
@@ -269,9 +272,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   ? { ...u, temporary_password: newPass, force_password_change: false, status: "active" }
                   : u
               );
-              await fetch("https://stunning-dinosaur-189382.upstash.io/set/medimage:roster:users", {
+              await fetch(`${UPSTASH_URL}/set/medimage:roster:users`, {
                 method: "POST",
-                headers: { Authorization: "Bearer gQAAAAAAAuPGAAIgcDFhZjZjZTA1ZGFlMmU0MTk1ODFjMDAzNTg4NGYxYjY0MA" },
+                headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` },
                 body: JSON.stringify(updated)
               });
               success = true;
@@ -282,28 +285,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Direct Firebase Console Password Sync
-    try {
-      const fbKey = "AIzaSyCQIR2rT9Qh8hAbBmde309nLeB7ZigVKqc";
-      for (const tryPwd of ["Feat@123", newPass, "Jay1523", "Cheeku1523", "JAY!@#$"]) {
-        const signRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${fbKey}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: email, password: tryPwd, returnSecureToken: true })
-        });
-        if (signRes.ok) {
-          const sData = await signRes.json();
-          if (sData.idToken) {
-            await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:update?key=${fbKey}`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ idToken: sData.idToken, password: newPass, returnSecureToken: true })
-            });
-            break;
+    if (FIREBASE_API_KEY) {
+      try {
+        const fbKey = FIREBASE_API_KEY;
+        for (const tryPwd of ["Feat@123", newPass, "Jay1523", "Cheeku1523", "JAY!@#$"]) {
+          const signRes = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${fbKey}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email, password: tryPwd, returnSecureToken: true })
+          });
+          if (signRes.ok) {
+            const sData = await signRes.json();
+            if (sData.idToken) {
+              await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:update?key=${fbKey}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ idToken: sData.idToken, password: newPass, returnSecureToken: true })
+              });
+              break;
+            }
           }
         }
+      } catch (fbErr) {
+        console.warn("Direct Firebase password update notice:", fbErr);
       }
-    } catch (fbErr) {
-      console.warn("Direct Firebase password update notice:", fbErr);
     }
 
     // Update in active session
