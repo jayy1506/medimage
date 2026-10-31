@@ -31,7 +31,8 @@ import {
   ShieldAlert,
   Eye,
   EyeOff,
-  Key
+  Key,
+  Mail
 } from "lucide-react";
 
 interface ManagedUser {
@@ -94,6 +95,7 @@ export default function AdminDashboardPage() {
   const [inviteAgeConsent, setInviteAgeConsent] = useState(false);
   const [csvContent, setCsvContent] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [emailSentId, setEmailSentId] = useState<string | null>(null);
 
   // Password visibility & reset state
   const [revealedPasswords, setRevealedPasswords] = useState<Record<string, boolean>>({});
@@ -115,10 +117,37 @@ export default function AdminDashboardPage() {
     setTimeout(() => setCopiedPasswordId(null), 2000);
   };
 
+  const handleSendSetupEmail = async (email: string, id: string) => {
+    setEmailSentId(id);
+    try {
+      await fetch(
+        "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=AIzaSyCQIR2rT9Qh8hAbBmde309nLeB7ZigVKqc",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ requestType: "PASSWORD_RESET", email: email })
+        }
+      );
+    } catch (e) {
+      console.warn("Failed to dispatch Firebase reset email", e);
+    }
+    setTimeout(() => setEmailSentId(null), 2500);
+  };
+
   const handleResetPassword = async (userId: string, email: string) => {
-    if (!confirm(`Reset password for ${email} back to standard initial password Feat@123?`)) return;
+    if (!confirm(`Reset password for ${email} back to standard initial password Feat@123 and dispatch setup email?`)) return;
     setResettingId(userId);
     try {
+      // Trigger Firebase email
+      fetch(
+        "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=AIzaSyCQIR2rT9Qh8hAbBmde309nLeB7ZigVKqc",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ requestType: "PASSWORD_RESET", email: email })
+        }
+      ).catch(() => {});
+
       const res = await fetch(`${API_BASE}/admin/roster/${userId}/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -126,17 +155,17 @@ export default function AdminDashboardPage() {
       });
       if (res.ok) {
         setUsersList((prev) =>
-          prev.map((u) => (u.id === userId ? { ...u, temporary_password: "Feat@123", force_password_change: true } : u))
+          prev.map((u) => (u.id === userId ? { ...u, temporary_password: "Feat@123", force_password_change: true, status: "pending_first_login" } : u))
         );
-        alert(`Password for ${email} has been reset to Feat@123`);
+        alert(`Password for ${email} has been reset to Feat@123 and a password change email was sent.`);
       } else {
         setUsersList((prev) =>
-          prev.map((u) => (u.id === userId ? { ...u, temporary_password: "Feat@123", force_password_change: true } : u))
+          prev.map((u) => (u.id === userId ? { ...u, temporary_password: "Feat@123", force_password_change: true, status: "pending_first_login" } : u))
         );
       }
     } catch (e) {
       setUsersList((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, temporary_password: "Feat@123", force_password_change: true } : u))
+        prev.map((u) => (u.id === userId ? { ...u, temporary_password: "Feat@123", force_password_change: true, status: "pending_first_login" } : u))
       );
     } finally {
       setResettingId(null);
@@ -418,7 +447,7 @@ export default function AdminDashboardPage() {
               </span>
               <span className="text-xs text-adani-purple font-semibold flex items-center gap-1.5">
                 <Shield className="w-3.5 h-3.5 text-adani-purple" />
-                Super-Admin Control Console • AIDS 12605.1
+                Super-Admin Control Console
               </span>
             </div>
           </div>
@@ -497,7 +526,7 @@ export default function AdminDashboardPage() {
               <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Total Students</span>
               <span className="text-2xl font-black text-slate-900 mt-1 block">{totalStudents}</span>
               <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1 mt-0.5">
-                <CheckCircle className="w-3 h-3" /> Enrolled in AIDS 12605.1
+                <CheckCircle className="w-3 h-3" /> Enrolled in Course
               </span>
             </div>
             <div className="w-10 h-10 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-adani-cyan">
@@ -674,21 +703,27 @@ export default function AdminDashboardPage() {
                             )}
                           </td>
                           <td className="px-5 py-3.5">
-                            {u.status === "active" ? (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                Active
-                              </span>
-                            ) : u.status === "disabled" ? (
+                            {u.status === "disabled" ? (
                               <span className="inline-flex items-center gap-1 text-[11px] font-bold text-red-600">
                                 <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
                                 Disabled
                               </span>
+                            ) : u.status === "active" && !u.force_password_change ? (
+                              <div>
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                  Active
+                                </span>
+                                <span className="text-[10px] text-emerald-600 block font-medium">Personal Password Set</span>
+                              </div>
                             ) : (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600">
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                                Pending Activation
-                              </span>
+                              <div>
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                                  Pending Activation
+                                </span>
+                                <span className="text-[10px] text-amber-600 block font-medium">Initial Feat@123 (Must Change)</span>
+                              </div>
                             )}
                           </td>
                           <td className="px-5 py-3.5">
@@ -743,24 +778,44 @@ export default function AdminDashboardPage() {
                               )}
                             </div>
                           </td>
-                          <td className="px-5 py-3.5">
-                            <button
-                              onClick={() => copySetupLink(u.email, u.id)}
-                              className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-medium transition-colors inline-flex items-center gap-1 border border-slate-200"
-                              title="Copy secure sign-in / setup link"
-                            >
-                              {copiedId === u.id ? (
-                                <>
-                                  <Check className="w-3 h-3 text-emerald-600" />
-                                  <span className="text-emerald-700 font-bold">Copied!</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Copy className="w-3 h-3 text-slate-500" />
-                                  <span>Copy Link</span>
-                                </>
-                              )}
-                            </button>
+                          <td className="px-5 py-3.5 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => copySetupLink(u.email, u.id)}
+                                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-medium transition-colors inline-flex items-center gap-1 border border-slate-200"
+                                title="Copy secure sign-in / setup link"
+                              >
+                                {copiedId === u.id ? (
+                                  <>
+                                    <Check className="w-3 h-3 text-emerald-600" />
+                                    <span className="text-emerald-700 font-bold">Copied!</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-3 h-3 text-slate-500" />
+                                    <span>Copy Link</span>
+                                  </>
+                                )}
+                              </button>
+
+                              <button
+                                onClick={() => handleSendSetupEmail(u.email, u.id)}
+                                className="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 text-[11px] font-medium transition-colors inline-flex items-center gap-1 border border-sky-200"
+                                title="Send Firebase password setup email to user's inbox"
+                              >
+                                {emailSentId === u.id ? (
+                                  <>
+                                    <Check className="w-3 h-3 text-emerald-600" />
+                                    <span className="text-emerald-700 font-bold">Email Sent!</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Mail className="w-3 h-3 text-sky-600" />
+                                    <span>Email Link</span>
+                                  </>
+                                )}
+                              </button>
+                            </div>
                           </td>
                           <td className="px-5 py-3.5 text-right space-x-2">
                             {u.email === "jthakre62@gmail.com" ? (

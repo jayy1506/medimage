@@ -44,7 +44,7 @@ export default function HomePage() {
                 Faculty of Engineering &amp; Technology
               </span>
               <span className="text-sm font-bold text-adani-cyan">
-                Medical Text and Image Processing (AIDS 12605.1)
+                Medical Text and Image Processing
               </span>
             </div>
           </div>
@@ -148,7 +148,7 @@ export default function HomePage() {
             <span>• Faculty of Engineering and Technology</span>
           </div>
           <div>
-            <span>Course AIDS 12605.1 • Credits 3 • Single Hosted Database • Free Tier Compliant</span>
+            <span>Credits 3 • Single Hosted Database • Free Tier Compliant</span>
           </div>
         </div>
       </footer>

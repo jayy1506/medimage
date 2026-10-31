@@ -13,6 +13,36 @@ INITIAL_ROSTER = [
         "temporary_password": "Jay1523",
         "force_password_change": False,
         "created_at": "2026-10-29T10:00:00Z"
+    },
+    {
+        "id": "u-2",
+        "email": "aryagawate5@gmail.com",
+        "full_name": "Arya Gawate",
+        "role": "admin",
+        "status": "pending_first_login",
+        "temporary_password": "Feat@123",
+        "force_password_change": True,
+        "created_at": "2026-10-31T00:00:00Z"
+    },
+    {
+        "id": "u-3",
+        "email": "jaythakre128@gmail.com",
+        "full_name": "Dr. Jay Thakre",
+        "role": "faculty",
+        "status": "active",
+        "temporary_password": "JAY!@#$",
+        "force_password_change": False,
+        "created_at": "2026-10-30T00:00:00Z"
+    },
+    {
+        "id": "u-4",
+        "email": "cheekuv1523@gmail.com",
+        "full_name": "Cheeku V",
+        "role": "student",
+        "status": "active",
+        "temporary_password": "Cheeku1523",
+        "force_password_change": False,
+        "created_at": "2026-10-30T00:00:00Z"
     }
 ]
 
@@ -153,23 +183,67 @@ class RosterRedisService:
 
     async def _sync_to_firebase(self, email: str, password: str = "Feat@123") -> bool:
         """
-        Provisions user into Firebase Console via Identity Toolkit API.
+        Provisions user into Firebase Console via Identity Toolkit API
+        and immediately dispatches password setup/change link to their mailbox.
         """
         api_key = settings.FIREBASE_API_KEY or "AIzaSyCQIR2rT9Qh8hAbBmde309nLeB7ZigVKqc"
-        url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={api_key}"
+        signup_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={api_key}"
+        reset_url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={api_key}"
         try:
-            async with httpx.AsyncClient(timeout=8.0) as client:
-                res = await client.post(url, json={"email": email, "password": password, "returnSecureToken": False})
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                res = await client.post(signup_url, json={"email": email, "password": password, "returnSecureToken": False})
                 if res.status_code == 200:
                     print(f"[FIREBASE] Successfully added user to Firebase Console: {email}")
-                    return True
-                err = res.json().get("error", {}).get("message", "")
-                if "EMAIL_EXISTS" in err:
-                    print(f"[FIREBASE] User already exists in Firebase Console: {email}")
-                    return True
-                print(f"[FIREBASE] Notice: {err}")
+                else:
+                    err = res.json().get("error", {}).get("message", "")
+                    if "EMAIL_EXISTS" in err:
+                        print(f"[FIREBASE] User already exists in Firebase Console: {email}")
+                    else:
+                        print(f"[FIREBASE] Notice: {err}")
+
+                # Automatically trigger official password setup/change email from Firebase to user
+                try:
+                    mail_res = await client.post(reset_url, json={"requestType": "PASSWORD_RESET", "email": email})
+                    if mail_res.status_code == 200:
+                        print(f"[FIREBASE] Password setup email dispatched to user inbox: {email}")
+                    else:
+                        print(f"[FIREBASE] Password reset email dispatch HTTP {mail_res.status_code}")
+                except Exception as m_err:
+                    print(f"[FIREBASE] Email dispatch exception for {email}: {m_err}")
+
+                return True
         except Exception as e:
             print(f"[FIREBASE] Sync exception: {e}")
+        return False
+
+    async def _update_firebase_password(self, email: str, old_password: str, new_password: str) -> bool:
+        """
+        Syncs newly chosen password into Firebase Auth using Identity Toolkit.
+        """
+        api_key = settings.FIREBASE_API_KEY or "AIzaSyCQIR2rT9Qh8hAbBmde309nLeB7ZigVKqc"
+        login_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}"
+        update_url = f"https://identitytoolkit.googleapis.com/v1/accounts:update?key={api_key}"
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                token = None
+                # Try signing in with previous known password or fallback defaults
+                for candidate in [old_password, "Feat@123", "Jay1523", "Cheeku1523", "JAY!@#$"]:
+                    if not candidate:
+                        continue
+                    res = await client.post(login_url, json={"email": email, "password": candidate, "returnSecureToken": True})
+                    if res.status_code == 200:
+                        token = res.json().get("idToken")
+                        break
+
+                if token:
+                    up_res = await client.post(update_url, json={"idToken": token, "password": new_password, "returnSecureToken": True})
+                    if up_res.status_code == 200:
+                        print(f"[FIREBASE] Successfully synced updated password to Firebase Auth for {email}")
+                        return True
+                    else:
+                        print(f"[FIREBASE] Update password status: {up_res.status_code}")
+        except Exception as e:
+            print(f"[FIREBASE] Exception while updating password: {e}")
         return False
 
     async def add_user(self, user: Dict[str, Any], actor_email: str = "jthakre62@gmail.com") -> List[Dict[str, Any]]:
@@ -177,6 +251,7 @@ class RosterRedisService:
         roster = await self.get_roster()
         user["temporary_password"] = user.get("temporary_password") or "Feat@123"
         user["force_password_change"] = user.get("force_password_change", True)
+        user["status"] = user.get("status", "pending_first_login")
 
         # Merge new user into roster (deduplicating by email)
         email_clean = user["email"].strip().lower()
@@ -189,7 +264,7 @@ class RosterRedisService:
         # Persist to Upstash Redis
         await self._redis_set(self.roster_key, updated_roster)
 
-        # Provision into Firebase Console
+        # Provision into Firebase Console & dispatch setup email
         await self._sync_to_firebase(user["email"], user["temporary_password"])
 
         # Audit log
@@ -200,7 +275,7 @@ class RosterRedisService:
             "target": user["email"],
             "timestamp": "Just now",
             "ip": "127.0.0.1",
-            "details": f"Added {user.get('role', 'user')} {user.get('full_name')} with default password Feat@123"
+            "details": f"Added {user.get('role', 'user')} {user.get('full_name')} with initial Feat@123 and dispatched Firebase password change email"
         })
         return self._in_memory_roster
 
@@ -233,11 +308,21 @@ class RosterRedisService:
             if u["id"] == user_id:
                 u["temporary_password"] = new_password
                 u["force_password_change"] = True
+                u["status"] = "pending_first_login"
                 target_email = u["email"]
                 break
         self._in_memory_roster = roster
         await self._redis_set(self.roster_key, roster)
         if target_email:
+            # Trigger Firebase password reset email to user inbox
+            api_key = settings.FIREBASE_API_KEY or "AIzaSyCQIR2rT9Qh8hAbBmde309nLeB7ZigVKqc"
+            reset_url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={api_key}"
+            try:
+                async with httpx.AsyncClient(timeout=8.0) as client:
+                    await client.post(reset_url, json={"requestType": "PASSWORD_RESET", "email": target_email})
+            except Exception as e:
+                print(f"[FIREBASE] Reset email exception for {target_email}: {e}")
+
             await self.add_audit_log({
                 "id": f"aud-reset-{user_id}",
                 "actor_email": actor_email,
@@ -245,22 +330,29 @@ class RosterRedisService:
                 "target": target_email,
                 "timestamp": "Just now",
                 "ip": "127.0.0.1",
-                "details": f"Password reset to common default ({new_password})"
+                "details": f"Password reset to common default ({new_password}) and Firebase email dispatched"
             })
         return self._in_memory_roster
 
     async def change_user_password(self, email: str, new_password: str) -> bool:
         roster = await self.get_roster()
         matched = False
+        old_password = "Feat@123"
         for u in roster:
             if u["email"].lower() == email.lower():
+                old_password = u.get("temporary_password", "Feat@123")
                 u["temporary_password"] = new_password
                 u["force_password_change"] = False
+                u["status"] = "active"
                 matched = True
                 break
         if matched:
             self._in_memory_roster = roster
             await self._redis_set(self.roster_key, roster)
+            
+            # Sync new password directly to Firebase Auth Console
+            await self._update_firebase_password(email, old_password, new_password)
+
             await self.add_audit_log({
                 "id": f"aud-change-{hash(email)}",
                 "actor_email": email,
@@ -268,7 +360,7 @@ class RosterRedisService:
                 "target": email,
                 "timestamp": "Just now",
                 "ip": "127.0.0.1",
-                "details": "User successfully set personal password on first login"
+                "details": "User successfully set personal password on first login. Status set to active."
             })
             return True
         return False

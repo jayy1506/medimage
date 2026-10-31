@@ -40,8 +40,8 @@ export default function LoginPage() {
         const userProf = await signIn(email, password);
         const norm = email.trim().toLowerCase();
 
-        // Super-admin routes directly without password change prompt
-        if (norm === "jthakre62@gmail.com" || norm === "jthakr62@gmail.com" || userProf?.role === "admin") {
+        // Root Super-Admin routes directly without password change prompt
+        if (norm === "jthakre62@gmail.com" || norm === "jthakr62@gmail.com") {
           router.push("/admin");
           return;
         }
@@ -54,7 +54,9 @@ export default function LoginPage() {
         }
 
         // Regular login destination
-        if (userProf?.role === "faculty") {
+        if (userProf?.role === "admin") {
+          router.push("/admin");
+        } else if (userProf?.role === "faculty") {
           router.push("/faculty");
         } else {
           router.push("/dashboard");
@@ -98,7 +100,9 @@ export default function LoginPage() {
 
     if (success) {
       setShowFirstTimeModal(false);
-      if (pendingUserRole === "faculty") {
+      if (pendingUserRole === "admin") {
+        router.push("/admin");
+      } else if (pendingUserRole === "faculty") {
         router.push("/faculty");
       } else {
         router.push("/dashboard");
@@ -120,7 +124,7 @@ export default function LoginPage() {
         <h1 className="mt-1 text-2xl font-black text-slate-900 tracking-tight">
           Medical Text and Image Processing
         </h1>
-        <p className="mt-1 text-xs text-slate-500 font-mono">AIDS 12605.1 • Academic Workstation</p>
+        <p className="mt-1 text-xs text-slate-500 font-mono">Academic Workstation</p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
@@ -254,7 +258,7 @@ export default function LoginPage() {
 
         <div className="mt-6 text-center space-y-1 text-xs text-slate-500">
           <p>
-            Enrolled in Course AIDS 12605.1 without access?{" "}
+            Enrolled student or faculty without access?{" "}
             <span className="font-semibold text-slate-700">Contact Course Faculty or Dept Admin</span>
           </p>
           <p className="text-[10px] text-slate-400">
