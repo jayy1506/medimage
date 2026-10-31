@@ -122,7 +122,7 @@ export default function LoginPage() {
           Faculty of Engineering and Technology
         </h2>
         <h1 className="mt-1 text-2xl font-black text-slate-900 tracking-tight">
-          Medical Text and Image Processing
+          GyaanLab
         </h1>
         <p className="mt-1 text-xs text-slate-500 font-mono">Academic Workstation</p>
       </div>

@@ -511,7 +511,7 @@ export default function AiTutorPage() {
 
             <div>
               <h2 className="text-xs sm:text-sm font-bold text-zinc-200 truncate max-w-xs sm:max-w-md">
-                {activeSession?.title || "Medical Text and Image Processing AI Tutor"}
+                {activeSession?.title || "GyaanLab Clinical AI Tutor"}
               </h2>
               <span className="text-[10px] text-zinc-500 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />

@@ -44,7 +44,7 @@ export default function HomePage() {
                 Faculty of Engineering &amp; Technology
               </span>
               <span className="text-sm font-bold text-adani-cyan">
-                Medical Text and Image Processing
+                GyaanLab
               </span>
             </div>
           </div>

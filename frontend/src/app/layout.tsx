@@ -6,8 +6,8 @@ import { GamificationProvider } from "@/context/GamificationContext";
 import FloatingAiTutorModal from "@/components/tutor/FloatingAiTutorModal";
 
 export const metadata: Metadata = {
-  title: "Medical Text and Image Processing | Adani University",
-  description: "Academic Learning Platform for AIDS 12605.1 - Faculty of Engineering and Technology, Adani Institute of Higher Education and Research",
+  title: "GyaanLab | Adani University",
+  description: "GyaanLab Academic Learning Platform - Faculty of Engineering and Technology, Adani Institute of Higher Education and Research",
   icons: {
     icon: "/assets/logo.png",
   },
