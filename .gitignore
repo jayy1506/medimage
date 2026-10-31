@@ -44,9 +44,11 @@ develop-eggs/
 dist/
 downloads/
 eggs/
-.eggs/
-lib/
-lib64/
+# Python env lib (exclude root lib but keep frontend/src/lib)
+/lib/
+/lib64/
+!frontend/src/lib/
+!frontend/src/lib/**
 parts/
 sdist/
 var/
