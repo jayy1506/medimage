@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProgressProvider } from "@/context/ProgressContext";
+import FloatingAiTutorModal from "@/components/tutor/FloatingAiTutorModal";
 
 export const metadata: Metadata = {
   title: "Medical Text and Image Processing | Adani University",
@@ -22,6 +23,7 @@ export default function RootLayout({
         <AuthProvider>
           <ProgressProvider>
             {children}
+            <FloatingAiTutorModal />
           </ProgressProvider>
         </AuthProvider>
       </body>

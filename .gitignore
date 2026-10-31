@@ -69,3 +69,14 @@ Thumbs.db
 # MCP Configs with credentials
 mcp_config.json
 .mcp/
+
+# Agent and IDE tool configurations
+.agent/
+.agents/
+.gemini/
+.gsd/
+adapters/
+docs/
+GSD-STYLE.md
+AGENTS.md
+PROJECT_RULES.md

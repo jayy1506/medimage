@@ -32,6 +32,77 @@ class TutorChatResponse(BaseModel):
     highlight_diagram_node: Optional[str] = None
 
 
+class TutorGeneralAskRequest(BaseModel):
+    prompt: str
+    topic_id: Optional[str] = None
+    topic_title: Optional[str] = None
+    active_diagram_node: Optional[str] = None
+
+
+class TutorGeneralAskResponse(BaseModel):
+    response: str
+    is_relevant: bool
+    citations: List[Citation] = []
+    highlight_diagram_node: Optional[str] = None
+
+
+@router.post("/ask", response_model=TutorGeneralAskResponse)
+async def ask_tutor_general(payload: TutorGeneralAskRequest):
+    """
+    Direct endpoint for the interactive Claude-style AI Tutor.
+    Validates course relevance, enforces clinical safety guardrails,
+    and returns rich answers grounded in AIDS 12605.1 syllabus.
+    """
+    prompt = payload.prompt.strip()
+    if not prompt:
+        raise HTTPException(status_code=400, detail="Prompt cannot be empty.")
+
+    # Guardrail evaluation
+    refusal = rag_service.check_guardrails(prompt)
+    if refusal:
+        return TutorGeneralAskResponse(
+            response=refusal,
+            is_relevant=False,
+            citations=[],
+            highlight_diagram_node=None
+        )
+
+    title = payload.topic_title or "Medical Text & Image Processing (AIDS 12605.1)"
+    topic_id = payload.topic_id or "general-tutor"
+
+    result = await rag_service.generate_response(
+        topic_title=title,
+        topic_id=topic_id,
+        section_contexts=[
+            "Official B.Tech Course Syllabus: AIDS 12605.1 Medical Text and Image Processing.",
+            "Covers Module 1 (Physics/Modalities: X-ray, CT, MRI, Ultrasound, PET/SPECT), "
+            "Module 2 (Digital Standards: DICOM, IOD, VR, PACS, Metadata, HIPAA De-identification), "
+            "Module 3 (Spatial Processing: Convolution, Sobel, Laplacian, High-boost, FFT, Frequency filtering), "
+            "Module 4 (Reconstruction & Segmentation: Radon Transform, Sinograms, FBP, Otsu, Active Contours, Level Sets), "
+            "Module 5 (Deep Learning: UNet, ResNet, Dice/IoU loss, 3D Convolutions, V-Net), "
+            "Module 6 (Clinical NLP & 3D: BioBERT, ClinicalBERT, NER, Marching Cubes, Surface/Volume Rendering)."
+        ],
+        prompt=prompt,
+        active_diagram_node=payload.active_diagram_node
+    )
+
+    citations = [
+        Citation(
+            topic_title=c.get("topic_title", title),
+            section_number=c.get("section_number", 1),
+            reference_code=c.get("reference_code", "AIDS-12605.1")
+        )
+        for c in result.get("citations", [])
+    ]
+
+    return TutorGeneralAskResponse(
+        response=result.get("response", "Could not synthesize response."),
+        is_relevant=True,
+        citations=citations,
+        highlight_diagram_node=result.get("highlight_diagram_node")
+    )
+
+
 @router.post("/chat", response_model=TutorChatResponse)
 async def chat_with_tutor(
     payload: TutorChatRequest,
@@ -63,3 +134,4 @@ async def chat_with_tutor(
     )
 
     return result
+

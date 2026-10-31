@@ -176,12 +176,12 @@ class RAGService:
                 if not candidate_key:
                     break
                 try:
-                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={candidate_key}"
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={candidate_key}"
                     payload = {
                         "contents": [{"parts": [{"text": f"{system_instruction}\n\n{user_content}"}]}],
-                        "generationConfig": {"temperature": 0.2, "maxOutputTokens": 600}
+                        "generationConfig": {"temperature": 0.2, "maxOutputTokens": 800}
                     }
-                    async with httpx.AsyncClient(timeout=10.0) as client:
+                    async with httpx.AsyncClient(timeout=25.0) as client:
                         res = await client.post(url, json=payload)
                         if res.status_code == 200:
                             data = res.json()
@@ -190,7 +190,7 @@ class RAGService:
                                 response_text = candidates[0]["content"]["parts"][0]["text"]
                                 break
                         else:
-                            print(f"[TUTOR] Key rotation check: status {res.status_code}")
+                            print(f"[TUTOR] Key rotation check: status {res.status_code} - {res.text[:100]}")
                 except Exception as e:
                     print(f"[TUTOR] Gemini key rotation attempt: {e}")
 
