@@ -69,7 +69,7 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     return (profile?.email || user?.email || "").trim().toLowerCase();
   }, [profile, user]);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  const API_BASE = typeof window !== "undefined" ? "/api/v1" : (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1");
 
   // Total topics across all 6 accredited curriculum modules
   const totalTopicsCount = useMemo(() => {

@@ -57,10 +57,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  const API_BASE = typeof window !== "undefined" ? "/api/v1" : (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1");
   const UPSTASH_URL = process.env.NEXT_PUBLIC_UPSTASH_REDIS_REST_URL || "";
   const UPSTASH_TOKEN = process.env.NEXT_PUBLIC_UPSTASH_REDIS_REST_TOKEN || "";
   const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "";
+
+  // In-memory instant roster cache (< 1ms lookup)
+  const [inMemoryRoster, setInMemoryRoster] = useState<any[]>([]);
+
+  const fetchRosterFast = async (): Promise<any[]> => {
+    if (inMemoryRoster.length > 0) return inMemoryRoster;
+
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 2000);
+      const res = await fetch(`${API_BASE}/admin/roster`, { signal: controller.signal });
+      clearTimeout(timer);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.users && Array.isArray(data.users)) {
+          setInMemoryRoster(data.users);
+          return data.users;
+        }
+      }
+    } catch (e) {}
+
+    if (UPSTASH_URL && UPSTASH_TOKEN) {
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 2500);
+        const upRes = await fetch(`${UPSTASH_URL}/get/medimage:roster:users`, {
+          headers: { Authorization: `Bearer ${UPSTASH_TOKEN}` },
+          signal: controller.signal
+        });
+        clearTimeout(timer);
+        if (upRes.ok) {
+          const uJson = await upRes.json();
+          if (uJson.result) {
+            const parsed = typeof uJson.result === "string" ? JSON.parse(uJson.result) : uJson.result;
+            if (Array.isArray(parsed)) {
+              setInMemoryRoster(parsed);
+              return parsed;
+            }
+          }
+        }
+      } catch (e) {}
+    }
+    return inMemoryRoster;
+  };
+
+  // Prefetch roster on mount so login button responds instantly on tap
+  useEffect(() => {
+    fetchRosterFast().catch(() => {});
+  }, [API_BASE]);
 
   const fetchBackendProfile = async (idToken: string): Promise<UserProfile | null> => {
     try {
@@ -145,42 +194,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return adminProf;
     }
 
-    // 2. Check Course Roster (Backend API or Hosted Upstash Redis)
+    // 2. Fast Course Roster Lookup (uses prefetched in-memory roster)
+    let backendUsers: any[] = inMemoryRoster;
     try {
-      let backendUsers: any[] = [];
-      try {
-        const res = await fetch(`${API_BASE}/admin/roster`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.users && Array.isArray(data.users)) {
-            backendUsers = data.users;
-          }
-        }
-      } catch (e) {}
-
-      // Direct Upstash Redis REST fallback if local backend is offline
-      if (backendUsers.length === 0 && UPSTASH_URL && UPSTASH_TOKEN) {
-        try {
-          const upstashRes = await fetch(`${UPSTASH_URL}/get/medimage:roster:users`, {
-            headers: {
-              Authorization: `Bearer ${UPSTASH_TOKEN}`
-            }
-          });
-          if (upstashRes.ok) {
-            const upstashData = await upstashRes.json();
-            if (upstashData.result) {
-              const parsed = typeof upstashData.result === "string" ? JSON.parse(upstashData.result) : upstashData.result;
-              if (Array.isArray(parsed)) {
-                backendUsers = parsed;
-              }
-            }
-          }
-        } catch (e) {}
+      if (backendUsers.length === 0) {
+        backendUsers = await fetchRosterFast();
       }
 
       const rosterList = backendUsers;
       const found = rosterList.find((u) => u.email && u.email.toLowerCase() === normalizedEmail);
       if (found) {
+        if (found.status === "disabled") {
+          throw new Error("This institutional account has been disabled by the administrator.");
+        }
+
         const isCommonDefault = pass === "Feat@123";
         const isCustomMatch = found.temporary_password && pass === found.temporary_password;
 
@@ -196,21 +223,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             force_password_change: mustChange
           };
 
-          if (userProf.status === "disabled") {
-            throw new Error("This institutional account has been disabled by the administrator.");
-          }
-
           setProfile(userProf);
           setRole(userProf.role);
           setToken("user-roster-session-token");
           setIsLoading(false);
           return userProf;
-        } else {
-          throw new Error("Invalid institutional password. Default initial password is Feat@123.");
         }
+        // If password is not Feat@123, fall through to Firebase Auth to verify their personal updated password!
       }
     } catch (e: any) {
-      if (e.message && (e.message.includes("disabled") || e.message.includes("password"))) {
+      if (e.message && e.message.includes("disabled")) {
         throw e;
       }
     }
@@ -222,20 +244,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(idToken);
       let userProf = await fetchBackendProfile(idToken);
       if (!userProf) {
+        const found = backendUsers.find((u) => u.email && u.email.toLowerCase() === normalizedEmail);
         userProf = {
           id: cred.user.uid,
           firebase_uid: cred.user.uid,
           email: email,
-          full_name: email.split("@")[0],
-          role: "student",
+          full_name: found?.full_name || email.split("@")[0],
+          role: found?.role || "student",
           status: "active",
           force_password_change: false
         };
         setProfile(userProf);
-        setRole("student");
+        setRole(userProf.role);
       }
       return userProf;
     } catch (err: any) {
+      if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password") {
+        throw new Error("Invalid institutional password. If this is your first time logging in, use default password Feat@123 to receive your password activation link.");
+      }
       if (err.code === "auth/api-key-not-valid" || err.message?.includes("api-key-not-valid")) {
         throw new Error("Invalid institutional email or password. Default initial password is Feat@123.");
       }
@@ -328,13 +354,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setProfile(null);
     setRole(null);
     setToken(null);
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && window.location.pathname !== "/login") {
       window.location.href = "/login";
     }
   };
 
   const resetPassword = async (email: string) => {
-    await sendPasswordResetEmail(auth, email);
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (fbErr: any) {
+      if (FIREBASE_API_KEY) {
+        const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${FIREBASE_API_KEY}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ requestType: "PASSWORD_RESET", email: email })
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData?.error?.message || "Failed to dispatch password setup email");
+        }
+      } else {
+        throw fbErr;
+      }
+    }
   };
 
   const refreshProfile = async () => {
