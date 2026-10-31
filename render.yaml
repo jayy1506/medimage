@@ -1,0 +1,40 @@
+# ====================================================================
+# Render Blueprint Specification (Infrastructure-as-Code)
+# Connects Next.js Frontend + FastAPI Backend as a single free Web Service
+# ====================================================================
+services:
+  - type: web
+    name: gyaanlab-platform
+    env: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/v1/curriculum/decisions
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: ENVIRONMENT
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        value: /api/v1
+      - key: FIREBASE_PROJECT_ID
+        value: medimage-ca668
+      - key: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+        value: medimage-ca668
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
+      - key: FIREBASE_API_KEY
+        sync: false
+      - key: NEXT_PUBLIC_FIREBASE_API_KEY
+        sync: false
+      - key: NEXT_PUBLIC_UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: NEXT_PUBLIC_UPSTASH_REDIS_REST_TOKEN
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
