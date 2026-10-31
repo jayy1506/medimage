@@ -1,298 +1,344 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { 
-  Activity, 
-  Sliders, 
-  Sparkles, 
-  Layers, 
-  Eye, 
-  RotateCcw,
-  Info,
-  Radio
-} from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+
+type FilterType = "lowpass" | "highpass" | "bandreject";
+type FilterProfile = "ideal" | "butterworth" | "gaussian";
+
+const SIZE = 128;
+
+function fft1D(real: Float64Array, imaginary: Float64Array, inverse: boolean) {
+  const length = real.length;
+  let reversed = 0;
+
+  for (let i = 1; i < length; i++) {
+    let bit = length >> 1;
+    while (reversed & bit) {
+      reversed ^= bit;
+      bit >>= 1;
+    }
+    reversed ^= bit;
+    if (i < reversed) {
+      [real[i], real[reversed]] = [real[reversed], real[i]];
+      [imaginary[i], imaginary[reversed]] = [imaginary[reversed], imaginary[i]];
+    }
+  }
+
+  for (let blockSize = 2; blockSize <= length; blockSize *= 2) {
+    const angle = (inverse ? 2 : -2) * Math.PI / blockSize;
+    const rootReal = Math.cos(angle);
+    const rootImaginary = Math.sin(angle);
+    const halfBlock = blockSize / 2;
+
+    for (let start = 0; start < length; start += blockSize) {
+      let weightReal = 1;
+      let weightImaginary = 0;
+      for (let offset = 0; offset < halfBlock; offset++) {
+        const even = start + offset;
+        const odd = even + halfBlock;
+        const productReal =
+          weightReal * real[odd] - weightImaginary * imaginary[odd];
+        const productImaginary =
+          weightReal * imaginary[odd] + weightImaginary * real[odd];
+        real[odd] = real[even] - productReal;
+        imaginary[odd] = imaginary[even] - productImaginary;
+        real[even] += productReal;
+        imaginary[even] += productImaginary;
+
+        const nextWeightReal =
+          weightReal * rootReal - weightImaginary * rootImaginary;
+        weightImaginary =
+          weightReal * rootImaginary + weightImaginary * rootReal;
+        weightReal = nextWeightReal;
+      }
+    }
+  }
+
+  if (inverse) {
+    for (let i = 0; i < length; i++) {
+      real[i] /= length;
+      imaginary[i] /= length;
+    }
+  }
+}
+
+function fft2D(
+  real: Float64Array,
+  imaginary: Float64Array,
+  size: number,
+  inverse: boolean
+) {
+  const lineReal = new Float64Array(size);
+  const lineImaginary = new Float64Array(size);
+
+  for (let y = 0; y < size; y++) {
+    const rowOffset = y * size;
+    for (let x = 0; x < size; x++) {
+      lineReal[x] = real[rowOffset + x];
+      lineImaginary[x] = imaginary[rowOffset + x];
+    }
+    fft1D(lineReal, lineImaginary, inverse);
+    for (let x = 0; x < size; x++) {
+      real[rowOffset + x] = lineReal[x];
+      imaginary[rowOffset + x] = lineImaginary[x];
+    }
+  }
+
+  for (let x = 0; x < size; x++) {
+    for (let y = 0; y < size; y++) {
+      const index = y * size + x;
+      lineReal[y] = real[index];
+      lineImaginary[y] = imaginary[index];
+    }
+    fft1D(lineReal, lineImaginary, inverse);
+    for (let y = 0; y < size; y++) {
+      const index = y * size + x;
+      real[index] = lineReal[y];
+      imaginary[index] = lineImaginary[y];
+    }
+  }
+}
+
+function filterResponse(
+  distance: number,
+  radius: number,
+  type: FilterType,
+  profile: FilterProfile
+) {
+  if (type === "bandreject") {
+    const bandWidth = Math.max(2, radius * 0.25);
+    const bandDistance = Math.abs(distance - radius);
+    if (profile === "ideal") return bandDistance <= bandWidth ? 0 : 1;
+    if (profile === "gaussian") {
+      return 1 - Math.exp(-(bandDistance * bandDistance) / (2 * bandWidth * bandWidth));
+    }
+    const ratio = bandDistance / bandWidth;
+    return (ratio ** 4) / (1 + ratio ** 4);
+  }
+
+  const lowPass = profile === "ideal"
+    ? Number(distance <= radius)
+    : profile === "gaussian"
+      ? Math.exp(-(distance * distance) / (2 * radius * radius))
+      : 1 / (1 + (distance / radius) ** 4);
+  return type === "lowpass" ? lowPass : 1 - lowPass;
+}
+
+function drawGrayscale(canvas: HTMLCanvasElement | null, pixels: Float64Array) {
+  const context = canvas?.getContext("2d");
+  if (!canvas || !context) return;
+
+  const min = Math.min(...pixels);
+  const range = Math.max(1, Math.max(...pixels) - min);
+  const image = context.createImageData(SIZE, SIZE);
+  for (let i = 0; i < pixels.length; i++) {
+    const value = Math.max(0, Math.min(255, Math.round(((pixels[i] - min) / range) * 255)));
+    const offset = i * 4;
+    image.data[offset] = value;
+    image.data[offset + 1] = value;
+    image.data[offset + 2] = value;
+    image.data[offset + 3] = 255;
+  }
+  context.putImageData(image, 0, 0);
+}
 
 export default function FourierPlayground() {
   const spatialCanvasRef = useRef<HTMLCanvasElement>(null);
   const spectrumCanvasRef = useRef<HTMLCanvasElement>(null);
   const filteredCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [filterType, setFilterType] = useState<FilterType>("lowpass");
+  const [cutoffRadius, setCutoffRadius] = useState(35);
+  const [filterProfile, setFilterProfile] = useState<FilterProfile>("gaussian");
 
-  const [filterType, setFilterType] = useState<"lowpass" | "highpass" | "bandreject">("lowpass");
-  const [cutoffRadius, setCutoffRadius] = useState<number>(35);
-  const [filterProfile, setFilterProfile] = useState<"ideal" | "butterworth" | "gaussian">("gaussian");
-
-  // Synthetic 128x128 frequency test pattern
-  const baseImgRef = useRef<Float32Array | null>(null);
-
-  useEffect(() => {
-    const size = 128;
-    const img = new Float32Array(size * size);
-
-    for (let y = 0; y < size; y++) {
-      for (let x = 0; x < size; x++) {
-        const idx = y * size + x;
-        // Low-frequency circular tissue mass
-        const dx = x - 64;
-        const dy = y - 64;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        let val = dist < 45 ? 180 : 40;
-
-        // High-frequency periodic fine texture / grid noise
-        val += Math.sin(x * 0.8) * 20 + Math.cos(y * 0.8) * 20;
-
-        // Sharp high-frequency bone edge
-        if (Math.abs(dist - 30) < 3) val = 250;
-
-        img[idx] = Math.max(0, Math.min(255, val));
+  const sourceImage = useMemo(() => {
+    const image = new Float64Array(SIZE * SIZE);
+    for (let y = 0; y < SIZE; y++) {
+      for (let x = 0; x < SIZE; x++) {
+        const index = y * SIZE + x;
+        const distance = Math.hypot(x - SIZE / 2, y - SIZE / 2);
+        let value = distance < 45 ? 180 : 40;
+        value += Math.sin(x * 0.8) * 20 + Math.cos(y * 0.8) * 20;
+        if (Math.abs(distance - 30) < 3) value = 250;
+        image[index] = Math.max(0, Math.min(255, value));
       }
     }
-
-    baseImgRef.current = img;
+    return image;
   }, []);
 
-  // Update Frequency Domain & Inverse Reconstruction
   useEffect(() => {
-    if (!baseImgRef.current) return;
-    const size = 128;
-    const raw = baseImgRef.current;
+    drawGrayscale(spatialCanvasRef.current, sourceImage);
 
-    // 1. Render Spatial Original Image
-    if (spatialCanvasRef.current) {
-      const ctx = spatialCanvasRef.current.getContext("2d");
-      if (ctx) {
-        const imgData = ctx.createImageData(size, size);
-        for (let i = 0; i < size * size; i++) {
-          const v = raw[i];
-          const pIdx = i * 4;
-          imgData.data[pIdx] = v;
-          imgData.data[pIdx + 1] = v;
-          imgData.data[pIdx + 2] = v;
-          imgData.data[pIdx + 3] = 255;
-        }
-        ctx.putImageData(imgData, 0, 0);
+    const real = Float64Array.from(sourceImage);
+    const imaginary = new Float64Array(sourceImage.length);
+    fft2D(real, imaginary, SIZE, false);
+
+    const responses = new Float64Array(sourceImage.length);
+    let maxMagnitude = 0;
+    for (let y = 0; y < SIZE; y++) {
+      const frequencyY = y <= SIZE / 2 ? y : y - SIZE;
+      for (let x = 0; x < SIZE; x++) {
+        const frequencyX = x <= SIZE / 2 ? x : x - SIZE;
+        const index = y * SIZE + x;
+        responses[index] = filterResponse(
+          Math.hypot(frequencyX, frequencyY),
+          cutoffRadius,
+          filterType,
+          filterProfile
+        );
+        maxMagnitude = Math.max(
+          maxMagnitude,
+          Math.log1p(Math.hypot(real[index], imaginary[index]))
+        );
       }
     }
 
-    // 2. Render Centered 2D Fourier Magnitude Spectrum & Mask Overlay
-    if (spectrumCanvasRef.current) {
-      const ctx = spectrumCanvasRef.current.getContext("2d");
-      if (ctx) {
-        const imgData = ctx.createImageData(size, size);
-        for (let y = 0; y < size; y++) {
-          for (let x = 0; x < size; x++) {
-            const u = x - 64;
-            const v = y - 64;
-            const d = Math.sqrt(u * u + v * v);
-
-            // Centered DC peak + reciprocal 1/d falloff
-            let mag = Math.min(255, Math.log(1 + (3000 / (d + 1))) * 32);
-
-            // Calculate filter mask attenuation H(u,v)
-            let H = 1.0;
-            if (filterType === "lowpass") {
-              if (filterProfile === "ideal") H = d <= cutoffRadius ? 1.0 : 0.0;
-              else if (filterProfile === "gaussian") H = Math.exp(-(d * d) / (2 * cutoffRadius * cutoffRadius));
-              else H = 1 / (1 + Math.pow(d / cutoffRadius, 4));
-            } else if (filterType === "highpass") {
-              if (filterProfile === "ideal") H = d > cutoffRadius ? 1.0 : 0.0;
-              else if (filterProfile === "gaussian") H = 1 - Math.exp(-(d * d) / (2 * cutoffRadius * cutoffRadius));
-              else H = 1 / (1 + Math.pow(cutoffRadius / Math.max(0.001, d), 4));
-            } else {
-              // Band-reject
-              H = Math.abs(d - cutoffRadius) > 12 ? 1.0 : 0.05;
-            }
-
-            const pIdx = (y * size + x) * 4;
-            // Modulate spectrum with mask color tint
-            imgData.data[pIdx] = Math.round(mag * H);
-            imgData.data[pIdx + 1] = Math.round(mag * (0.4 + 0.6 * H));
-            imgData.data[pIdx + 2] = Math.round(mag * 1.1);
-            imgData.data[pIdx + 3] = 255;
-          }
+    const spectrumContext = spectrumCanvasRef.current?.getContext("2d");
+    if (spectrumContext) {
+      const image = spectrumContext.createImageData(SIZE, SIZE);
+      for (let y = 0; y < SIZE; y++) {
+        for (let x = 0; x < SIZE; x++) {
+          const shiftedX = (x + SIZE / 2) % SIZE;
+          const shiftedY = (y + SIZE / 2) % SIZE;
+          const index = shiftedY * SIZE + shiftedX;
+          const magnitude = Math.log1p(Math.hypot(real[index], imaginary[index]));
+          const intensity = maxMagnitude > 0
+            ? Math.round((magnitude / maxMagnitude) * 255)
+            : 0;
+          const response = responses[index];
+          const offset = (y * SIZE + x) * 4;
+          image.data[offset] = Math.round(intensity * response * 0.45);
+          image.data[offset + 1] = Math.round(intensity * (0.35 + 0.65 * response));
+          image.data[offset + 2] = intensity;
+          image.data[offset + 3] = 255;
         }
-        ctx.putImageData(imgData, 0, 0);
-
-        // Draw Cutoff Radius Ring
-        ctx.strokeStyle = "#00B4D8";
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(64, 64, cutoffRadius, 0, Math.PI * 2);
-        ctx.stroke();
       }
+      spectrumContext.putImageData(image, 0, 0);
+      spectrumContext.strokeStyle = "#00B4D8";
+      spectrumContext.lineWidth = 1.5;
+      spectrumContext.beginPath();
+      spectrumContext.arc(SIZE / 2, SIZE / 2, cutoffRadius, 0, Math.PI * 2);
+      spectrumContext.stroke();
     }
 
-    // 3. Render Reconstructed Spatial Filtered Image
-    if (filteredCanvasRef.current) {
-      const ctx = filteredCanvasRef.current.getContext("2d");
-      if (ctx) {
-        const imgData = ctx.createImageData(size, size);
-        for (let y = 0; y < size; y++) {
-          for (let x = 0; x < size; x++) {
-            const idx = y * size + x;
-            const origVal = raw[idx];
-            const dx = x - 64;
-            const dy = y - 64;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-
-            let outVal = origVal;
-
-            if (filterType === "lowpass") {
-              // Blurs fine edges, strips noise, retains smooth low-frequency DC
-              const blurFactor = Math.min(1.0, cutoffRadius / 60);
-              const highFreqNoise = Math.sin(x * 0.8) * 20 + Math.cos(y * 0.8) * 20;
-              outVal = (origVal - highFreqNoise * (1 - blurFactor));
-            } else if (filterType === "highpass") {
-              // High-pass zeroes DC background, boosts edges
-              const highFactor = Math.min(1.0, (65 - cutoffRadius) / 50);
-              const edgeSignal = (Math.abs(dist - 30) < 4 ? 200 : 0) + (Math.sin(x * 0.8) * 25);
-              outVal = 128 + edgeSignal * highFactor;
-            } else {
-              // Band-reject removes periodic noise strip
-              outVal = origVal - (Math.sin(x * 0.8) * 18 + Math.cos(y * 0.8) * 18);
-            }
-
-            const pIdx = idx * 4;
-            const clamped = Math.max(0, Math.min(255, Math.round(outVal)));
-            imgData.data[pIdx] = clamped;
-            imgData.data[pIdx + 1] = clamped;
-            imgData.data[pIdx + 2] = clamped;
-            imgData.data[pIdx + 3] = 255;
-          }
-        }
-        ctx.putImageData(imgData, 0, 0);
-      }
+    const filteredReal = new Float64Array(real.length);
+    const filteredImaginary = new Float64Array(imaginary.length);
+    for (let i = 0; i < real.length; i++) {
+      filteredReal[i] = real[i] * responses[i];
+      filteredImaginary[i] = imaginary[i] * responses[i];
     }
-  }, [filterType, cutoffRadius, filterProfile]);
+    fft2D(filteredReal, filteredImaginary, SIZE, true);
+    drawGrayscale(filteredCanvasRef.current, filteredReal);
+  }, [sourceImage, filterType, cutoffRadius, filterProfile]);
+
+  const buttonClass = (selected: boolean) =>
+    `rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
+      selected
+        ? "bg-white text-adani-navy shadow-sm"
+        : "text-slate-600 hover:text-slate-900"
+    }`;
 
   return (
     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 sm:p-8 space-y-6">
-      {/* Simulation Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full bg-adani-purple/10 text-adani-purple text-[10px] font-bold uppercase tracking-wider">
-              CO3 • Frequency Transforms &amp; 2D DFT Lab
-            </span>
-            <span className="text-slate-300">•</span>
-            <span className="text-xs text-slate-500 font-medium">Module 5 Theory</span>
-          </div>
-          <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            2D Discrete Fourier Frequency Filtering Studio
-          </h2>
-          <p className="text-xs text-slate-600 mt-1 max-w-2xl leading-relaxed">
-            Decompose spatial images into sinusoidal frequency bases $F(u,v)$. Centered DC component $F(0,0)$ anchors average brightness, while outer radii correspond to high-frequency structural edges and texture noise.
-          </p>
-        </div>
-
-        {/* Filter Type Pills */}
-        <div className="flex rounded-xl bg-slate-100 p-1 space-x-1 text-xs font-bold self-start md:self-center">
-          <button
-            onClick={() => setFilterType("lowpass")}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
-              filterType === "lowpass" ? "bg-white text-adani-navy shadow-sm" : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            Low-Pass Filter
-          </button>
-          <button
-            onClick={() => setFilterType("highpass")}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
-              filterType === "highpass" ? "bg-white text-adani-navy shadow-sm" : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            High-Pass Filter
-          </button>
-          <button
-            onClick={() => setFilterType("bandreject")}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
-              filterType === "bandreject" ? "bg-white text-adani-navy shadow-sm" : "text-slate-600 hover:text-slate-900"
-            }`}
-          >
-            Band-Reject Filter
-          </button>
-        </div>
+      <div className="border-b border-slate-100 pb-5">
+        <span className="inline-flex rounded-full bg-adani-purple/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-adani-purple">
+          CO3 • Frequency Transforms &amp; 2D DFT Lab
+        </span>
+        <h2 className="mt-2 text-xl sm:text-2xl font-black tracking-tight text-slate-900">
+          2D Fourier Transform &amp; Frequency Filters
+        </h2>
+        <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-600">
+          Inspect the computed, centered 2D FFT magnitude spectrum, apply an ideal, Butterworth, or Gaussian frequency response, and view the inverse-FFT reconstruction.
+        </p>
       </div>
 
-      {/* 3 Interactive Canvases: Spatial Domain -> Fourier Spectrum -> Inverse Reconstruction */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* 1. Original Spatial Domain */}
-        <div className="space-y-2 text-center">
-          <span className="text-xs font-bold text-slate-700 block">1. Spatial Domain $f(x,y)$</span>
-          <div className="bg-slate-900 rounded-2xl p-4 flex items-center justify-center border border-slate-800 aspect-square">
-            <canvas ref={spatialCanvasRef} width={128} height={128} className="w-full max-w-[200px] aspect-square rounded-lg object-contain" />
-          </div>
-          <p className="text-[11px] text-slate-500">Unprocessed anatomical phantom with periodic grid noise</p>
-        </div>
+      <div className="flex flex-wrap gap-2 rounded-xl bg-slate-100 p-1">
+        {(["lowpass", "highpass", "bandreject"] as const).map((type) => (
+          <button
+            key={type}
+            type="button"
+            aria-pressed={filterType === type}
+            onClick={() => setFilterType(type)}
+            className={buttonClass(filterType === type)}
+          >
+            {type === "bandreject" ? "Band-Reject" : `${type === "lowpass" ? "Low" : "High"}-Pass`} Filter
+          </button>
+        ))}
+      </div>
 
-        {/* 2. Frequency Domain Spectrum */}
-        <div className="space-y-2 text-center">
-          <span className="text-xs font-bold text-adani-purple block">2. Fourier Magnitude $|F(u,v)|$</span>
-          <div className="bg-slate-900 rounded-2xl p-4 flex items-center justify-center border border-purple-900/50 aspect-square relative">
-            <canvas ref={spectrumCanvasRef} width={128} height={128} className="w-full max-w-[200px] aspect-square rounded-lg object-contain" />
-            <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/70 text-[9px] text-cyan-300 font-mono">
-              DC Center (0,0)
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        {[
+          {
+            label: "1. Spatial Image",
+            canvas: spatialCanvasRef,
+            caption: "Synthetic medical image with tissue boundaries and periodic texture."
+          },
+          {
+            label: "2. Centered FFT Magnitude",
+            canvas: spectrumCanvasRef,
+            caption: "Log-scaled |F(u,v)|. Center is DC; the circle marks filter radius."
+          },
+          {
+            label: "3. Inverse-FFT Reconstruction",
+            canvas: filteredCanvasRef,
+            caption: "Spatial image reconstructed from the filtered complex spectrum."
+          }
+        ].map((panel) => (
+          <div key={panel.label} className="space-y-2 text-center">
+            <h3 className="text-xs font-bold text-slate-800">{panel.label}</h3>
+            <div className="flex aspect-square items-center justify-center rounded-2xl border border-slate-200 bg-slate-950 p-4">
+              <canvas
+                ref={panel.canvas}
+                width={SIZE}
+                height={SIZE}
+                className="aspect-square w-full max-w-[240px] rounded-lg"
+              />
             </div>
+            <p className="text-[11px] text-slate-500">{panel.caption}</p>
           </div>
-          <p className="text-[11px] text-slate-500">Log-scaled frequency spectrum with cyan cutoff circle ($D_0$)</p>
-        </div>
-
-        {/* 3. Reconstructed Inverse Output */}
-        <div className="space-y-2 text-center">
-          <span className="text-xs font-bold text-emerald-700 block">3. Inverse Reconstructed $g(x,y)$</span>
-          <div className="bg-slate-900 rounded-2xl p-4 flex items-center justify-center border border-emerald-900/50 aspect-square">
-            <canvas ref={filteredCanvasRef} width={128} height={128} className="w-full max-w-[200px] aspect-square rounded-lg object-contain" />
-          </div>
-          <p className="text-[11px] text-slate-500">Real-time inverse spatial transformation after frequency masking</p>
-        </div>
+        ))}
       </div>
 
-      {/* Controls & Filter Profile */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-100">
+      <div className="grid grid-cols-1 gap-6 border-t border-slate-100 pt-4 md:grid-cols-2">
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-slate-800">Cutoff Frequency Radius ($D_0$):</label>
-            <span className="text-xs font-mono font-bold text-adani-purple px-2 py-0.5 rounded bg-purple-50 border border-purple-200">
+            <label htmlFor="frequency-cutoff" className="text-xs font-bold text-slate-800">
+              Cutoff frequency radius
+            </label>
+            <span className="rounded border border-purple-200 bg-purple-50 px-2 py-0.5 font-mono text-xs font-bold text-adani-purple">
               {cutoffRadius} px
             </span>
           </div>
           <input
+            id="frequency-cutoff"
             type="range"
             min={10}
             max={60}
             value={cutoffRadius}
-            onChange={(e) => setCutoffRadius(Number(e.target.value))}
-            className="w-full accent-adani-purple cursor-pointer"
+            onChange={(event) => setCutoffRadius(Number(event.target.value))}
+            className="w-full cursor-pointer accent-adani-purple"
           />
-          <div className="flex justify-between text-[10px] text-slate-400">
-            <span>Tight Cutoff (Strong Filter)</span>
-            <span>Wide Cutoff (Mild Filter)</span>
-          </div>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-slate-800 block">Transfer Function Profile $H(u,v)$:</label>
+        <fieldset className="space-y-2">
+          <legend className="text-xs font-bold text-slate-800">Filter profile</legend>
           <div className="grid grid-cols-3 gap-2">
-            {(["gaussian", "butterworth", "ideal"] as const).map((prof) => (
+            {(["gaussian", "butterworth", "ideal"] as const).map((profile) => (
               <button
-                key={prof}
-                onClick={() => setFilterProfile(prof)}
-                className={`py-2 px-2.5 rounded-xl border text-xs font-bold capitalize transition-all ${
-                  filterProfile === prof
-                    ? "bg-purple-50 border-purple-300 text-adani-purple shadow-xs"
-                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                key={profile}
+                type="button"
+                aria-pressed={filterProfile === profile}
+                onClick={() => setFilterProfile(profile)}
+                className={`rounded-xl border px-2.5 py-2 text-xs font-bold capitalize transition-colors ${
+                  filterProfile === profile
+                    ? "border-purple-300 bg-purple-50 text-adani-purple"
+                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                 }`}
               >
-                {prof}
+                {profile}
               </button>
             ))}
           </div>
-          <span className="text-[10px] text-slate-500 block">
-            {filterProfile === "ideal" && "Ideal filter causes sharp ringing artifacts in spatial domain (Gibbs phenomenon)."}
-            {filterProfile === "butterworth" && "Butterworth filter provides smooth transition without Gibbs ringing."}
-            {filterProfile === "gaussian" && "Gaussian filter has smooth bell curve; Fourier transform of a Gaussian is also a Gaussian."}
-          </span>
-        </div>
+        </fieldset>
       </div>
     </div>
   );

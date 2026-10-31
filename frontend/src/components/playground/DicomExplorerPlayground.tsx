@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { parseDicom, type DataSet } from "dicom-parser";
 import { 
   FileText, 
   ShieldAlert, 
@@ -12,8 +13,24 @@ import {
   Sparkles, 
   Eye, 
   HelpCircle,
-  X
+  X,
+  Upload,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
+
+interface LoadedDicomSlice {
+  fileName: string;
+  instanceNumber: number;
+  frameNumber: number;
+  frameCount: number;
+  width: number;
+  height: number;
+  pixels: Float32Array;
+  windowCenter: number | null;
+  windowWidth: number | null;
+  invert: boolean;
+}
 
 interface DicomTag {
   tag: string;
@@ -217,13 +234,119 @@ const SAMPLE_DATASETS: Record<string, { title: string; modality: string; organ: 
   }
 };
 
+async function readDicomFile(file: File): Promise<LoadedDicomSlice[]> {
+  const buffer = await file.arrayBuffer();
+  let dataset: DataSet;
+  try {
+    dataset = parseDicom(new Uint8Array(buffer));
+  } catch {
+    throw new Error(`${file.name} is not a readable DICOM file.`);
+  }
+
+  const width = dataset.uint16("x00280011");
+  const height = dataset.uint16("x00280010");
+  const bitsAllocated = dataset.uint16("x00280100");
+  const pixelElement = dataset.elements.x7fe00010;
+  if (!width || !height || !bitsAllocated || !pixelElement) {
+    throw new Error(`${file.name} is missing image dimensions, pixel format, or pixel data.`);
+  }
+
+  const bitsStored = dataset.uint16("x00280101") ?? bitsAllocated;
+  const highBit = dataset.uint16("x00280102") ?? (bitsStored - 1);
+  const pixelRepresentation = dataset.uint16("x00280103") ?? 0;
+  const samplesPerPixel = dataset.uint16("x00280002") ?? 1;
+  const frameCount = Math.max(
+    1,
+    Number.parseInt(dataset.string("x00280008") ?? "1", 10) || 1
+  );
+
+  if (!Number.isInteger(bitsStored) || bitsStored < 1 || bitsStored > bitsAllocated) {
+    throw new Error(`${file.name} has an invalid stored pixel bit depth.`);
+  }
+  if (pixelElement.hadUndefinedLength || pixelElement.encapsulatedPixelData) {
+    throw new Error(
+      `${file.name} uses compressed pixel data. This viewer currently supports uncompressed DICOM images.`
+    );
+  }
+  if (samplesPerPixel !== 1) {
+    throw new Error(`${file.name} is a color image; only grayscale images are supported.`);
+  }
+  if (bitsAllocated !== 8 && bitsAllocated !== 16) {
+    throw new Error(
+      `${file.name} uses ${bitsAllocated}-bit pixels. This viewer supports 8-bit and 16-bit grayscale images.`
+    );
+  }
+
+  const bytesPerPixel = bitsAllocated / 8;
+  const pixelsPerFrame = width * height;
+  const requiredBytes = pixelsPerFrame * frameCount * bytesPerPixel;
+  if (pixelElement.length < requiredBytes) {
+    throw new Error(`${file.name} has incomplete pixel data.`);
+  }
+
+  const transferSyntax = dataset.string("x00020010");
+  const littleEndian = transferSyntax !== "1.2.840.10008.1.2.2";
+  const dataView = new DataView(buffer);
+  const shift = Math.max(0, highBit - bitsStored + 1);
+  const mask = 2 ** bitsStored - 1;
+  const slope = dataset.floatString("x00281053") ?? 1;
+  const intercept = dataset.floatString("x00281052") ?? 0;
+  const instanceNumber = dataset.intString("x00200013") ?? 0;
+  const windowCenter = dataset.floatString("x00281050") ?? null;
+  const windowWidth = dataset.floatString("x00281051") ?? null;
+  const invert = dataset.string("x00280004") === "MONOCHROME1";
+  const slices: LoadedDicomSlice[] = [];
+
+  for (let frame = 0; frame < frameCount; frame++) {
+    const pixels = new Float32Array(pixelsPerFrame);
+    const frameOffset = pixelElement.dataOffset + frame * pixelsPerFrame * bytesPerPixel;
+    for (let i = 0; i < pixelsPerFrame; i++) {
+      const offset = frameOffset + i * bytesPerPixel;
+      let raw = bitsAllocated === 8
+        ? (pixelRepresentation === 1 ? dataView.getInt8(offset) : dataView.getUint8(offset))
+        : (pixelRepresentation === 1
+          ? dataView.getInt16(offset, littleEndian)
+          : dataView.getUint16(offset, littleEndian));
+
+      if (bitsStored < bitsAllocated || shift > 0) {
+        raw = (raw >> shift) & mask;
+        if (pixelRepresentation === 1 && raw >= 2 ** (bitsStored - 1)) {
+          raw -= 2 ** bitsStored;
+        }
+      }
+      pixels[i] = raw * slope + intercept;
+    }
+
+    slices.push({
+      fileName: file.name,
+      instanceNumber,
+      frameNumber: frame + 1,
+      frameCount,
+      width,
+      height,
+      pixels,
+      windowCenter,
+      windowWidth,
+      invert
+    });
+  }
+
+  return slices;
+}
+
 export default function DicomExplorerPlayground() {
+  const imageCanvasRef = useRef<HTMLCanvasElement>(null);
   const [selectedKey, setSelectedKey] = useState<string>("head-ct");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [categoryFilter, setCategoryFilter] = useState<string>("All");
   const [inspectedTag, setInspectedTag] = useState<DicomTag | null>(null);
+  const [loadedSlices, setLoadedSlices] = useState<LoadedDicomSlice[]>([]);
+  const [activeSliceIndex, setActiveSliceIndex] = useState(0);
+  const [isLoadingDicom, setIsLoadingDicom] = useState(false);
+  const [dicomError, setDicomError] = useState<string | null>(null);
 
   const activeDataset = SAMPLE_DATASETS[selectedKey];
+  const activeSlice = loadedSlices[activeSliceIndex] ?? null;
   const tags = activeDataset.tags.filter((t) => {
     const matchesSearch =
       t.tag.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -232,6 +355,71 @@ export default function DicomExplorerPlayground() {
     const matchesCat = categoryFilter === "All" || t.category === categoryFilter;
     return matchesSearch && matchesCat;
   });
+
+  useEffect(() => {
+    const canvas = imageCanvasRef.current;
+    if (!canvas || !activeSlice) return;
+
+    canvas.width = activeSlice.width;
+    canvas.height = activeSlice.height;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+
+    const imageData = context.createImageData(activeSlice.width, activeSlice.height);
+    let min = Infinity;
+    let max = -Infinity;
+    for (const value of activeSlice.pixels) {
+      min = Math.min(min, value);
+      max = Math.max(max, value);
+    }
+
+    const hasWindow =
+      activeSlice.windowCenter !== null &&
+      activeSlice.windowWidth !== null &&
+      activeSlice.windowWidth > 0;
+    const lower = hasWindow
+      ? activeSlice.windowCenter! - activeSlice.windowWidth! / 2
+      : min;
+    const range = hasWindow ? activeSlice.windowWidth! : Math.max(1, max - min);
+
+    for (let i = 0; i < activeSlice.pixels.length; i++) {
+      const gray = Math.max(
+        0,
+        Math.min(255, Math.round(((activeSlice.pixels[i] - lower) / range) * 255))
+      );
+      const displayGray = activeSlice.invert ? 255 - gray : gray;
+      const pixelOffset = i * 4;
+      imageData.data[pixelOffset] = displayGray;
+      imageData.data[pixelOffset + 1] = displayGray;
+      imageData.data[pixelOffset + 2] = displayGray;
+      imageData.data[pixelOffset + 3] = 255;
+    }
+    context.putImageData(imageData, 0, 0);
+  }, [activeSlice]);
+
+  const handleDicomFiles = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setIsLoadingDicom(true);
+    setDicomError(null);
+    try {
+      const fileSlices = await Promise.all(
+        Array.from(files).map((file) => readDicomFile(file))
+      );
+      const sortedSlices = fileSlices.flat().sort(
+        (a, b) => a.instanceNumber - b.instanceNumber ||
+          a.fileName.localeCompare(b.fileName) ||
+          a.frameNumber - b.frameNumber
+      );
+      setLoadedSlices(sortedSlices);
+      setActiveSliceIndex(0);
+    } catch (error) {
+      setDicomError(
+        error instanceof Error ? error.message : "Unable to read the selected DICOM files."
+      );
+    } finally {
+      setIsLoadingDicom(false);
+    }
+  };
 
   return (
     <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
@@ -278,6 +466,86 @@ export default function DicomExplorerPlayground() {
           ))}
         </div>
       </div>
+
+      <section className="rounded-2xl border border-slate-200 bg-slate-950 p-4 sm:p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h4 className="text-sm font-bold text-white">Local DICOM Image Viewer</h4>
+            <p className="text-xs text-slate-300 mt-1">
+              Load uncompressed 8-bit or 16-bit grayscale DICOM files or a series. Files are read in this browser and are not uploaded.
+            </p>
+          </div>
+          <label className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-white transition-colors ${isLoadingDicom ? "bg-slate-600 cursor-wait" : "bg-adani-cyan hover:bg-sky-600 cursor-pointer"}`}>
+            <Upload className="w-4 h-4" />
+            {isLoadingDicom ? "Reading DICOM..." : "Load DICOM Files"}
+            <input
+              type="file"
+              accept=".dcm,application/dicom"
+              multiple
+              disabled={isLoadingDicom}
+              className="sr-only"
+              onChange={(event) => {
+                void handleDicomFiles(event.currentTarget.files);
+                event.currentTarget.value = "";
+              }}
+            />
+          </label>
+        </div>
+
+        {dicomError && (
+          <p role="alert" className="rounded-lg border border-rose-400/40 bg-rose-950/60 p-3 text-xs text-rose-200">
+            {dicomError}
+          </p>
+        )}
+
+        {activeSlice ? (
+          <div className="space-y-3">
+            <div className="min-h-48 rounded-xl bg-black flex items-center justify-center overflow-hidden">
+              <canvas
+                ref={imageCanvasRef}
+                aria-label={`DICOM image ${activeSliceIndex + 1} of ${loadedSlices.length}`}
+                className="max-h-[60vh] max-w-full w-auto h-auto object-contain"
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-200">
+              <span className="truncate" title={activeSlice.fileName}>
+                {activeSlice.fileName}
+                {activeSlice.frameCount > 1 && ` · frame ${activeSlice.frameNumber}/${activeSlice.frameCount}`}
+                {` · ${activeSlice.width} × ${activeSlice.height}`}
+              </span>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  aria-label="Previous DICOM image"
+                  disabled={activeSliceIndex === 0}
+                  onClick={() => setActiveSliceIndex((index) => Math.max(0, index - 1))}
+                  className="inline-flex items-center gap-1 rounded-lg bg-slate-800 px-3 py-2 font-semibold hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </button>
+                <span className="whitespace-nowrap">
+                  {activeSliceIndex + 1} / {loadedSlices.length}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Next DICOM image"
+                  disabled={activeSliceIndex >= loadedSlices.length - 1}
+                  onClick={() => setActiveSliceIndex((index) => Math.min(loadedSlices.length - 1, index + 1))}
+                  className="inline-flex items-center gap-1 rounded-lg bg-slate-800 px-3 py-2 font-semibold hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="min-h-48 rounded-xl border border-dashed border-slate-700 bg-black/50 flex items-center justify-center px-6 text-center text-xs text-slate-400">
+            Select one DICOM image or multiple files from the same series to view and navigate slices.
+          </div>
+        )}
+      </section>
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

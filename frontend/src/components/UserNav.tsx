@@ -16,6 +16,7 @@ import {
   KeyRound,
   Sparkles,
   BookOpen,
+  Wrench,
   X
 } from "lucide-react";
 
@@ -100,6 +101,15 @@ export function UserNav() {
               >
                 <BookOpen className="w-4 h-4 text-adani-cyan" />
                 Course Dashboard
+              </Link>
+
+              <Link
+                href="/medical-imaging-tools"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-2.5 px-4 py-2 hover:bg-sky-50 font-medium text-slate-700 transition-colors"
+              >
+                <Wrench className="w-4 h-4 text-adani-cyan" />
+                Medical Imaging Tools
               </Link>
 
               <Link

@@ -56,6 +56,12 @@ export default function HomePage() {
             >
               Curriculum Dashboard
             </Link>
+            <Link
+              href="/medical-imaging-tools"
+              className="hidden sm:inline-flex items-center text-xs font-bold text-adani-cyan hover:text-adani-navy px-3 py-2 rounded-lg hover:bg-sky-50 transition-colors"
+            >
+              Medical Imaging Tools
+            </Link>
             {user || profile ? (
               <UserNav />
             ) : (
