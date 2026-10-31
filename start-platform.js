@@ -21,8 +21,8 @@ console.log(`📡 Render PORT: ${PORT}`);
 console.log(`📁 Root: ${ROOT_DIR}`);
 console.log('====================================================');
 
-// 1. Detect Python executable
-function getPythonCommand() {
+// 1. Detect base Python executable
+function getBasePythonCommand() {
   const candidates = ['python3', 'python'];
   for (const cmd of candidates) {
     try {
@@ -35,43 +35,69 @@ function getPythonCommand() {
   return 'python3';
 }
 
-const pythonCmd = getPythonCommand();
-console.log(`🐍 Using Python command: ${pythonCmd}`);
+const basePythonCmd = getBasePythonCommand();
+console.log(`🐍 Detected base Python command: ${basePythonCmd}`);
 
-// 2. Ensure Python Dependencies (for Native Node environments on Render)
+// 2. Ensure Python Dependencies (supports Debian/Ubuntu PEP 668 externally-managed environments)
 function ensureDependencies() {
   console.log('🔍 Checking Python dependencies (fastapi, uvicorn, etc.)...');
+  
+  // First check if base python already has packages
   try {
-    execSync(`${pythonCmd} -c "import fastapi, uvicorn, pydantic, sqlalchemy, asyncpg"`, {
+    execSync(`${basePythonCmd} -c "import fastapi, uvicorn, pydantic, sqlalchemy, asyncpg"`, {
       stdio: 'ignore',
     });
-    console.log('✅ Python dependencies are satisfied.');
+    console.log('✅ Python dependencies already satisfied in base environment.');
+    return basePythonCmd;
   } catch (err) {
-    console.log('📦 Installing Python dependencies from backend/requirements.txt...');
-    const reqPath = path.join(BACKEND_DIR, 'requirements.txt');
-    try {
-      execSync(`${pythonCmd} -m pip install --no-cache-dir -r "${reqPath}"`, {
-        stdio: 'inherit',
-      });
-      console.log('✅ Python dependencies installed successfully.');
-    } catch (pipErr) {
-      console.warn('⚠️ Standard pip install failed, attempting with --user flag...');
-      execSync(`${pythonCmd} -m pip install --user --no-cache-dir -r "${reqPath}"`, {
-        stdio: 'inherit',
-      });
-      console.log('✅ Python dependencies installed with --user successfully.');
-    }
+    console.log('📦 Missing Python dependencies. Installing from backend/requirements.txt...');
   }
+
+  const reqPath = path.join(BACKEND_DIR, 'requirements.txt');
+
+  // Strategy A: Try pip install with --break-system-packages (recommended by PEP 668 in containers/VMs)
+  try {
+    console.log('⚡ Trying: pip install --break-system-packages...');
+    execSync(`${basePythonCmd} -m pip install --break-system-packages --no-cache-dir -r "${reqPath}"`, {
+      stdio: 'inherit',
+    });
+    console.log('✅ Python dependencies installed successfully via --break-system-packages.');
+    return basePythonCmd;
+  } catch (breakErr) {
+    console.warn('⚠️ pip install --break-system-packages failed or unsupported, creating .venv...');
+  }
+
+  // Strategy B: Create an isolated virtual environment (.venv)
+  const venvDir = path.join(ROOT_DIR, '.venv');
+  const venvPython = process.platform === 'win32'
+    ? path.join(venvDir, 'Scripts', 'python.exe')
+    : path.join(venvDir, 'bin', 'python');
+  const venvPip = process.platform === 'win32'
+    ? path.join(venvDir, 'Scripts', 'pip.exe')
+    : path.join(venvDir, 'bin', 'pip');
+
+  if (!fs.existsSync(venvPython)) {
+    console.log(`🌱 Creating virtual environment at ${venvDir}...`);
+    execSync(`${basePythonCmd} -m venv "${venvDir}"`, { stdio: 'inherit' });
+  }
+
+  console.log(`📦 Installing dependencies into .venv...`);
+  execSync(`"${venvPip}" install --no-cache-dir -r "${reqPath}"`, {
+    stdio: 'inherit',
+  });
+  console.log('✅ Python dependencies installed successfully in .venv.');
+  return venvPython;
 }
 
+let activePythonCmd = basePythonCmd;
 try {
-  ensureDependencies();
+  activePythonCmd = ensureDependencies();
 } catch (depErr) {
-  console.error('⚠️ Warning during dependency check:', depErr.message);
+  console.error('⚠️ Critical warning during dependency preparation:', depErr.message);
 }
 
 // 3. Launch FastAPI Backend
-console.log('⚙️  [1/2] Launching FastAPI backend on 0.0.0.0:8000...');
+console.log(`⚙️  [1/2] Launching FastAPI backend using: ${activePythonCmd} on 0.0.0.0:8000...`);
 
 const backendEnv = {
   ...process.env,
@@ -81,7 +107,7 @@ const backendEnv = {
 
 // Use stdio: 'inherit' so Python outputs any errors directly to Render console
 const fastapiProcess = spawn(
-  pythonCmd,
+  activePythonCmd,
   ['-m', 'uvicorn', 'app.main:app', '--host', '0.0.0.0', '--port', '8000'],
   {
     cwd: BACKEND_DIR,

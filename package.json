@@ -5,7 +5,7 @@
   "description": "Medical Text and Image Processing (AIDS 12605.1) - Adani Institute of Higher Education and Research",
   "scripts": {
     "dev": "npm --prefix frontend run dev",
-    "build": "node -e \"try { require('child_process').execSync('pip install --no-cache-dir -r backend/requirements.txt || python3 -m pip install --no-cache-dir -r backend/requirements.txt', {stdio: 'inherit'}); } catch (e) { console.log('Notice: ' + e.message); }\" && npm --prefix frontend run build",
+    "build": "node -e \"try { require('child_process').execSync('pip install --break-system-packages --no-cache-dir -r backend/requirements.txt || python3 -m pip install --break-system-packages --no-cache-dir -r backend/requirements.txt || pip install --no-cache-dir -r backend/requirements.txt', {stdio: 'inherit'}); } catch (e) { console.log('Notice: ' + e.message); }\" && npm --prefix frontend run build",
     "start": "node start-platform.js",
     "start:frontend": "npm --prefix frontend run start",
     "lint": "npm --prefix frontend run lint"
