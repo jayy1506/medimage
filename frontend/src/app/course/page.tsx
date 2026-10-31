@@ -13,7 +13,10 @@ import {
   Sparkles,
   FileText,
   Calculator,
-  UserCheck
+  UserCheck,
+  ArrowRight,
+  TrendingUp,
+  ArrowLeft
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { UserNav } from "@/components/UserNav";
@@ -24,13 +27,26 @@ import {
   STUDENT_NOTE_METADATA 
 } from "@/data/curriculumData";
 import { BrandLogo } from "@/components/BrandLogo";
+import PlaygroundNavModal from "@/components/playground/PlaygroundNavModal";
 
 export default function CourseDashboardPage() {
   const { user, profile } = useAuth();
-  const { isTopicCompleted, completedTopicsCount, totalTopicsCount } = useProgress();
+  const { 
+    isTopicCompleted, 
+    completedTopics = [], 
+    completedTopicsCount, 
+    totalTopicsCount,
+    clearedModulesCount = 0,
+    clearedModules = [],
+    moduleScores = {}
+  } = useProgress();
   const [activeTab, setActiveTab] = useState<"modules" | "formulas">("modules");
 
   const progressPct = totalTopicsCount > 0 ? Math.round((completedTopicsCount / totalTopicsCount) * 100) : 0;
+
+  // Find next topic to study or default to Topic 1
+  const allTopicsFlat = ALL_MODULES.flatMap((m) => m.topics.map((t) => ({ ...t, moduleId: m.id })));
+  const nextTopic = allTopicsFlat.find((t) => !completedTopics.includes(t.slug)) || allTopicsFlat[0];
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
@@ -45,12 +61,21 @@ export default function CourseDashboardPage() {
               </span>
             </Link>
             <div className="hidden sm:block h-5 w-px bg-slate-300" />
+            <Link
+              href="/dashboard"
+              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-adani-cyan transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back to Dashboard</span>
+            </Link>
+            <span className="hidden sm:block text-slate-300">•</span>
             <span className="hidden sm:block text-xs font-bold text-adani-navy uppercase tracking-wider">
               {STUDENT_NOTE_METADATA.course_code} • Workstation
             </span>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2.5">
+            <PlaygroundNavModal />
             <UserNav />
           </div>
         </div>
@@ -58,38 +83,92 @@ export default function CourseDashboardPage() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 space-y-6">
-        {/* Student Dedication & Academic Header */}
-        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-adani-navy via-slate-900 to-slate-950 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+        {/* COURSE START PAGE & COMPLETION PROGRESS BANNER */}
+        <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-adani-navy via-slate-900 to-slate-950 text-white shadow-xl flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8 relative overflow-hidden">
           <div className="space-y-3 max-w-2xl relative z-10">
             <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-slate-200 text-[10px] font-semibold transition-colors"
+              >
+                <ArrowLeft className="w-3 h-3" />
+                <span>Dashboard</span>
+              </Link>
               <span className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400/30 text-adani-cyan text-[11px] font-bold uppercase tracking-wider">
                 <BookOpen className="w-3.5 h-3.5" />
                 <span>Accredited Academic Notes • {STUDENT_NOTE_METADATA.course_code}</span>
               </span>
               <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full bg-purple-500/20 border border-purple-400/30 text-purple-300 text-[10px] font-bold">
                 <Sparkles className="w-3 h-3" />
-                <span>Concept → Example → Application Question</span>
+                <span>Concept → Example → Application</span>
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+            <h1 className="text-2xl sm:text-3.5xl font-black tracking-tight text-white leading-tight">
               {STUDENT_NOTE_METADATA.title}
             </h1>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
               Comprehensive accredited learning modules for B.Tech Semester VI. Every topic includes detailed physics, mathematical derivations, worked clinical examples, and verified application questions.
             </p>
+
+            {/* Primary Action Buttons: Start Syllabus & MedAI Tutor */}
+            <div className="pt-2 flex flex-wrap items-center gap-3">
+              <Link
+                href={`/course/${nextTopic.moduleId}/${nextTopic.slug}`}
+                className="px-5 py-2.5 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-adani-cyan via-adani-purple to-adani-magenta hover:opacity-95 shadow-md transition-all flex items-center gap-2 transform hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <BookOpen className="w-4 h-4" />
+                <span>{progressPct > 0 ? "Continue Syllabus" : "Start Syllabus"} ({nextTopic.title})</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+
+              <Link
+                href="/tutor"
+                className="px-4 py-2.5 rounded-xl font-bold text-xs text-purple-200 bg-white/10 hover:bg-white/20 border border-white/15 transition-all flex items-center gap-1.5"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-purple-300" />
+                <span>Ask MedAI Tutor</span>
+              </Link>
+            </div>
           </div>
 
-          {/* Progress Circular Dial */}
-          <div className="flex items-center space-x-4 bg-white/10 p-5 rounded-2xl border border-white/10 flex-shrink-0 relative z-10">
-            <div className="text-center">
-              <div className="text-3xl font-black text-adani-cyan">{progressPct}%</div>
-              <div className="text-[10px] text-slate-300 uppercase tracking-wider font-bold">Curriculum Cleared</div>
+          {/* Elevated Progress Circular Dial & Course Completion Card */}
+          <div className="flex items-center space-x-5 bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/15 flex-shrink-0 relative z-10">
+            <div className="relative w-20 h-20 flex items-center justify-center flex-shrink-0">
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 36 36">
+                <path
+                  className="text-white/20"
+                  strokeWidth="3.5"
+                  stroke="currentColor"
+                  fill="none"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+                <path
+                  className="text-adani-cyan transition-all duration-1000 ease-out"
+                  strokeDasharray={`${progressPct}, 100`}
+                  strokeWidth="3.5"
+                  strokeLinecap="round"
+                  stroke="currentColor"
+                  fill="none"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+              </svg>
+              <div className="absolute text-center">
+                <span className="text-xl font-black text-white">{progressPct}%</span>
+              </div>
             </div>
-            <div className="h-10 w-px bg-white/20" />
-            <div className="text-xs space-y-1">
-              <div className="text-slate-200"><span className="font-bold text-white">{completedTopicsCount}</span> of {totalTopicsCount} Topics</div>
-              <div className="text-[10px] text-emerald-400 font-semibold">&gt;75% Pass Condition Active</div>
+
+            <div className="space-y-1">
+              <div className="text-[11px] text-slate-300 uppercase tracking-wider font-bold">Course Completion</div>
+              <div className="text-sm font-bold text-white">
+                {completedTopicsCount} of {totalTopicsCount} Topics
+              </div>
+              <div className="text-xs text-slate-300">
+                {clearedModulesCount} of 6 Modules Cleared
+              </div>
+              <div className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1 pt-0.5">
+                <TrendingUp className="w-3 h-3 text-emerald-400" /> &gt;75.0% Pass Rule Active
+              </div>
             </div>
           </div>
         </div>

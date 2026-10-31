@@ -36,8 +36,8 @@ export function UserNav() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const fullName = profile?.full_name || (user?.email ? user.email.split("@")[0] : "Institutional User");
-  const email = profile?.email || user?.email || "user@adani.edu.in";
+  const fullName = profile?.full_name || user?.displayName || "Jay Thakre";
+  const email = profile?.email || user?.email || "jay.thakre@adani.edu.in";
   const userRole = profile?.role || role || "student";
 
   // Compute initials for the avatar logo
@@ -56,19 +56,10 @@ export function UserNav() {
       <div className="relative" ref={menuRef}>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 p-1 pl-1.5 pr-2.5 rounded-full hover:bg-slate-100 border border-slate-200 transition-colors focus:outline-none focus:ring-2 focus:ring-adani-cyan/30"
+          className="w-8 h-8 rounded-full bg-gradient-to-tr from-adani-cyan via-purple-600 to-adani-purple hover:opacity-90 flex items-center justify-center text-white font-bold text-xs shadow-sm ring-2 ring-white border border-slate-200 transition-all transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-adani-cyan/40 touch-manipulation cursor-pointer"
           title={`${fullName} (${email})`}
         >
-          {/* Avatar / Logo with initials */}
-          <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-adani-cyan to-adani-purple flex items-center justify-center text-white font-bold text-xs shadow-sm ring-2 ring-white">
-            {initials}
-          </div>
-
-          <span className="text-xs font-semibold text-slate-800 hidden sm:inline-block max-w-[120px] truncate">
-            {fullName}
-          </span>
-
-          <ChevronDown className={`w-3.5 h-3.5 text-slate-500 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+          {initials}
         </button>
 
         {/* Dropdown Menu */}

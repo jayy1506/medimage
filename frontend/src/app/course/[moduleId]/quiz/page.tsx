@@ -6,6 +6,7 @@ import {
   Award, 
   Clock, 
   ChevronLeft, 
+  ChevronRight,
   CheckCircle2, 
   XCircle, 
   RotateCcw, 
@@ -28,6 +29,7 @@ export default function ModuleQuizPage({
   const currentQuestions: QuizQuestionItem[] = MODULE_QUIZ_REGISTRY[params.moduleId] || MODULE_QUIZ_REGISTRY["mod-1"];
   const currentModule = ALL_MODULES.find((m) => m.id === params.moduleId) || ALL_MODULES[0];
 
+  const [currentQIndex, setCurrentQIndex] = useState<number>(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({});
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [result, setResult] = useState<{
@@ -40,6 +42,18 @@ export default function ModuleQuizPage({
   const handleSelect = (questionId: string, optionId: string) => {
     if (isSubmitted) return;
     setSelectedAnswers((prev) => ({ ...prev, [questionId]: optionId }));
+  };
+
+  const handlePrev = () => {
+    if (currentQIndex > 0) {
+      setCurrentQIndex((prev) => prev - 1);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentQIndex < currentQuestions.length - 1) {
+      setCurrentQIndex((prev) => prev + 1);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -184,96 +198,174 @@ export default function ModuleQuizPage({
           </div>
         )}
 
-        {/* 15 Questions Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {currentQuestions.map((q, idx) => (
-            <div
-              key={q.id}
-              className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <span className="text-xs font-black text-slate-400">
-                  {idx + 1 < 10 ? `0${idx + 1}` : idx + 1}.
-                </span>
-                <p className="flex-1 text-sm font-bold text-slate-900 leading-snug">
+        {/* Question Stepper / Jump Navigation Bar */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 overflow-x-auto py-1 max-w-full">
+            {currentQuestions.map((item, idx) => {
+              const isAnswered = !!selectedAnswers[item.id];
+              const isCurrent = idx === currentQIndex;
+              return (
+                <button
+                  type="button"
+                  key={item.id}
+                  onClick={() => setCurrentQIndex(idx)}
+                  className={`w-7 h-7 rounded-lg text-xs font-bold transition-all flex items-center justify-center ${
+                    isCurrent
+                      ? "bg-adani-cyan text-white shadow-sm ring-2 ring-sky-300"
+                      : isAnswered
+                      ? "bg-emerald-100 text-emerald-800 border border-emerald-300"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200 border border-slate-200"
+                  }`}
+                  title={`Go to Question ${idx + 1}`}
+                >
+                  {idx + 1}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="text-xs font-semibold text-slate-600 flex-shrink-0">
+            Answered: <strong className="text-adani-cyan font-bold">{Object.keys(selectedAnswers).length}</strong> of {currentQuestions.length} Questions
+          </div>
+        </div>
+
+        {/* ONE QUESTION ASKED AT A TIME */}
+        {(() => {
+          const q = currentQuestions[currentQIndex] || currentQuestions[0];
+          const isSelected = selectedAnswers[q.id];
+
+          return (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm p-6 sm:p-8 space-y-5">
+                <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-black px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 font-mono">
+                      Question {currentQIndex + 1 < 10 ? `0${currentQIndex + 1}` : currentQIndex + 1} of {currentQuestions.length}
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-adani-cyan/10 text-adani-cyan">
+                      {q.co_tag}
+                    </span>
+                  </div>
+
+                  {selectedAnswers[q.id] && !isSubmitted && (
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      Option {selectedAnswers[q.id]} Selected
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-sm sm:text-base font-bold text-slate-900 leading-snug">
                   {q.question_text}
                 </p>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-adani-cyan/10 text-adani-cyan">
-                  {q.co_tag}
-                </span>
-              </div>
 
-              <div className="space-y-2 mt-4">
-                {q.options.map((opt) => {
-                  const isSelected = selectedAnswers[q.id] === opt.id;
-                  const isCorrect = isSubmitted && opt.id === q.correct_option_id;
-                  const isWrongSelected = isSubmitted && isSelected && opt.id !== q.correct_option_id;
+                <div className="space-y-2.5 mt-4">
+                  {q.options.map((opt) => {
+                    const isOptSelected = selectedAnswers[q.id] === opt.id;
+                    const isCorrect = isSubmitted && opt.id === q.correct_option_id;
+                    const isWrongSelected = isSubmitted && isOptSelected && opt.id !== q.correct_option_id;
 
-                  return (
-                    <button
-                      type="button"
-                      key={opt.id}
-                      disabled={isSubmitted}
-                      onClick={() => handleSelect(q.id, opt.id)}
-                      className={`w-full text-left p-3.5 rounded-xl border text-xs transition-all flex items-start space-x-3 ${
-                        isCorrect
-                          ? "border-emerald-500 bg-emerald-50/80 text-emerald-950 font-bold shadow-sm"
-                          : isWrongSelected
-                          ? "border-red-400 bg-red-50 text-red-950 font-medium"
-                          : isSelected
-                          ? "border-adani-cyan bg-adani-cyan/5 text-adani-navy font-bold shadow-sm"
-                          : "border-slate-200 hover:border-slate-300 text-slate-700 bg-white"
-                      }`}
-                    >
-                      <span
-                        className={`h-5 w-5 rounded-md flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${
+                    return (
+                      <button
+                        type="button"
+                        key={opt.id}
+                        disabled={isSubmitted}
+                        onClick={() => handleSelect(q.id, opt.id)}
+                        className={`w-full text-left p-4 rounded-2xl border text-xs sm:text-sm transition-all flex items-start space-x-3 cursor-pointer disabled:cursor-default ${
                           isCorrect
-                            ? "bg-emerald-600 text-white"
+                            ? "border-emerald-500 bg-emerald-50/90 text-emerald-950 font-bold shadow-sm"
                             : isWrongSelected
-                            ? "bg-red-600 text-white"
-                            : isSelected
-                            ? "bg-adani-cyan text-white"
-                            : "bg-slate-100 text-slate-600"
+                            ? "border-red-400 bg-red-50 text-red-950 font-medium"
+                            : isOptSelected
+                            ? "border-adani-cyan bg-sky-50/70 text-adani-navy font-bold shadow-sm ring-1 ring-adani-cyan/50"
+                            : "border-slate-200 hover:border-slate-300 text-slate-700 bg-white hover:bg-slate-50"
                         }`}
                       >
-                        {opt.id}
-                      </span>
-                      <span className="flex-1 leading-relaxed">{opt.text}</span>
-                    </button>
-                  );
-                })}
+                        <span
+                          className={`h-5 w-5 rounded-md flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${
+                            isCorrect
+                              ? "bg-emerald-600 text-white"
+                              : isWrongSelected
+                              ? "bg-red-600 text-white"
+                              : isOptSelected
+                              ? "bg-adani-cyan text-white"
+                              : "bg-slate-100 text-slate-600"
+                          }`}
+                        >
+                          {opt.id}
+                        </span>
+                        <span className="flex-1 leading-relaxed">{opt.text}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Verified Explanation upon submission */}
+                {isSubmitted && q.explanation && (
+                  <div className="mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-start gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-slate-800">Verified Answer: Option {q.correct_option_id}</span>
+                      <p className="mt-0.5 text-slate-600 text-xs leading-relaxed">{q.explanation}</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Verified Explanation upon submission */}
-              {isSubmitted && q.explanation && (
-                <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold text-slate-800">Verified Answer: Option {q.correct_option_id}</span>
-                    <p className="mt-0.5 text-slate-600 text-[11px] leading-relaxed">{q.explanation}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
+              {/* PREVIOUS AND NEXT BUTTONS: LEFT AND RIGHT SIDES RESPECTIVELY */}
+              <div className="flex items-center justify-between pt-2">
+                {/* Left Side: Previous Button */}
+                <button
+                  type="button"
+                  onClick={handlePrev}
+                  disabled={currentQIndex === 0}
+                  className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                    currentQIndex === 0
+                      ? "bg-slate-100 text-slate-300 border border-slate-200 cursor-not-allowed opacity-60"
+                      : "bg-white text-slate-700 hover:text-adani-navy hover:bg-slate-100 border border-slate-200 shadow-2xs active:scale-95 cursor-pointer"
+                  }`}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Previous Question</span>
+                </button>
 
-          {!isSubmitted && (
-            <div className="flex items-center justify-between pt-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm sticky bottom-4 z-20">
-              <span className="text-xs text-slate-500 font-medium">
-                Answered: <strong className="text-adani-cyan font-bold">{Object.keys(selectedAnswers).length}</strong> of {currentQuestions.length} Questions
-              </span>
+                {/* Middle: Progress label */}
+                <span className="text-xs font-semibold text-slate-500 hidden sm:inline">
+                  Question {currentQIndex + 1} of {currentQuestions.length}
+                </span>
 
-              <button
-                type="submit"
-                disabled={Object.keys(selectedAnswers).length < currentQuestions.length}
-                className="px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-adani-cyan via-adani-purple to-adani-magenta hover:opacity-95 disabled:opacity-40 shadow-md transition-all flex items-center space-x-2"
-              >
-                <span>Submit Evaluation (&gt;75% Rule)</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-        </form>
+                {/* Right Side: Next Button OR Submit Button */}
+                {currentQIndex < currentQuestions.length - 1 ? (
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-adani-cyan hover:bg-sky-600 shadow-sm transition-all transform hover:translate-x-0.5 active:scale-95 cursor-pointer"
+                  >
+                    <span>Next Question</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                ) : !isSubmitted ? (
+                  <button
+                    type="submit"
+                    disabled={Object.keys(selectedAnswers).length < currentQuestions.length}
+                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-adani-cyan via-adani-purple to-adani-magenta hover:opacity-95 shadow-md disabled:opacity-40 transition-all cursor-pointer"
+                  >
+                    <span>Submit Evaluation (&gt;75% Rule)</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleRetake}
+                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-slate-700 bg-white border border-slate-200 shadow-2xs hover:bg-slate-100 cursor-pointer"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span>Retake Assessment</span>
+                  </button>
+                )}
+              </div>
+            </form>
+          );
+        })()}
       </div>
     </div>
   );
