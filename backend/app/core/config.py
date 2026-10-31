@@ -10,9 +10,10 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/postgres"
     DIRECT_DATABASE_URL: str = ""
 
-    # Firebase Admin SDK
+    # Firebase Admin SDK & Web Auth
     FIREBASE_SERVICE_ACCOUNT_B64: str = ""
-    FIREBASE_PROJECT_ID: str = "adani-medimage"
+    FIREBASE_PROJECT_ID: str = "medimage-ca668"
+    FIREBASE_API_KEY: str = "AIzaSyCQIR2rT9Qh8hAbBmde309nLeB7ZigVKqc"
 
     # Upstash Redis
     UPSTASH_REDIS_REST_URL: str = ""

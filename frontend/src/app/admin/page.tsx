@@ -151,7 +151,7 @@ export default function AdminDashboardPage() {
     if (typeof window !== "undefined") {
       try {
         localStorage.removeItem("medimage_redis_roster_cache");
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const DUMMY_EMAILS = new Set([
@@ -361,7 +361,7 @@ export default function AdminDashboardPage() {
             })
           });
           addedCount++;
-        } catch (e) {}
+        } catch (e) { }
       }
     }
 
@@ -374,7 +374,7 @@ export default function AdminDashboardPage() {
           setUsersList(data.users);
         }
       }
-    } catch (e) {}
+    } catch (e) { }
 
     setInviteSuccess(`Successfully imported and cached ${addedCount} users in Redis`);
     setCsvContent("");
@@ -551,33 +551,30 @@ export default function AdminDashboardPage() {
         <div className="flex border-b border-slate-200 space-x-1">
           <button
             onClick={() => setActiveTab("users")}
-            className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${
-              activeTab === "users"
-                ? "border-adani-cyan text-adani-cyan bg-sky-50/50"
-                : "border-transparent text-slate-500 hover:text-slate-800"
-            }`}
+            className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${activeTab === "users"
+              ? "border-adani-cyan text-adani-cyan bg-sky-50/50"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
           >
             <Users className="w-4 h-4" />
             User Roster &amp; Provisioning ({usersList.length})
           </button>
           <button
             onClick={() => setActiveTab("audit")}
-            className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${
-              activeTab === "audit"
-                ? "border-adani-purple text-adani-purple bg-purple-50/50"
-                : "border-transparent text-slate-500 hover:text-slate-800"
-            }`}
+            className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${activeTab === "audit"
+              ? "border-adani-purple text-adani-purple bg-purple-50/50"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
           >
             <History className="w-4 h-4" />
             Audit Trail &amp; Access Log ({auditLogs.length})
           </button>
           <button
             onClick={() => setActiveTab("system")}
-            className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${
-              activeTab === "system"
-                ? "border-emerald-600 text-emerald-600 bg-emerald-50/50"
-                : "border-transparent text-slate-500 hover:text-slate-800"
-            }`}
+            className={`px-4 py-2.5 text-xs font-bold transition-all border-b-2 flex items-center gap-2 ${activeTab === "system"
+              ? "border-emerald-600 text-emerald-600 bg-emerald-50/50"
+              : "border-transparent text-slate-500 hover:text-slate-800"
+              }`}
           >
             <Activity className="w-4 h-4" />
             System Health &amp; Upstash Redis
@@ -774,11 +771,10 @@ export default function AdminDashboardPage() {
                               <>
                                 <button
                                   onClick={() => handleToggleStatus(u.id)}
-                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors border ${
-                                    u.status === "active"
-                                      ? "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200"
-                                      : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200"
-                                  }`}
+                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors border ${u.status === "active"
+                                    ? "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200"
+                                    : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200"
+                                    }`}
                                 >
                                   {u.status === "active" ? "Disable" : "Enable"}
                                 </button>

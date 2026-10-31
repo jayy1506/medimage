@@ -8,8 +8,6 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 from typing import Dict, Any, List, Optional
 import math
-from app.api.deps import get_optional_current_user
-from app.models.user import User
 
 router = APIRouter(prefix="/missions", tags=["Clinical Missions & Challenges"])
 
@@ -98,8 +96,7 @@ async def get_missions_catalog():
 
 @router.post("/submit", response_model=MissionSubmitResponse, summary="Server-side score verification")
 async def verify_mission_attempt(
-    attempt: MissionSubmitRequest,
-    current_user: Optional[User] = Depends(get_optional_current_user)
+    attempt: MissionSubmitRequest
 ):
     """
     Computes server-side clinical contrast score to prevent client manipulation.

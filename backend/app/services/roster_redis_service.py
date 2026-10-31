@@ -151,6 +151,27 @@ class RosterRedisService:
             self._in_memory_roster = list(INITIAL_ROSTER)
         return self._in_memory_roster
 
+    async def _sync_to_firebase(self, email: str, password: str = "Feat@123") -> bool:
+        """
+        Provisions user into Firebase Console via Identity Toolkit API.
+        """
+        api_key = settings.FIREBASE_API_KEY or "AIzaSyCQIR2rT9Qh8hAbBmde309nLeB7ZigVKqc"
+        url = f"https://identitytoolkit.googleapis.com/v1/accounts:signUp?key={api_key}"
+        try:
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                res = await client.post(url, json={"email": email, "password": password, "returnSecureToken": False})
+                if res.status_code == 200:
+                    print(f"[FIREBASE] Successfully added user to Firebase Console: {email}")
+                    return True
+                err = res.json().get("error", {}).get("message", "")
+                if "EMAIL_EXISTS" in err:
+                    print(f"[FIREBASE] User already exists in Firebase Console: {email}")
+                    return True
+                print(f"[FIREBASE] Notice: {err}")
+        except Exception as e:
+            print(f"[FIREBASE] Sync exception: {e}")
+        return False
+
     async def add_user(self, user: Dict[str, Any], actor_email: str = "jthakre62@gmail.com") -> List[Dict[str, Any]]:
         # Fetch current roster safely
         roster = await self.get_roster()
@@ -167,6 +188,9 @@ class RosterRedisService:
 
         # Persist to Upstash Redis
         await self._redis_set(self.roster_key, updated_roster)
+
+        # Provision into Firebase Console
+        await self._sync_to_firebase(user["email"], user["temporary_password"])
 
         # Audit log
         await self.add_audit_log({
