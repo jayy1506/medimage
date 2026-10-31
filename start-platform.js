@@ -38,7 +38,39 @@ function getPythonCommand() {
 const pythonCmd = getPythonCommand();
 console.log(`🐍 Using Python command: ${pythonCmd}`);
 
-// 2. Launch FastAPI Backend
+// 2. Ensure Python Dependencies (for Native Node environments on Render)
+function ensureDependencies() {
+  console.log('🔍 Checking Python dependencies (fastapi, uvicorn, etc.)...');
+  try {
+    execSync(`${pythonCmd} -c "import fastapi, uvicorn, pydantic, sqlalchemy, asyncpg"`, {
+      stdio: 'ignore',
+    });
+    console.log('✅ Python dependencies are satisfied.');
+  } catch (err) {
+    console.log('📦 Installing Python dependencies from backend/requirements.txt...');
+    const reqPath = path.join(BACKEND_DIR, 'requirements.txt');
+    try {
+      execSync(`${pythonCmd} -m pip install --no-cache-dir -r "${reqPath}"`, {
+        stdio: 'inherit',
+      });
+      console.log('✅ Python dependencies installed successfully.');
+    } catch (pipErr) {
+      console.warn('⚠️ Standard pip install failed, attempting with --user flag...');
+      execSync(`${pythonCmd} -m pip install --user --no-cache-dir -r "${reqPath}"`, {
+        stdio: 'inherit',
+      });
+      console.log('✅ Python dependencies installed with --user successfully.');
+    }
+  }
+}
+
+try {
+  ensureDependencies();
+} catch (depErr) {
+  console.error('⚠️ Warning during dependency check:', depErr.message);
+}
+
+// 3. Launch FastAPI Backend
 console.log('⚙️  [1/2] Launching FastAPI backend on 0.0.0.0:8000...');
 
 const backendEnv = {
@@ -47,32 +79,25 @@ const backendEnv = {
   PYTHONUNBUFFERED: '1',
 };
 
+// Use stdio: 'inherit' so Python outputs any errors directly to Render console
 const fastapiProcess = spawn(
   pythonCmd,
   ['-m', 'uvicorn', 'app.main:app', '--host', '0.0.0.0', '--port', '8000'],
   {
     cwd: BACKEND_DIR,
     env: backendEnv,
-    stdio: ['inherit', 'pipe', 'pipe'],
+    stdio: 'inherit',
   }
 );
-
-fastapiProcess.stdout.on('data', (data) => {
-  process.stdout.write(`[FastAPI] ${data}`);
-});
-
-fastapiProcess.stderr.on('data', (data) => {
-  process.stderr.write(`[FastAPI] ${data}`);
-});
 
 let fastapiExited = false;
 fastapiProcess.on('exit', (code, signal) => {
   fastapiExited = true;
-  console.error(`❌ [FastAPI] Exited with code ${code} (signal: ${signal})`);
+  console.error(`❌ [FastAPI] Process exited with code ${code} (signal: ${signal})`);
 });
 
-// 3. Health-check FastAPI until responsive (up to 30 seconds)
-function waitForFastAPI(maxAttempts = 60, intervalMs = 500) {
+// 4. Health-check FastAPI until responsive (up to 40 attempts = 20 seconds)
+function waitForFastAPI(maxAttempts = 40, intervalMs = 500) {
   return new Promise((resolve, reject) => {
     let attempts = 0;
 
@@ -101,7 +126,7 @@ function waitForFastAPI(maxAttempts = 60, intervalMs = 500) {
 
       function retry() {
         if (attempts >= maxAttempts) {
-          console.warn('⚠️ [FastAPI] Timeout waiting for /health. Continuing to launch frontend anyway...');
+          console.warn('⚠️ [FastAPI] Health check timed out, continuing to launch frontend...');
           return resolve();
         }
         setTimeout(check, intervalMs);
@@ -112,7 +137,7 @@ function waitForFastAPI(maxAttempts = 60, intervalMs = 500) {
   });
 }
 
-// 4. Launch Next.js Frontend
+// 5. Launch Next.js Frontend
 async function startFrontend() {
   await waitForFastAPI();
 
@@ -127,7 +152,6 @@ async function startFrontend() {
 
   let nextProcess;
 
-  // Check possible locations for standalone server.js or next start
   const standaloneLocations = [
     path.join(FRONTEND_DIR, 'server.js'),
     path.join(FRONTEND_DIR, '.next', 'standalone', 'server.js'),
