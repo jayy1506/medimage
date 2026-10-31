@@ -185,7 +185,7 @@ export default function UnifiedCurriculumDashboard() {
                 </div>
                 <div className="flex items-center justify-between text-slate-600">
                   <span className="text-slate-500">Enrolled Subjects</span>
-                  <span className="font-medium text-slate-800">1 Course (4.0 Credits)</span>
+                  <span className="font-medium text-slate-800">1 Course (3 Credits)</span>
                 </div>
                 <div className="flex items-center justify-between text-slate-600">
                   <span className="text-slate-500">Evaluation Rule</span>
@@ -242,7 +242,7 @@ export default function UnifiedCurriculumDashboard() {
                     Medical Text and Image Processing
                   </h3>
                   <p className="text-xs text-slate-500 mt-1">
-                    B.Tech Semester VI • 4.0 Credits • Faculty of Eng &amp; Tech
+                    B.Tech Semester VI • 3 Credits • Faculty of Eng &amp; Tech
                   </p>
                 </div>
 

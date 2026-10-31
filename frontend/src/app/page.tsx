@@ -17,50 +17,6 @@ import {
   Database
 } from "lucide-react";
 
-const MODULES = [
-  {
-    num: "01",
-    title: "Medical Image Sources",
-    hours: "8h Theory",
-    co: "CO1",
-    desc: "Radiology, X-ray physics, photon attenuation, CT geometry, MRI Larmor physics, Ultrasound acoustic impedance, SPECT & PET."
-  },
-  {
-    num: "02",
-    title: "Image Processing in Clinical Practice",
-    hours: "8h Theory",
-    co: "CO2",
-    desc: "Hospital PACS networks, DICOM C-STORE workflows, diagnostic contrast enhancement, clinical segmentation pipelines."
-  },
-  {
-    num: "03",
-    title: "Image Representation",
-    hours: "8h Theory",
-    co: "CO2, CO4",
-    desc: "Pixels vs voxels, anisotropic grid geometry, DICOM Part 10 file structure, tag dictionaries, SNR and MTF curves."
-  },
-  {
-    num: "04",
-    title: "Operations in Intensity Space",
-    hours: "7h Theory",
-    co: "CO2, CO3",
-    desc: "Window Width / Level piecewise mapping, CT Hounsfield range (-1000 to +3000 HU), histogram equalization & CLAHE."
-  },
-  {
-    num: "05",
-    title: "Filtering, Transforms & Segmentation",
-    hours: "7h Theory",
-    co: "CO3",
-    desc: "Spatial convolution, 2D Discrete Fourier Transforms, frequency filtering, Otsu thresholding, seeded region growing."
-  },
-  {
-    num: "06",
-    title: "Spatial Transforms & 3D Rendering",
-    hours: "7h Theory",
-    co: "CO3, CO4",
-    desc: "Affine matrix transformations, isotropic volume resampling, multiplanar reformatting (MPR), raycasting and MIP."
-  }
-];
 
 export default function HomePage() {
   const { user, profile } = useAuth();
@@ -182,54 +138,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Curriculum Modules Grid */}
-      <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex-1">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-adani-cyan mb-2">
-            Structured Course Syllabus (45 Lecture Hours)
-          </h2>
-          <p className="text-3xl font-black text-slate-900 tracking-tight">
-            Six Comprehensive Curriculum Modules
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {MODULES.map((m) => (
-            <div
-              key={m.num}
-              className="group p-6 rounded-2xl bg-white border border-slate-200 shadow-sm hover:border-adani-cyan/50 hover:shadow-md transition-all flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-2xl font-black text-slate-300 group-hover:text-adani-cyan transition-colors">
-                    {m.num}
-                  </span>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
-                      {m.hours}
-                    </span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-adani-cyan/10 text-adani-cyan">
-                      {m.co}
-                    </span>
-                  </div>
-                </div>
-
-                <h3 className="text-lg font-bold text-slate-900 group-hover:text-adani-navy transition-colors mb-2">
-                  {m.title}
-                </h3>
-                <p className="text-xs text-slate-500 leading-relaxed">
-                  {m.desc}
-                </p>
-              </div>
-
-              <div className="pt-6 mt-6 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-adani-navy group-hover:text-adani-cyan transition-colors">
-                <span>View Module Topics</span>
-                <ChevronRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
 
       {/* Institutional Footer */}
       <footer className="bg-adani-dark text-slate-400 text-xs py-8 border-t border-slate-800">

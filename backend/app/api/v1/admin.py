@@ -251,6 +251,67 @@ async def update_user_status(
     return {"status": "success", "user_id": str(user.id), "new_status": payload.status}
 
 
+@router.delete("/users/{user_id}")
+async def delete_user_account(
+    user_id: str,
+    current_admin: User = Depends(require_role(["admin"])),
+    db: AsyncSession = Depends(get_db)
+):
+    """Permanently deletes a user from Hosted DB, Firebase Auth, and Upstash Redis."""
+    from app.services.roster_redis_service import roster_redis_service
+
+    # Attempt to locate user in Postgres by UUID or email
+    user = None
+    try:
+        user_uuid = uuid.UUID(user_id)
+        res = await db.execute(select(User).where(User.id == user_uuid))
+        user = res.scalar_one_or_none()
+    except ValueError:
+        res = await db.execute(select(User).where(User.email == user_id))
+        user = res.scalar_one_or_none()
+
+    target_email = user.email if user else user_id
+
+    # Protect root admin
+    if target_email.lower() == "jthakre62@gmail.com":
+        raise HTTPException(status_code=400, detail="Root administrator cannot be deleted.")
+
+    # 1. Delete from Firebase Auth
+    if user and user.firebase_uid:
+        try:
+            fb_auth.delete_user(user.firebase_uid)
+        except Exception:
+            pass
+    elif target_email:
+        try:
+            fb_u = fb_auth.get_user_by_email(target_email)
+            fb_auth.delete_user(fb_u.uid)
+        except Exception:
+            pass
+
+    # 2. Delete from Postgres DB if exists
+    if user:
+        await db.delete(user)
+        audit = AuditLog(
+            actor_id=current_admin.id,
+            action="DELETE_USER",
+            target_type="USER",
+            target_id=str(user.id),
+            metadata={"email": target_email}
+        )
+        db.add(audit)
+        await db.commit()
+
+    # 3. Delete from Upstash Redis roster
+    updated_roster = await roster_redis_service.delete_user(user_id, actor_email=current_admin.email)
+
+    return {
+        "status": "success",
+        "message": f"User {target_email} permanently deleted.",
+        "roster": updated_roster
+    }
+
+
 @router.get("/audit-logs")
 async def get_audit_logs(
     page: int = Query(1, ge=1),

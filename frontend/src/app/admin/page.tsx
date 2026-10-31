@@ -65,56 +65,6 @@ const DEFAULT_USERS: ManagedUser[] = [
     created_at: "2026-10-29T10:00:00Z",
     temporary_password: "Jay1523",
     force_password_change: false
-  },
-  {
-    id: "u-2",
-    email: "prof.radiology@adani.edu.in",
-    full_name: "Dr. R. K. Sharma",
-    role: "faculty",
-    status: "active",
-    created_at: "2026-10-29T10:30:00Z",
-    temporary_password: "Feat@123",
-    force_password_change: true
-  },
-  {
-    id: "u-3",
-    email: "dr.patel@adani.edu.in",
-    full_name: "Dr. Anjali Patel",
-    role: "faculty",
-    status: "active",
-    created_at: "2026-10-29T11:15:00Z",
-    temporary_password: "Feat@123",
-    force_password_change: true
-  },
-  {
-    id: "u-4",
-    email: "aarav.p@adani.edu.in",
-    full_name: "Aarav Patel",
-    role: "student",
-    status: "active",
-    created_at: "2026-10-29T12:00:00Z",
-    temporary_password: "Feat@123",
-    force_password_change: true
-  },
-  {
-    id: "u-5",
-    email: "diya.s@adani.edu.in",
-    full_name: "Diya Sharma",
-    role: "student",
-    status: "active",
-    created_at: "2026-10-29T12:05:00Z",
-    temporary_password: "Feat@123",
-    force_password_change: true
-  },
-  {
-    id: "u-6",
-    email: "kabir.m@adani.edu.in",
-    full_name: "Kabir Mehta",
-    role: "student",
-    status: "pending_first_login",
-    created_at: "2026-10-29T13:40:00Z",
-    temporary_password: "Feat@123",
-    force_password_change: true
   }
 ];
 
@@ -150,7 +100,7 @@ export default function AdminDashboardPage() {
   const [copiedPasswordId, setCopiedPasswordId] = useState<string | null>(null);
   const [resettingId, setResettingId] = useState<string | null>(null);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
+  const API_BASE = typeof window !== "undefined" ? "/api/v1" : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1");
 
   const togglePasswordVisibility = (userId: string) => {
     setRevealedPasswords((prev) => ({
@@ -197,70 +147,60 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     setMounted(true);
 
-    // 1. Immediately hydrate from local cache on mount
+    // Clean legacy local storage
     if (typeof window !== "undefined") {
-      const cached = localStorage.getItem("medimage_redis_roster_cache");
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setUsersList(parsed);
-          }
-        } catch (e) {}
-      }
+      try {
+        localStorage.removeItem("medimage_redis_roster_cache");
+      } catch (e) {}
     }
 
-    // 2. Fetch latest from Upstash Redis and perform zero-loss merge
+    const DUMMY_EMAILS = new Set([
+      "prof.radiology@adani.edu.in",
+      "dr.patel@adani.edu.in",
+      "aarav.p@adani.edu.in",
+      "diya.s@adani.edu.in",
+      "kabir.m@adani.edu.in"
+    ]);
+
+    // Fetch latest from Upstash Redis and populate roster state
     const loadRedisRoster = async () => {
       try {
-        const res = await fetch(`${API_BASE}/admin/roster`);
+        const api = typeof window !== "undefined" ? "/api/v1" : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1");
+        const res = await fetch(`${api}/admin/roster`);
         if (res.ok) {
           const data = await res.json();
-          if (data.users && Array.isArray(data.users) && data.users.length > 0) {
-            const userMap = new Map<string, ManagedUser>();
-            // Load existing local cache first
-            if (typeof window !== "undefined") {
-              try {
-                const local = localStorage.getItem("medimage_redis_roster_cache");
-                if (local) {
-                  const parsed: ManagedUser[] = JSON.parse(local);
-                  for (const u of parsed) {
-                    if (u && u.email) userMap.set(u.email.toLowerCase(), u);
-                  }
-                }
-              } catch (e) {}
-            }
-            // Merge backend users
-            for (const u of data.users) {
-              if (u && u.email) userMap.set(u.email.toLowerCase(), u);
-            }
-            const mergedList = Array.from(userMap.values());
-            setUsersList(mergedList);
-            if (typeof window !== "undefined") {
-              localStorage.setItem("medimage_redis_roster_cache", JSON.stringify(mergedList));
-            }
+          if (data.users && Array.isArray(data.users)) {
+            const cleanUsers = data.users.filter((u: ManagedUser) => !DUMMY_EMAILS.has(u.email.toLowerCase()));
+            setUsersList(cleanUsers);
           }
           if (data.audit_logs) {
             setAuditLogs(data.audit_logs);
           }
           setIsRedisSynced(true);
-        } else {
-          fallbackLocalCache();
+          return;
         }
       } catch (err) {
-        console.warn("[ROSTER] Backend connection fallback to cached roster:", err);
-        fallbackLocalCache();
+        console.warn("[ROSTER] Backend connection error, trying direct Upstash REST fallback:", err);
       }
-    };
 
-    const fallbackLocalCache = () => {
-      if (typeof window !== "undefined") {
-        const cached = localStorage.getItem("medimage_redis_roster_cache");
-        if (cached) {
-          try {
-            setUsersList(JSON.parse(cached));
-          } catch (e) {}
+      // Direct Upstash Redis REST fallback
+      try {
+        const upstashRes = await fetch("https://stunning-dinosaur-189382.upstash.io/get/medimage:roster:users", {
+          headers: { Authorization: "Bearer gQAAAAAAAuPGAAIgcDFhZjZjZTA1ZGFlMmU0MTk1ODFjMDAzNTg4NGYxYjY0MA" }
+        });
+        if (upstashRes.ok) {
+          const uJson = await upstashRes.json();
+          if (uJson.result) {
+            const parsed = JSON.parse(uJson.result);
+            if (Array.isArray(parsed)) {
+              const cleanUsers = parsed.filter((u: ManagedUser) => !DUMMY_EMAILS.has(u.email.toLowerCase()));
+              setUsersList(cleanUsers);
+              setIsRedisSynced(true);
+            }
+          }
         }
+      } catch (e) {
+        console.warn("[ROSTER] Upstash direct fetch error:", e);
       }
     };
 
@@ -278,9 +218,6 @@ export default function AdminDashboardPage() {
     // Optimistic UI update
     const updated = usersList.map((u) => (u.id === userId ? { ...u, status: nextStatus as any } : u));
     setUsersList(updated);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("medimage_redis_roster_cache", JSON.stringify(updated));
-    }
 
     try {
       const res = await fetch(`${API_BASE}/admin/roster/${userId}/status`, {
@@ -329,9 +266,6 @@ export default function AdminDashboardPage() {
     };
     const updated = [tempUser, ...usersList.filter((u) => u.email.toLowerCase() !== payload.email.toLowerCase())];
     setUsersList(updated);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("medimage_redis_roster_cache", JSON.stringify(updated));
-    }
 
     try {
       const res = await fetch(`${API_BASE}/admin/roster`, {
@@ -351,9 +285,6 @@ export default function AdminDashboardPage() {
           }
           const merged = Array.from(userMap.values());
           setUsersList(merged);
-          if (typeof window !== "undefined") {
-            localStorage.setItem("medimage_redis_roster_cache", JSON.stringify(merged));
-          }
         }
         if (data.audit_logs) setAuditLogs(data.audit_logs);
       }
@@ -374,23 +305,35 @@ export default function AdminDashboardPage() {
   const handleDeleteUser = async (userId: string, email: string) => {
     if (!confirm(`Are you sure you want to remove ${email} from the course roster?`)) return;
 
-    const updated = usersList.filter((u) => u.id !== userId);
+    const updated = usersList.filter((u) => u.id !== userId && u.email.toLowerCase() !== email.toLowerCase());
     setUsersList(updated);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("medimage_redis_roster_cache", JSON.stringify(updated));
-    }
 
     try {
-      const res = await fetch(`${API_BASE}/admin/roster/${userId}?actor_email=${encodeURIComponent(user?.email || "jthakre62@gmail.com")}`, {
+      const res = await fetch(`${API_BASE}/admin/roster/${encodeURIComponent(userId)}?actor_email=${encodeURIComponent(user?.email || "jthakre62@gmail.com")}`, {
         method: "DELETE"
       });
       if (res.ok) {
         const data = await res.json();
         if (data.users) setUsersList(data.users);
         if (data.audit_logs) setAuditLogs(data.audit_logs);
+        return;
       }
     } catch (e) {
-      console.warn("Deleted from local roster cache");
+      console.warn("Backend delete issue, using Upstash direct fallback:", e);
+    }
+
+    // Direct Upstash sync fallback
+    try {
+      await fetch("https://stunning-dinosaur-189382.upstash.io/set/medimage:roster:users", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer gQAAAAAAAuPGAAIgcDFhZjZjZTA1ZGFlMmU0MTk1ODFjMDAzNTg4NGYxYjY0MA",
+          "Content-Type": "text/plain"
+        },
+        body: JSON.stringify(updated)
+      });
+    } catch (err) {
+      console.warn("Failed direct Upstash delete", err);
     }
   };
 
@@ -429,9 +372,6 @@ export default function AdminDashboardPage() {
         const data = await res.json();
         if (data.users && Array.isArray(data.users)) {
           setUsersList(data.users);
-          if (typeof window !== "undefined") {
-            localStorage.setItem("medimage_redis_roster_cache", JSON.stringify(data.users));
-          }
         }
       }
     } catch (e) {}
@@ -484,6 +424,13 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
+            <Link
+              href="/admin/curriculum"
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-adani-navy bg-slate-100 hover:bg-slate-200/80 transition-colors flex items-center gap-1.5 border border-slate-200"
+            >
+              <Layers className="w-3.5 h-3.5 text-adani-cyan" />
+              Curriculum Bank
+            </Link>
             <Link
               href="/dashboard"
               className="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-adani-navy bg-slate-100 hover:bg-slate-200/80 transition-colors flex items-center gap-1.5 border border-slate-200"
@@ -635,6 +582,14 @@ export default function AdminDashboardPage() {
             <Activity className="w-4 h-4" />
             System Health &amp; Upstash Redis
           </button>
+          <Link
+            href="/admin/curriculum"
+            className="px-4 py-2.5 text-xs font-bold transition-all border-b-2 border-transparent text-slate-500 hover:text-adani-cyan flex items-center gap-2 group"
+          >
+            <Layers className="w-4 h-4 text-adani-cyan group-hover:scale-110 transition-transform" />
+            Curriculum &amp; EQB Browser
+            <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-adani-cyan" />
+          </Link>
         </div>
 
         {/* TAB 1: USERS DIRECTORY */}
@@ -811,7 +766,11 @@ export default function AdminDashboardPage() {
                             </button>
                           </td>
                           <td className="px-5 py-3.5 text-right space-x-2">
-                            {u.email !== "jthakre62@gmail.com" && (
+                            {u.email === "jthakre62@gmail.com" ? (
+                              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
+                                Protected Admin
+                              </span>
+                            ) : (
                               <>
                                 <button
                                   onClick={() => handleToggleStatus(u.id)}
@@ -825,10 +784,11 @@ export default function AdminDashboardPage() {
                                 </button>
                                 <button
                                   onClick={() => handleDeleteUser(u.id, u.email)}
-                                  className="p-1 text-slate-400 hover:text-red-600 transition-colors"
-                                  title="Remove from roster"
+                                  className="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 hover:border-red-300 inline-flex items-center gap-1 shadow-sm"
+                                  title={`Permanently delete ${u.full_name || u.email}`}
                                 >
-                                  <Trash2 className="w-4 h-4" />
+                                  <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                                  <span>Delete</span>
                                 </button>
                               </>
                             )}

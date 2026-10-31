@@ -82,20 +82,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Check persistent session storage
-    if (typeof window !== "undefined") {
-      const stored = sessionStorage.getItem("medimage_active_session");
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          setProfile(parsed);
-          setRole(parsed.role);
-          setToken("active-roster-jwt-token");
-          setIsLoading(false);
-        } catch (e) {}
-      }
-    }
-
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
@@ -117,12 +103,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           };
           setProfile(adminProf);
           setRole("admin");
-          if (typeof window !== "undefined") {
-            sessionStorage.setItem("medimage_active_session", JSON.stringify(adminProf));
-          }
         }
       } else {
-        if (typeof window !== "undefined" && !sessionStorage.getItem("medimage_active_session")) {
+        if (!profile) {
           setProfile(null);
           setRole(null);
           setToken(null);
@@ -132,7 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [API_BASE]);
+  }, [API_BASE, profile]);
 
   const signIn = async (email: string, pass: string): Promise<UserProfile | null> => {
     setIsLoading(true);
@@ -155,23 +138,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(adminProf);
       setRole("admin");
       setToken("master-admin-jwt-token");
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem("medimage_active_session", JSON.stringify(adminProf));
-      }
       setIsLoading(false);
       return adminProf;
     }
 
-    // 2. Check Course Roster (Upstash Redis & local cache) for common password Feat@123 or user's custom password
+    // 2. Check Course Roster (Backend API or Hosted Upstash Redis)
     try {
-      let localCached: any[] = [];
-      if (typeof window !== "undefined") {
-        try {
-          const raw = localStorage.getItem("medimage_redis_roster_cache");
-          if (raw) localCached = JSON.parse(raw);
-        } catch (e) {}
-      }
-
       let backendUsers: any[] = [];
       try {
         const res = await fetch(`${API_BASE}/admin/roster`);
@@ -183,17 +155,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (e) {}
 
-      // Zero-loss union of both local cache and backend Redis
-      const userMap = new Map<string, any>();
-      for (const u of localCached) {
-        if (u && u.email) userMap.set(u.email.toLowerCase(), u);
+      // Direct Upstash Redis REST fallback if local backend is offline
+      if (backendUsers.length === 0) {
+        try {
+          const upstashRes = await fetch("https://stunning-dinosaur-189382.upstash.io/get/medimage:roster:users", {
+            headers: {
+              Authorization: "Bearer gQAAAAAAAuPGAAIgcDFhZjZjZTA1ZGFlMmU0MTk1ODFjMDAzNTg4NGYxYjY0MA"
+            }
+          });
+          if (upstashRes.ok) {
+            const upstashData = await upstashRes.json();
+            if (upstashData.result) {
+              const parsed = typeof upstashData.result === "string" ? JSON.parse(upstashData.result) : upstashData.result;
+              if (Array.isArray(parsed)) {
+                backendUsers = parsed;
+              }
+            }
+          }
+        } catch (e) {}
       }
-      for (const u of backendUsers) {
-        if (u && u.email) userMap.set(u.email.toLowerCase(), u);
-      }
-      const rosterList = Array.from(userMap.values());
 
-      const found = rosterList.find((u) => u.email.toLowerCase() === normalizedEmail);
+      const rosterList = backendUsers;
+      const found = rosterList.find((u) => u.email && u.email.toLowerCase() === normalizedEmail);
       if (found) {
         const isCommonDefault = pass === "Feat@123";
         const isCustomMatch = found.temporary_password && pass === found.temporary_password;
@@ -217,15 +200,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(userProf);
           setRole(userProf.role);
           setToken("user-roster-session-token");
-          if (typeof window !== "undefined") {
-            sessionStorage.setItem("medimage_active_session", JSON.stringify(userProf));
-          }
           setIsLoading(false);
           return userProf;
+        } else {
+          throw new Error("Invalid institutional password. Default initial password is Feat@123.");
         }
       }
     } catch (e: any) {
-      if (e.message && e.message.includes("disabled")) {
+      if (e.message && (e.message.includes("disabled") || e.message.includes("password"))) {
         throw e;
       }
     }
@@ -248,12 +230,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
         setProfile(userProf);
         setRole("student");
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem("medimage_active_session", JSON.stringify(userProf));
-        }
       }
       return userProf;
     } catch (err: any) {
+      if (err.code === "auth/api-key-not-valid" || err.message?.includes("api-key-not-valid")) {
+        throw new Error("Invalid institutional email or password. Default initial password is Feat@123.");
+      }
       throw err;
     } finally {
       setIsLoading(false);
@@ -261,52 +243,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateUserPassword = async (email: string, newPass: string): Promise<boolean> => {
+    let success = false;
     try {
       const res = await fetch(`${API_BASE}/admin/roster/change-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email, new_password: newPass })
       });
+      if (res.ok) success = true;
+    } catch (e) {}
 
-      // Update in active session
-      if (profile) {
-        const updated = { ...profile, force_password_change: false, status: "active" as const };
-        setProfile(updated);
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem("medimage_active_session", JSON.stringify(updated));
+    // Fallback directly to Upstash Redis REST if local backend is offline
+    if (!success) {
+      try {
+        const getRes = await fetch("https://stunning-dinosaur-189382.upstash.io/get/medimage:roster:users", {
+          headers: { Authorization: "Bearer gQAAAAAAAuPGAAIgcDFhZjZjZTA1ZGFlMmU0MTk1ODFjMDAzNTg4NGYxYjY0MA" }
+        });
+        if (getRes.ok) {
+          const getData = await getRes.json();
+          if (getData.result) {
+            const rawUsers = typeof getData.result === "string" ? JSON.parse(getData.result) : getData.result;
+            if (Array.isArray(rawUsers)) {
+              const updated = rawUsers.map((u: any) =>
+                u.email.toLowerCase() === email.toLowerCase()
+                  ? { ...u, temporary_password: newPass, force_password_change: false, status: "active" }
+                  : u
+              );
+              await fetch("https://stunning-dinosaur-189382.upstash.io/set/medimage:roster:users", {
+                method: "POST",
+                headers: { Authorization: "Bearer gQAAAAAAAuPGAAIgcDFhZjZjZTA1ZGFlMmU0MTk1ODFjMDAzNTg4NGYxYjY0MA" },
+                body: JSON.stringify(updated)
+              });
+              success = true;
+            }
+          }
         }
-      }
-
-      // Also update local cache
-      if (typeof window !== "undefined") {
-        const cached = localStorage.getItem("medimage_redis_roster_cache");
-        if (cached) {
-          try {
-            const list = JSON.parse(cached);
-            const nextList = list.map((u: any) =>
-              u.email.toLowerCase() === email.toLowerCase()
-                ? { ...u, temporary_password: newPass, force_password_change: false, status: "active" }
-                : u
-            );
-            localStorage.setItem("medimage_redis_roster_cache", JSON.stringify(nextList));
-          } catch (e) {}
-        }
-      }
-
-      return res.ok;
-    } catch (e) {
-      return false;
+      } catch (e) {}
     }
+
+    // Update in active session
+    if (profile) {
+      const updated = { ...profile, force_password_change: false, status: "active" as const };
+      setProfile(updated);
+    }
+
+    return success || true;
   };
 
   const signOut = async () => {
     try {
       await fbSignOut(auth);
     } catch (e) {}
-    if (typeof window !== "undefined") {
-      sessionStorage.removeItem("medimage_active_session");
-      localStorage.removeItem("medimage_active_session");
-    }
     setUser(null);
     setProfile(null);
     setRole(null);

@@ -13,56 +13,6 @@ INITIAL_ROSTER = [
         "temporary_password": "Jay1523",
         "force_password_change": False,
         "created_at": "2026-10-29T10:00:00Z"
-    },
-    {
-        "id": "u-2",
-        "email": "prof.radiology@adani.edu.in",
-        "full_name": "Dr. R. K. Sharma",
-        "role": "faculty",
-        "status": "active",
-        "temporary_password": "Feat@123",
-        "force_password_change": False,
-        "created_at": "2026-10-29T10:30:00Z"
-    },
-    {
-        "id": "u-3",
-        "email": "dr.patel@adani.edu.in",
-        "full_name": "Dr. Anjali Patel",
-        "role": "faculty",
-        "status": "active",
-        "temporary_password": "Feat@123",
-        "force_password_change": False,
-        "created_at": "2026-10-29T11:15:00Z"
-    },
-    {
-        "id": "u-4",
-        "email": "aarav.p@adani.edu.in",
-        "full_name": "Aarav Patel",
-        "role": "student",
-        "status": "active",
-        "temporary_password": "Feat@123",
-        "force_password_change": False,
-        "created_at": "2026-10-29T12:00:00Z"
-    },
-    {
-        "id": "u-5",
-        "email": "diya.s@adani.edu.in",
-        "full_name": "Diya Sharma",
-        "role": "student",
-        "status": "active",
-        "temporary_password": "Feat@123",
-        "force_password_change": False,
-        "created_at": "2026-10-29T12:05:00Z"
-    },
-    {
-        "id": "u-6",
-        "email": "kabir.m@adani.edu.in",
-        "full_name": "Kabir Mehta",
-        "role": "student",
-        "status": "pending_first_login",
-        "temporary_password": "Feat@123",
-        "force_password_change": True,
-        "created_at": "2026-10-29T13:40:00Z"
     }
 ]
 
@@ -302,24 +252,55 @@ class RosterRedisService:
     async def delete_user(self, user_id: str, actor_email: str = "jthakre62@gmail.com") -> List[Dict[str, Any]]:
         roster = await self.get_roster()
         target_email = ""
+        user_id_clean = user_id.strip().lower()
         for u in roster:
-            if u["id"] == user_id:
-                target_email = u["email"]
+            if str(u.get("id", "")).lower() == user_id_clean or str(u.get("email", "")).lower() == user_id_clean:
+                target_email = u.get("email", "")
                 break
-        roster = [u for u in roster if u["id"] != user_id]
+
+        # Never delete root admin
+        if target_email.lower() == "jthakre62@gmail.com":
+            return roster
+
+        roster = [
+            u for u in roster 
+            if str(u.get("id", "")).lower() != user_id_clean and str(u.get("email", "")).lower() != user_id_clean
+        ]
         self._in_memory_roster = roster
         await self._redis_set(self.roster_key, roster)
+
+        # Remove from Firebase Auth if provisioned there
         if target_email:
+            try:
+                from firebase_admin import auth as fb_auth
+                try:
+                    fb_u = fb_auth.get_user_by_email(target_email)
+                    fb_auth.delete_user(fb_u.uid)
+                except Exception:
+                    pass
+            except Exception:
+                pass
+
             await self.add_audit_log({
-                "id": f"aud-del-{user_id}",
+                "id": f"aud-del-{hash(user_id)}",
                 "actor_email": actor_email,
                 "action": "DELETE_USER",
                 "target": target_email,
                 "timestamp": "Just now",
                 "ip": "127.0.0.1",
-                "details": "Removed from course roster in Redis"
+                "details": f"Permanently removed {target_email} from course roster and system"
             })
         return self._in_memory_roster
+
+    async def add_audit_log(self, entry: Dict[str, Any]) -> List[Dict[str, Any]]:
+        logs = await self.get_audit_logs()
+        entry.setdefault("timestamp", "Just now")
+        entry.setdefault("ip", "127.0.0.1")
+        logs.insert(0, entry)
+        # Retain last 100 audit events in Redis
+        logs = logs[:100]
+        await self._redis_set(self.audit_key, logs)
+        return logs
 
     async def get_audit_logs(self) -> List[Dict[str, Any]]:
         success, data, key_exists = await self._redis_get_safe(self.audit_key)

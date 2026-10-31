@@ -8,6 +8,7 @@ from app.api.v1.assessments import router as assessments_router
 from app.api.v1.tutor import router as tutor_router
 from app.api.v1.faculty import router as faculty_router
 from app.api.v1.roster import router as roster_router
+from app.api.v1.curriculum import router as curriculum_router
 
 # Initialize Sentry Monitoring (Free Tier)
 if settings.SENTRY_DSN:
@@ -29,7 +30,8 @@ app = FastAPI(
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins or ["*"],
+    allow_origins=settings.cors_origins,
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -43,6 +45,7 @@ app.include_router(assessments_router, prefix="/api/v1")
 app.include_router(tutor_router, prefix="/api/v1")
 app.include_router(faculty_router, prefix="/api/v1")
 app.include_router(roster_router, prefix="/api/v1")
+app.include_router(curriculum_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["System"])

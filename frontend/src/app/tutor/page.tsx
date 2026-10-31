@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { MathView } from "@/components/ui/MathView";
+import { FormattedAiMessage } from "@/components/tutor/FormattedAiMessage";
 import { STUDENT_NOTE_METADATA } from "@/data/curriculumData";
 
 interface Citation {
@@ -598,23 +599,8 @@ export default function AiTutorPage() {
                       )}
 
                       {/* Main Message Content with Math and Formatting */}
-                      <div className="text-xs sm:text-sm text-zinc-200 leading-relaxed space-y-2.5 bg-zinc-900/60 p-4 rounded-2xl border border-zinc-800/80">
-                        {msg.text.split("\n\n").map((paragraph, pIdx) => {
-                          // Check if paragraph contains block latex $$...$$
-                          if (paragraph.startsWith("$$") && paragraph.endsWith("$$")) {
-                            return (
-                              <div key={pIdx} className="my-2 p-2 rounded bg-black/40 text-center overflow-x-auto">
-                                <MathView math={paragraph} displayMode={true} />
-                              </div>
-                            );
-                          }
-
-                          return (
-                            <p key={pIdx} className="whitespace-pre-line">
-                              {paragraph}
-                            </p>
-                          );
-                        })}
+                      <div className="bg-zinc-900/60 p-4 sm:p-5 rounded-2xl border border-zinc-800/80">
+                        <FormattedAiMessage content={msg.text} theme="dark" />
 
                         {/* Citations block */}
                         {msg.citations && msg.citations.length > 0 && (

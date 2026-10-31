@@ -123,19 +123,20 @@ export default function TopicAiTutor({
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-40">
+    <div className="fixed bottom-20 right-3 sm:bottom-6 sm:right-6 z-40">
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="flex items-center space-x-2 px-4 py-3 rounded-full bg-gradient-to-r from-adani-cyan via-adani-purple to-adani-magenta text-white font-bold text-xs shadow-xl hover:opacity-95 transition-all transform hover:scale-105"
+          className="flex items-center space-x-2 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-full bg-gradient-to-r from-adani-cyan via-adani-purple to-adani-magenta text-white font-bold text-xs shadow-xl hover:opacity-95 transition-all transform hover:scale-105 active:scale-95"
         >
           <Sparkles className="w-4 h-4" />
-          <span>Ask AI Clinical Tutor</span>
+          <span className="hidden sm:inline">Ask AI Clinical Tutor</span>
+          <span className="sm:hidden">AI Tutor</span>
         </button>
       )}
 
       {isOpen && (
-        <div className="w-96 h-[500px] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5">
+        <div className="w-[calc(100vw-24px)] max-w-sm sm:w-96 h-[480px] max-h-[75vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5">
           {/* Header */}
           <div className="px-4 py-3 bg-gradient-to-r from-adani-navy to-adani-dark text-white flex items-center justify-between">
             <div className="flex items-center space-x-2">

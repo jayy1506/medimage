@@ -21,6 +21,7 @@ import MermaidDiagram from "@/components/diagrams/MermaidDiagram";
 import QuickCheckQuiz, { QuickCheckQuestion } from "@/components/topic/QuickCheckQuiz";
 import TopicAiTutor from "@/components/tutor/TopicAiTutor";
 import { UserNav } from "@/components/UserNav";
+import PlaygroundNavModal from "@/components/playground/PlaygroundNavModal";
 import { useProgress } from "@/context/ProgressContext";
 import { RichContentRenderer } from "@/components/ui/RichContentRenderer";
 import { EquationCard } from "@/components/ui/MathView";
@@ -88,6 +89,7 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
   const isCompleted = isTopicCompleted(topic.slug);
   const [highlightedNode, setHighlightedNode] = useState<string | undefined>(undefined);
   const [visualTab, setVisualTab] = useState<"diagram" | "scan" | "interactive">("diagram");
+  const [mobileView, setMobileView] = useState<"theory" | "scan" | "diagram">("theory");
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
   // IntersectionObserver for scroll-synchronization
@@ -141,27 +143,27 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Sticky Header */}
+      {/* Sticky Responsive Header */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Link href="/dashboard" className="flex items-center mr-1" title="Adani University Dashboard">
-              <BrandLogo className="w-8 h-8" size={32} />
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
+          <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+            <Link href="/dashboard" className="flex items-center mr-0.5 sm:mr-1 flex-shrink-0" title="Adani University Dashboard">
+              <BrandLogo className="w-7 h-7 sm:w-8 h-8" size={30} />
             </Link>
             <Link
               href="/course"
-              className="text-xs font-semibold text-slate-500 hover:text-adani-navy flex items-center"
+              className="text-xs font-semibold text-slate-500 hover:text-adani-navy flex items-center flex-shrink-0"
             >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              <span>Module {topic.module.module_number}</span>
+              <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-0.5" />
+              <span className="hidden sm:inline">Module </span>M{topic.module.module_number}
             </Link>
-            <span className="text-slate-300">/</span>
-            <span className="text-xs font-bold text-slate-900 truncate max-w-[200px] sm:max-w-md">
+            <span className="text-slate-300 flex-shrink-0">/</span>
+            <span className="text-xs font-bold text-slate-900 truncate max-w-[130px] sm:max-w-md">
               {topic.title}
             </span>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4 flex-shrink-0">
             <div className="hidden sm:flex items-center space-x-2 text-xs text-slate-500 font-medium">
               <Clock className="w-3.5 h-3.5" />
               <span>{topic.read_time_minutes} min read</span>
@@ -169,7 +171,7 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
 
             <button
               onClick={toggleComplete}
-              className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`inline-flex items-center space-x-1 sm:space-x-1.5 px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg text-xs font-bold transition-all ${
                 isCompleted
                   ? "bg-emerald-50 text-emerald-800 border border-emerald-300"
                   : "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200"
@@ -177,16 +179,20 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
             >
               {isCompleted ? (
                 <>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  <span>Topic Cleared</span>
+                  <CheckCircle2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" />
+                  <span className="hidden sm:inline">Topic Cleared</span>
+                  <span className="sm:hidden">Cleared</span>
                 </>
               ) : (
                 <>
-                  <Circle className="w-4 h-4 text-slate-400" />
-                  <span>Mark Complete</span>
+                  <Circle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" />
+                  <span className="hidden sm:inline">Mark Complete</span>
+                  <span className="sm:hidden">Done</span>
                 </>
               )}
             </button>
+
+            <PlaygroundNavModal />
 
             <div className="h-4 w-px bg-slate-200 hidden sm:block" />
             <UserNav />
@@ -195,8 +201,122 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
       </header>
 
       {/* Main Dual-Panel Workspace */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 flex-1 w-full pb-28 lg:pb-16">
+        
+        {/* Mobile View Mode Switcher (Theory, Clinical Scan, Diagram) */}
+        <div className="lg:hidden sticky top-14 sm:top-16 z-20 bg-slate-50/95 backdrop-blur-md py-2 -mx-3 px-3 sm:-mx-6 sm:px-6 border-b border-slate-200 shadow-sm mb-4">
+          <div className="flex rounded-xl bg-slate-200/80 p-1 space-x-1 text-xs font-bold text-slate-700">
+            <button
+              onClick={() => setMobileView("theory")}
+              className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                mobileView === "theory"
+                  ? "bg-white text-adani-navy shadow-sm"
+                  : "hover:text-slate-900 text-slate-600"
+              }`}
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>Theory</span>
+            </button>
+            
+            {activeAsset && (
+              <button
+                onClick={() => setMobileView("scan")}
+                className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                  mobileView === "scan"
+                    ? "bg-white text-adani-navy shadow-sm"
+                    : "hover:text-slate-900 text-slate-600"
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-adani-cyan" />
+                <span>Clinical Scan</span>
+              </button>
+            )}
+
+            {linkedDiagram && (
+              <button
+                onClick={() => setMobileView("diagram")}
+                className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                  mobileView === "diagram"
+                    ? "bg-white text-adani-navy shadow-sm"
+                    : "hover:text-slate-900 text-slate-600"
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5 text-adani-purple" />
+                <span>Diagram</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile Dedicated Clinical Scan Viewport */}
+        {mobileView === "scan" && activeAsset && (
+          <div className="lg:hidden space-y-4 mb-8">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Clinical Radiological Scan
+              </span>
+              <button
+                onClick={() => setMobileView("theory")}
+                className="text-xs font-bold text-adani-cyan hover:underline flex items-center gap-1"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                Back to Theory
+              </button>
+            </div>
+
+            <div className="bg-black rounded-2xl border border-slate-800 p-4 text-white overflow-hidden shadow-lg space-y-3">
+              <div className="relative w-full h-72 sm:h-96">
+                <Image
+                  src={activeAsset.storage_url}
+                  alt={activeAsset.alt_text}
+                  fill
+                  className="object-contain"
+                />
+              </div>
+              <div className="pt-3 border-t border-slate-800 text-xs text-slate-300">
+                <span className="font-bold text-white text-sm block mb-1">{activeAsset.title}</span>
+                <p className="leading-relaxed">{activeAsset.alt_text}</p>
+                {activeAsset.attribution && (
+                  <div className="text-[10px] text-slate-500 mt-2">
+                    Source: {activeAsset.attribution} ({activeAsset.license})
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Mobile Dedicated Diagram Viewport */}
+        {mobileView === "diagram" && linkedDiagram && (
+          <div className="lg:hidden space-y-4 mb-8">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Pipeline &amp; Architecture Flowchart
+              </span>
+              <button
+                onClick={() => setMobileView("theory")}
+                className="text-xs font-bold text-adani-cyan hover:underline flex items-center gap-1"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                Back to Theory
+              </button>
+            </div>
+
+            <div className="h-[480px]">
+              <MermaidDiagram
+                id={`mobile-full-${linkedDiagram.id}`}
+                code={linkedDiagram.code_or_markup}
+                title={linkedDiagram.title}
+                interactiveNodeMap={linkedDiagram.interactive_node_map}
+                onNodeClick={handleNodeClick}
+                activeNodeId={highlightedNode}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Dual-Panel / Standard Viewport */}
+        <div className={`grid grid-cols-1 lg:grid-cols-12 gap-8 items-start ${mobileView !== "theory" ? "hidden lg:grid" : ""}`}>
           
           {/* Left Panel: Scrollable Conceptual & Mathematical Column (col-span-7) */}
           <div className="lg:col-span-7 space-y-12 pb-24">
@@ -260,16 +380,28 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
                     />
                   )}
 
-                  {/* Inline visual on Mobile devices */}
-                  <div className="lg:hidden mt-6">
-                    {linkedDiagram && (
-                      <MermaidDiagram
-                        id={`mobile-${linkedDiagram.id}`}
-                        code={linkedDiagram.code_or_markup}
-                        title={linkedDiagram.title}
-                      />
-                    )}
-                  </div>
+                  {/* Compact Mobile Visual Reference */}
+                  {(sec.linked_diagram_id || activeAsset) && (
+                    <div className="lg:hidden mt-4 p-3 rounded-xl bg-slate-100/90 border border-slate-200 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-sky-100 text-adani-cyan flex items-center justify-center flex-shrink-0">
+                          {activeAsset ? <Sparkles className="w-4 h-4" /> : <Layers className="w-4 h-4" />}
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-xs font-bold text-slate-800 truncate block">
+                            {activeAsset ? "Visual Scan Reference" : (linkedDiagram?.title || "Architecture Diagram")}
+                          </span>
+                          <span className="text-[10px] text-slate-500">Tap to inspect full clinical figure</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setMobileView(activeAsset ? "scan" : "diagram")}
+                        className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-50 text-adani-cyan border border-sky-200 text-xs font-bold shadow-sm flex-shrink-0"
+                      >
+                        View
+                      </button>
+                    </div>
+                  )}
                 </section>
               );
             })}
@@ -484,6 +616,51 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
         topicTitle={topic.title}
         onHighlightNode={(node) => setHighlightedNode(node)}
       />
+      {/* Sticky Mobile Bottom Navigation Bar */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 px-3 py-2 sm:px-4 sm:py-2.5 flex items-center justify-between gap-2 shadow-lg">
+        {topic.previous_topic_slug ? (
+          <Link
+            href={`/course/${topic.module.id}/${topic.previous_topic_slug}`}
+            className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1 border border-slate-200"
+            title="Previous Topic"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            <span className="hidden sm:inline">Prev</span>
+          </Link>
+        ) : <div className="w-8" />}
+
+        <button
+          onClick={toggleComplete}
+          disabled={isUpdating}
+          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            isCompleted
+              ? "bg-emerald-50 text-emerald-800 border border-emerald-300"
+              : "bg-adani-cyan hover:bg-sky-600 text-white shadow-sm"
+          }`}
+        >
+          <CheckCircle2 className="w-3.5 h-3.5" />
+          <span>{isCompleted ? "Completed" : "Mark Done"}</span>
+        </button>
+
+        {topic.next_topic_slug ? (
+          <Link
+            href={`/course/${topic.module.id}/${topic.next_topic_slug}`}
+            className="px-2.5 py-1.5 rounded-lg bg-adani-navy hover:bg-adani-dark text-white font-bold text-xs flex items-center gap-1 shadow-sm"
+            title="Next Topic"
+          >
+            <span>Next</span>
+            <ChevronRight className="w-4 h-4" />
+          </Link>
+        ) : (
+          <Link
+            href={`/course/${topic.module.id}/quiz`}
+            className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-adani-cyan to-adani-purple text-white font-bold text-xs flex items-center gap-1 shadow-sm"
+          >
+            <span>Quiz</span>
+            <ChevronRight className="w-4 h-4" />
+          </Link>
+        )}
+      </div>
     </div>
   );
 }

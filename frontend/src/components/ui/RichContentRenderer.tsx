@@ -256,8 +256,56 @@ export function RichContentRenderer({ content, className = "" }: RichContentRend
           );
         }
 
-        // 4. Paragraph & Callout Detection
+        // 4. Paragraph, Heading, Image & Callout Detection
         const fullParagraph = block.raw.join(" ");
+
+        // Check for Image ![caption](url)
+        const imgMatch = fullParagraph.match(/^!\[(.*?)\]\((.*?)\)$/);
+        if (imgMatch) {
+          const caption = imgMatch[1];
+          const src = imgMatch[2];
+          return (
+            <figure
+              key={`fig-${bIdx}`}
+              className="my-6 p-4 rounded-2xl bg-white border border-slate-200 shadow-sm text-center"
+            >
+              <img
+                src={src}
+                alt={caption}
+                className="max-w-full h-auto max-h-72 sm:max-h-96 mx-auto rounded-xl object-contain border border-slate-100 shadow-sm"
+                loading="lazy"
+              />
+              {caption && (
+                <figcaption className="text-xs font-semibold text-slate-600 mt-3 px-4 py-1.5 bg-slate-50 rounded-lg inline-block border border-slate-200">
+                  {caption}
+                </figcaption>
+              )}
+            </figure>
+          );
+        }
+
+        // Check for Markdown Headings
+        if (fullParagraph.startsWith("# ")) {
+          return (
+            <h1 key={`h1-${bIdx}`} className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-8 mb-3">
+              {formatInline(fullParagraph.replace("# ", "").trim())}
+            </h1>
+          );
+        }
+        if (fullParagraph.startsWith("## ")) {
+          return (
+            <h2 key={`h2-${bIdx}`} className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight mt-6 mb-2 border-b border-slate-200 pb-2">
+              {formatInline(fullParagraph.replace("## ", "").trim())}
+            </h2>
+          );
+        }
+        if (fullParagraph.startsWith("### ")) {
+          return (
+            <h3 key={`h3-${bIdx}`} className="text-sm sm:text-base font-bold text-slate-800 tracking-tight mt-4 mb-1.5">
+              {formatInline(fullParagraph.replace("### ", "").trim())}
+            </h3>
+          );
+        }
 
         // Check for Exam Point Callout
         if (fullParagraph.includes("**Exam Point:**")) {

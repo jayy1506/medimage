@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { MathView } from "@/components/ui/MathView";
+import { FormattedAiMessage } from "@/components/tutor/FormattedAiMessage";
 
 interface Citation {
   topic_title: string;
@@ -137,10 +138,6 @@ export default function FloatingAiTutorModal() {
     (user?.displayName) || 
     (user?.email ? user.email.split("@")[0].replace(/[0-9]/g, "").replace(/\./g, " ").trim().split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : "Jay Thakre") || "Jay Thakre";
 
-  // Hide on full /tutor page to avoid duplicate interface
-  if (pathname === "/tutor") {
-    return null;
-  }
 
   // Load chat history from localStorage
   useEffect(() => {
@@ -334,13 +331,23 @@ export default function FloatingAiTutorModal() {
     }
   };
 
+  // Only display clinical AI tutor when user is logged in
+  if (!user && !profile) {
+    return null;
+  }
+
+  // Hide on login or dedicated tutor page
+  if (pathname === "/login" || pathname === "/tutor") {
+    return null;
+  }
+
   return (
     <>
       {/* FLOATING TRIGGER ICON IN BOTTOM-RIGHT CORNER */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-full bg-white hover:bg-slate-50 text-slate-900 font-bold text-xs border border-slate-200 shadow-xl hover:shadow-2xl transition-all transform hover:scale-105 group active:scale-95 touch-manipulation cursor-pointer"
+          className="fixed bottom-20 right-3 sm:bottom-6 sm:right-6 z-50 flex items-center gap-2.5 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-full bg-white hover:bg-slate-50 text-slate-900 font-bold text-xs border border-slate-200 shadow-xl hover:shadow-2xl transition-all transform hover:scale-105 group active:scale-95 touch-manipulation cursor-pointer"
           title="Open MedAI Clinical Tutor"
         >
           <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-adani-cyan via-purple-600 to-adani-magenta flex items-center justify-center text-white shadow-sm">
@@ -574,21 +581,8 @@ export default function FloatingAiTutorModal() {
                             )}
 
                             {/* Response content */}
-                            <div className="text-xs sm:text-sm text-slate-800 leading-relaxed space-y-2 bg-slate-50/80 p-3.5 rounded-2xl border border-slate-200 shadow-xs">
-                              {msg.text.split("\n\n").map((paragraph, pIdx) => {
-                                if (paragraph.startsWith("$$") && paragraph.endsWith("$$")) {
-                                  return (
-                                    <div key={pIdx} className="my-2 p-2 rounded-xl bg-white border border-slate-200 text-center overflow-x-auto shadow-xs">
-                                      <MathView math={paragraph} displayMode={true} />
-                                    </div>
-                                  );
-                                }
-                                return (
-                                  <p key={pIdx} className="whitespace-pre-line">
-                                    {paragraph}
-                                  </p>
-                                );
-                              })}
+                            <div className="bg-slate-50/80 p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs">
+                              <FormattedAiMessage content={msg.text} theme="light" />
 
                               {/* Citations badge */}
                               {msg.citations && msg.citations.length > 0 && (

@@ -144,6 +144,24 @@ export default function MermaidDiagram({
     setIsDragging(false);
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      setIsDragging(true);
+      setDragStart({ x: touch.clientX - pan.x, y: touch.clientY - pan.y });
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    setPan({ x: touch.clientX - dragStart.x, y: touch.clientY - dragStart.y });
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+  };
+
   const resetView = () => {
     setZoomLevel(1);
     setPan({ x: 0, y: 0 });
@@ -225,10 +243,13 @@ export default function MermaidDiagram({
               </div>
             </div>
             <div
-              className="relative flex-1 overflow-auto p-8 flex items-center justify-center bg-slate-50/50"
+              className="relative flex-1 overflow-auto p-4 sm:p-8 flex items-center justify-center bg-slate-50/50 touch-none"
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
             >
               <div
                 style={{
@@ -246,11 +267,14 @@ export default function MermaidDiagram({
 
       {/* SVG Canvas Area */}
       <div
-        className="relative flex-1 overflow-hidden cursor-grab active:cursor-grabbing p-6 flex items-center justify-center min-h-[360px]"
+        className="relative flex-1 overflow-hidden cursor-grab active:cursor-grabbing p-4 sm:p-6 flex items-center justify-center min-h-[300px] sm:min-h-[360px] touch-none"
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
       >
         <div
           ref={containerRef}
