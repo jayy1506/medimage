@@ -262,7 +262,7 @@ export default function LoginPage() {
             <span className="font-semibold text-slate-700">Contact Course Faculty or Dept Admin</span>
           </p>
           <p className="text-[10px] text-slate-400">
-            Adani University (AIHER) • 100% Free Accredited Non-Commercial Academic Platform
+            Adani University (AIHER) • Accredited Academic Workstation
           </p>
         </div>
       </div>

@@ -148,7 +148,7 @@ export default function HomePage() {
             <span>• Faculty of Engineering and Technology</span>
           </div>
           <div>
-            <span>Credits 3 • Single Hosted Database • Free Tier Compliant</span>
+            <span>Accredited Academic Workstation</span>
           </div>
         </div>
       </footer>
