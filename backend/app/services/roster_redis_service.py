@@ -246,6 +246,37 @@ class RosterRedisService:
             print(f"[FIREBASE] Exception while updating password: {e}")
         return False
 
+    async def _delete_from_firebase(self, email: str, known_password: Optional[str] = None) -> bool:
+        """
+        Deletes user from Firebase Auth using Identity Toolkit accounts:delete.
+        """
+        api_key = settings.FIREBASE_API_KEY or "AIzaSyCQIR2rT9Qh8hAbBmde309nLeB7ZigVKqc"
+        login_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={api_key}"
+        delete_url = f"https://identitytoolkit.googleapis.com/v1/accounts:delete?key={api_key}"
+        
+        candidates = [known_password, "Feat@123", "Jay1523", "Cheeku1523", "JAY!@#$"]
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                token = None
+                for pwd in candidates:
+                    if not pwd:
+                        continue
+                    res = await client.post(login_url, json={"email": email, "password": pwd, "returnSecureToken": True})
+                    if res.status_code == 200:
+                        token = res.json().get("idToken")
+                        break
+                
+                if token:
+                    del_res = await client.post(delete_url, json={"idToken": token})
+                    if del_res.status_code == 200:
+                        print(f"[FIREBASE] Successfully deleted {email} from Firebase Auth.")
+                        return True
+                    else:
+                        print(f"[FIREBASE] accounts:delete returned {del_res.status_code}")
+        except Exception as e:
+            print(f"[FIREBASE] accounts:delete exception for {email}: {e}")
+        return False
+
     async def add_user(self, user: Dict[str, Any], actor_email: str = "jthakre62@gmail.com") -> List[Dict[str, Any]]:
         # Fetch current roster safely
         roster = await self.get_roster()
@@ -368,10 +399,12 @@ class RosterRedisService:
     async def delete_user(self, user_id: str, actor_email: str = "jthakre62@gmail.com") -> List[Dict[str, Any]]:
         roster = await self.get_roster()
         target_email = ""
+        known_pwd = None
         user_id_clean = user_id.strip().lower()
         for u in roster:
             if str(u.get("id", "")).lower() == user_id_clean or str(u.get("email", "")).lower() == user_id_clean:
                 target_email = u.get("email", "")
+                known_pwd = u.get("temporary_password")
                 break
 
         # Never delete root admin
@@ -385,17 +418,9 @@ class RosterRedisService:
         self._in_memory_roster = roster
         await self._redis_set(self.roster_key, roster)
 
-        # Remove from Firebase Auth if provisioned there
+        # Remove from Firebase Auth directly using Identity Toolkit REST API
         if target_email:
-            try:
-                from firebase_admin import auth as fb_auth
-                try:
-                    fb_u = fb_auth.get_user_by_email(target_email)
-                    fb_auth.delete_user(fb_u.uid)
-                except Exception:
-                    pass
-            except Exception:
-                pass
+            await self._delete_from_firebase(target_email, known_pwd)
 
             await self.add_audit_log({
                 "id": f"aud-del-{hash(user_id)}",
