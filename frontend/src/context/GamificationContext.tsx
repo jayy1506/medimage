@@ -72,32 +72,31 @@ interface GamificationContextType {
 
 const GamificationContext = createContext<GamificationContextType | undefined>(undefined);
 
-const STORAGE_KEY = "mtip_gamification_state";
+const STORAGE_KEY = "mtip_gamification_state_v2";
 
 export function GamificationProvider({ children }: { children: React.ReactNode }) {
-  const [xp, setXp] = useState<number>(340);
-  const [streakDays, setStreakDays] = useState<number>(3);
-  const [bestScores, setBestScores] = useState<Record<string, number>>({
-    "mission-bone-window": 92,
-    "mission-subdural-hematoma": 85
-  });
-  const [unlockedBadges, setUnlockedBadges] = useState<string[]>([
-    "badge-hounsfield"
-  ]);
+  const [xp, setXp] = useState<number>(0);
+  const [streakDays, setStreakDays] = useState<number>(0);
+  const [bestScores, setBestScores] = useState<Record<string, number>>({});
+  const [unlockedBadges, setUnlockedBadges] = useState<string[]>([]);
   const [dailyChallengeCompleted, setDailyChallengeCompleted] = useState<boolean>(false);
 
   // Load from local storage on mount (browser session)
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.xp !== undefined) setXp(parsed.xp);
-        if (parsed.streakDays !== undefined) setStreakDays(parsed.streakDays);
-        if (parsed.bestScores) setBestScores(parsed.bestScores);
-        if (parsed.unlockedBadges) setUnlockedBadges(parsed.unlockedBadges);
-        if (parsed.dailyChallengeCompleted !== undefined) {
-          setDailyChallengeCompleted(parsed.dailyChallengeCompleted);
+      if (typeof window !== "undefined") {
+        // Purge legacy mock data with pre-filled dummy scores
+        localStorage.removeItem("mtip_gamification_state");
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (typeof parsed.xp === "number") setXp(parsed.xp);
+          if (typeof parsed.streakDays === "number") setStreakDays(parsed.streakDays);
+          if (parsed.bestScores) setBestScores(parsed.bestScores);
+          if (parsed.unlockedBadges) setUnlockedBadges(parsed.unlockedBadges);
+          if (parsed.dailyChallengeCompleted !== undefined) {
+            setDailyChallengeCompleted(parsed.dailyChallengeCompleted);
+          }
         }
       }
     } catch (e) {
@@ -139,6 +138,9 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     if (score >= 75) xpEarned += 40;
     if (score >= 90) xpEarned += 60; // 3-star bonus
 
+    const nextStreak = streakDays === 0 ? 1 : streakDays;
+    setStreakDays(nextStreak);
+
     const newXp = xp + xpEarned;
     setXp(newXp);
 
@@ -148,7 +150,7 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
     }
     setUnlockedBadges(newBadges);
 
-    saveState(newXp, streakDays, newBests, newBadges, dailyChallengeCompleted);
+    saveState(newXp, nextStreak, newBests, newBadges, dailyChallengeCompleted);
     return { isNewBest, xpEarned };
   };
 
@@ -165,18 +167,21 @@ export function GamificationProvider({ children }: { children: React.ReactNode }
   const completeDailyChallenge = () => {
     if (dailyChallengeCompleted) return;
     setDailyChallengeCompleted(true);
+    const nextStreak = streakDays === 0 ? 1 : streakDays;
+    setStreakDays(nextStreak);
     const nextXp = xp + 150;
     setXp(nextXp);
-    saveState(nextXp, streakDays, bestScores, unlockedBadges, true);
+    saveState(nextXp, nextStreak, bestScores, unlockedBadges, true);
   };
 
   const resetGamification = () => {
     setXp(0);
-    setStreakDays(1);
+    setStreakDays(0);
     setBestScores({});
     setUnlockedBadges([]);
     setDailyChallengeCompleted(false);
     try {
+      localStorage.removeItem("mtip_gamification_state");
       localStorage.removeItem(STORAGE_KEY);
     } catch (e) {}
   };
