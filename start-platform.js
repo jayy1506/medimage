@@ -99,8 +99,12 @@ try {
 // 3. Launch FastAPI Backend
 console.log(`⚙️  [1/2] Launching FastAPI backend using: ${activePythonCmd} on 0.0.0.0:8000...`);
 
+const userLocalBin = path.join(process.env.HOME || '/opt/render', '.local', 'bin');
+process.env.PATH = `${userLocalBin}:${process.env.PATH || ''}`;
+
 const backendEnv = {
   ...process.env,
+  PATH: `${userLocalBin}:${process.env.PATH || ''}`,
   PYTHONPATH: `${BACKEND_DIR}:${process.env.PYTHONPATH || ''}`,
   PYTHONUNBUFFERED: '1',
 };
