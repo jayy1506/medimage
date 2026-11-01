@@ -119,6 +119,78 @@ const SUGGESTED_PROMPTS = [
 
 type WindowSize = "small" | "half" | "full";
 
+async function queryGeminiDirect(prompt: string): Promise<{ text: string; citations: Citation[] } | null> {
+  const keysStr = process.env.NEXT_PUBLIC_GEMINI_API_KEYS || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
+  const keys = keysStr.split(",").map((k) => k.trim()).filter(Boolean);
+  if (keys.length === 0) return null;
+
+  const isGreeting = /^(h[iey]+|heyy+|hello+|what'?s\s+up|whats\s+up|howdy|good\s+(morning|afternoon|evening)|sup)\b/i.test(prompt.trim());
+
+  let cleanRef = "Module 1 (M1), Topic 1: Radiology Modalities & Physics";
+  let citations: Citation[] = [];
+
+  const lower = prompt.toLowerCase();
+  if (/\bct\b|computed\s+tomography/i.test(lower)) {
+    cleanRef = "Module 1 (M1), Topic 5: Computed Tomography (CT & Sinograms)";
+    citations = [{ topic_title: "M1 (Module 1), Topic 5: Computed Tomography (CT & Sinograms)", section_number: 5, reference_code: "AIDS-12605.1" }];
+  } else if (/\bmri\b|magnetic\s+resonance/i.test(lower)) {
+    cleanRef = "Module 1 (M1), Topic 6: Magnetic Resonance Tomography (MRI)";
+    citations = [{ topic_title: "M1 (Module 1), Topic 6: Magnetic Resonance Tomography (MRI)", section_number: 6, reference_code: "AIDS-12605.1" }];
+  } else if (/\bultrasound\b|\busg\b|acoustic/i.test(lower)) {
+    cleanRef = "Module 1 (M1), Topic 7: Diagnostic Ultrasound & Acoustic Impedance";
+    citations = [{ topic_title: "M1 (Module 1), Topic 7: Diagnostic Ultrasound & Acoustic Impedance", section_number: 7, reference_code: "AIDS-12605.1" }];
+  } else if (/\bpet\b|\bspect\b|positron/i.test(lower)) {
+    cleanRef = "Module 1 (M1), Topic 8: Nuclear Medicine & Molecular Imaging (SPECT/PET)";
+    citations = [{ topic_title: "M1 (Module 1), Topic 8: Nuclear Medicine & Molecular Imaging (SPECT/PET)", section_number: 8, reference_code: "AIDS-12605.1" }];
+  } else if (/\bdicom\b/i.test(lower)) {
+    cleanRef = "Module 3 (M3), Topic 4: The DICOM Standard & Tag Dictionaries";
+    citations = [{ topic_title: "M3 (Module 3), Topic 4: The DICOM Standard & Tag Dictionaries", section_number: 4, reference_code: "AIDS-12605.1" }];
+  } else if (/\bwindow\b|\bhu\b|hounsfield/i.test(lower)) {
+    cleanRef = "Module 4 (M4), Topic 2: Clinical Windowing (Level, Width & Hounsfield Units)";
+    citations = [{ topic_title: "M4 (Module 4), Topic 2: Clinical Windowing", section_number: 2, reference_code: "AIDS-12605.1" }];
+  } else if (/\bu-?net\b|segmentation/i.test(lower)) {
+    cleanRef = "Module 2 (M2), Topic 4: Clinical Segmentation Strategies & U-Net";
+    citations = [{ topic_title: "M2 (Module 2), Topic 4: Clinical Segmentation Strategies & U-Net", section_number: 4, reference_code: "AIDS-12605.1" }];
+  } else if (!isGreeting) {
+    citations = [{ topic_title: "M1 (Module 1), Topic 1: Radiology Modalities & Physics", section_number: 1, reference_code: "AIDS-12605.1" }];
+  }
+
+  const systemInstruction = isGreeting
+    ? "You are Lexi, the official academic AI Clinical Tutor for 'Medical Text and Image Processing (AIDS 12605.1)' at the Faculty of Engineering and Technology, Adani Institute of Higher Education and Research. The student greeted you. Reply warmly, conversationally, and engagingly as Lexi. Ask what medical imaging modality or topic (such as CT, MRI, Ultrasound, DICOM, or segmentation) they want to explore today. Do NOT include any course citation line."
+    : `You are Lexi, the official academic AI Clinical Tutor for 'Medical Text and Image Processing (AIDS 12605.1)' at the Faculty of Engineering and Technology, Adani Institute of Higher Education and Research.\n\nINSTRUCTIONS:\n1. Answer like an expert AI tutor.\n2. If asked about an acronym or modality (e.g. CT, MRI, PET, SPECT, X-ray, Ultrasound, DICOM, PACS, HU, FBP), state the FULL FORM in bold right at the beginning (e.g. **CT** stands for **Computed Tomography**), provide diagnostic definition, operational physics, and math with KaTeX ($...$).\n3. End with a clean reference line: 📚 Course Reference: ${cleanRef}`;
+
+  const models = ["gemini-flash-lite-latest", "gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
+
+  for (const key of keys) {
+    for (const model of models) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+        const resp = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `${systemInstruction}\n\nUSER QUESTION: ${prompt}` }] }],
+            generationConfig: { temperature: isGreeting ? 0.7 : 0.3, maxOutputTokens: 900 }
+          })
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (candidateText) {
+            return {
+              text: candidateText,
+              citations: isGreeting ? [] : citations
+            };
+          }
+        }
+      } catch (e) {
+        // continue rotation
+      }
+    }
+  }
+  return null;
+}
+
 export default function FloatingAiTutorModal() {
   const pathname = usePathname();
   const { user, profile } = useAuth();
@@ -283,17 +355,59 @@ export default function FloatingAiTutorModal() {
     } catch (err) {
       console.error("AI Tutor floating modal request error:", err);
 
+      // 1. Try direct Gemini LLM call with user's Gemini API Keys pool
+      const geminiDirect = await queryGeminiDirect(prompt);
+      if (geminiDirect) {
+        const directMsg: ChatMessage = {
+          id: `tutor-${Date.now()}`,
+          sender: "tutor",
+          text: geminiDirect.text,
+          isRelevant: true,
+          citations: geminiDirect.citations,
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        };
+        const finalSessions = sessions.map((s) => {
+          if (s.id === targetSessionId) {
+            return {
+              ...s,
+              title: updatedTitle,
+              messages: [...s.messages, userMsg, directMsg],
+              updatedAt: "Just now"
+            };
+          }
+          return s;
+        });
+        saveSessions(finalSessions);
+        return;
+      }
+
+      // 2. Emergency offline fallback if completely unreachable
       const lower = prompt.toLowerCase();
       let fallbackText = "";
       let isRelevant = true;
+      let citationsList: Citation[] = [];
 
-      if (lower.includes("cricket") || lower.includes("ipl") || lower.includes("recipe") || lower.includes("movie") || lower.includes("bitcoin")) {
-        fallbackText = "I am strictly scoped to assist only with Medical Text and Image Processing (AIDS 12605.1) at Adani Institute of Higher Education and Research. Questions outside of medical imaging physics, DICOM standards, 2D filtering, tomographic reconstruction, and clinical NLP are not permitted.";
+      if (/^(h[iey]+|heyy+|hello+|what'?s\s+up|whats\s+up|howdy|good\s+(morning|afternoon|evening)|sup)\b/i.test(prompt.trim())) {
+        fallbackText = "Hey! What's up? I'm Lexi, your academic AI Clinical Tutor for **Medical Text & Image Processing (AIDS 12605.1)** at Adani University.\n\nI can explain any modality (CT, MRI, Ultrasound, PET), DICOM standards, or segmentation algorithms. What are we studying today?";
+        citationsList = [];
+      } else if (lower.includes("cricket") || lower.includes("ipl") || lower.includes("recipe") || lower.includes("movie") || lower.includes("bitcoin")) {
+        fallbackText = "I am strictly scoped to assist only with Medical Text and Image Processing (AIDS 12605.1) at Adani Institute of Higher Education and Research. Questions outside of medical imaging physics, DICOM standards, 2D filtering, and clinical NLP are not permitted.";
         isRelevant = false;
+      } else if (/\bct\b|computed\s+tomography/i.test(prompt)) {
+        fallbackText = `### Computed Tomography (CT)\n\n**CT** stands for **Computed Tomography**.\n\n#### 1. Clinical Definition\nComputed Tomography is a diagnostic imaging modality that utilizes rotating X-ray beams and digital detectors to create detailed cross-sectional tomographic slices and 3D volumetric views of internal organs and tissues.\n\n#### 2. Operating Principles & Physics\nMeasures the differential linear attenuation coefficient ($\\mu$) across projection angles $\\theta$, producing a **sinogram** via the **Radon Transform**. Reconstructed using **Filtered Backprojection (FBP)** with a Ram-Lak ramp filter or iterative reconstruction.\n\n#### 3. Hounsfield Units (HU)\n$$\\text{HU} = 1000 \\times \\frac{\\mu - \\mu_{\\text{water}}}{\\mu_{\\text{water}}}$$\n- Air: $-1000$ HU\n- Lungs: $-500$ HU\n- Water: $0$ HU\n- Soft Tissue: $+40$ HU\n- Bone: $+1000$ to $+3000$ HU\n\n📚 Course Reference: Module 1 (M1), Topic 5: Computed Tomography (CT & Sinograms)`;
+        citationsList = [{ topic_title: "Computed Tomography (CT & Sinograms)", section_number: 5, reference_code: "M1 (Module 1), Topic 5" }];
+      } else if (/\bmri\b|magnetic\s+resonance/i.test(prompt)) {
+        fallbackText = `### Magnetic Resonance Imaging (MRI)\n\n**MRI** stands for **Magnetic Resonance Imaging**.\n\n#### 1. Clinical Definition\nNon-invasive tomographic modality utilizing strong magnetic fields and RF pulses to map proton spin density ($^1\\text{H}$) without ionizing radiation.\n\n#### 2. Fundamental Physics\nSpins precess at the **Larmor frequency**: $\\omega_0 = \\gamma B_0$ (at $1.5\\text{T}$, $\\omega_0 \\approx 63.87\\text{ MHz}$). T1 longitudinal relaxation and T2 transverse dephasing govern soft-tissue contrast.\n\n📚 Course Reference: Module 1 (M1), Topic 6: Magnetic Resonance Tomography (MRI)`;
+        citationsList = [{ topic_title: "Magnetic Resonance Tomography (MRI)", section_number: 6, reference_code: "M1 (Module 1), Topic 6" }];
+      } else if (/\bdicom\b/i.test(prompt)) {
+        fallbackText = `### Digital Imaging and Communications in Medicine (DICOM)\n\n**DICOM** stands for **Digital Imaging and Communications in Medicine**.\n\n#### 1. Standard Purpose\nInternational standard (NEMA PS3 / ISO 12052) for medical image exchange, storage, and communication across clinical PACS archives.\n\n#### 2. Part 10 Structure\nData Elements are indexed by hexadecimal (Group, Element) tag pairs, Value Representations (VR), and length fields.\n\n📚 Course Reference: Module 3 (M3), Topic 4: The DICOM Standard & Tag Dictionaries`;
+        citationsList = [{ topic_title: "The DICOM Standard & Tag Dictionaries", section_number: 4, reference_code: "M3 (Module 3), Topic 4" }];
       } else if (lower.includes("beer") || lower.includes("hvl") || lower.includes("attenuation")) {
-        fallbackText = "The Beer-Lambert Law states that $I(x) = I_0 \\, e^{-\\mu x}$. Half-Value Layer is $\\text{HVL} = \\frac{\\ln(2)}{\\mu} \\approx \\frac{0.693}{\\mu}$. High-atomic number absorbers like cortical bone have higher $\\mu$ and smaller HVL.";
+        fallbackText = "The Beer-Lambert Law states that $I(x) = I_0 \\, e^{-\\mu x}$. Half-Value Layer is $\\text{HVL} = \\frac{\\ln(2)}{\\mu} \\approx \\frac{0.693}{\\mu}$. High-atomic number absorbers like cortical bone have higher $\\mu$ and smaller HVL.\n\n📚 Course Reference: Module 1 (M1), Topic 4: Attenuation & Exponential Imaging Laws";
+        citationsList = [{ topic_title: "Attenuation & Exponential Imaging Laws", section_number: 4, reference_code: "M1 (Module 1), Topic 4" }];
       } else {
-        fallbackText = `In accordance with the AIDS 12605.1 curriculum for Medical Image Processing, diagnostic accuracy depends on spatial attenuation coefficients, discrete matrix sampling, and preserving contrast-to-noise ratio (CNR) without introducing irreversible aliasing artifacts.`;
+        fallbackText = `In accordance with the AIDS 12605.1 curriculum for Medical Image Processing, diagnostic accuracy depends on spatial attenuation coefficients, discrete matrix sampling, and preserving contrast-to-noise ratio (CNR) without introducing irreversible aliasing artifacts.\n\n📚 Course Reference: Module 1 (M1), Topic 1: Radiology Modalities & Physics`;
+        citationsList = [{ topic_title: "Radiology Modalities & Physics", section_number: 1, reference_code: "M1 (Module 1), Topic 1" }];
       }
 
       const fallbackMsg: ChatMessage = {
@@ -301,7 +415,7 @@ export default function FloatingAiTutorModal() {
         sender: "tutor",
         text: fallbackText,
         isRelevant: isRelevant,
-        citations: isRelevant ? [{ topic_title: "Medical Image Processing", section_number: 1, reference_code: "AIDS-12605.1" }] : [],
+        citations: citationsList,
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
       };
 
@@ -585,10 +699,10 @@ export default function FloatingAiTutorModal() {
                                   {msg.citations.map((c, cIdx) => (
                                     <span
                                       key={cIdx}
-                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-white text-adani-navy border border-slate-200 shadow-2xs"
+                                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold bg-white text-adani-navy border border-slate-200 shadow-2xs"
                                     >
                                       <Bookmark className="w-3 h-3 text-adani-cyan" />
-                                      {c.topic_title} • Sec {c.section_number}
+                                      {c.reference_code ? (c.reference_code.includes(c.topic_title) ? c.reference_code : `${c.reference_code}: ${c.topic_title}`) : c.topic_title}
                                     </span>
                                   ))}
                                 </div>

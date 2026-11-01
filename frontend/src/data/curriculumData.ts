@@ -167,6 +167,9 @@ export const TOPICS_DATA_REGISTRY: Record<string, TopicPayload> = {
     co_tags: ["CO1"],
     read_time_minutes: 15,
     is_completed: false,
+    video_url: "/videos/Seeing_Inside_the_Body.mp4",
+    video_title: "Seeing Inside the Human Body: Clinical Radiology Modalities",
+    video_description: "An authoritative visual clinical masterclass exploring how ionizing and non-ionizing energy forms (X-ray, CT, MRI, Ultrasound) probe internal human anatomy non-invasively.",
     module: { id: "mod-1", module_number: 1, title: "Medical Image Sources" },
     sections: [
       {

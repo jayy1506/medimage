@@ -15,7 +15,9 @@ import {
   FileCheck,
   AlertCircle,
   Award,
-  ArrowRight
+  ArrowRight,
+  Film,
+  Play
 } from "lucide-react";
 import MermaidDiagram from "@/components/diagrams/MermaidDiagram";
 import QuickCheckQuiz, { QuickCheckQuestion } from "@/components/topic/QuickCheckQuiz";
@@ -26,6 +28,7 @@ import { RichContentRenderer } from "@/components/ui/RichContentRenderer";
 import { EquationCard } from "@/components/ui/MathView";
 import { BrandLogo } from "@/components/BrandLogo";
 import { SUBTOPIC_5_MCQS_REGISTRY } from "@/data/subtopicQuizDatabase";
+import ClinicalVideoPlayer from "@/components/topic/ClinicalVideoPlayer";
 
 export interface SectionData {
   id: string;
@@ -74,6 +77,9 @@ export interface TopicPayload {
   quick_checks?: QuickCheckQuestion[];
   previous_topic_slug?: string | null;
   next_topic_slug?: string | null;
+  video_url?: string;
+  video_title?: string;
+  video_description?: string;
 }
 
 interface DualPanelViewerProps {
@@ -87,8 +93,10 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
   );
   const isCompleted = isTopicCompleted(topic.slug);
   const [highlightedNode, setHighlightedNode] = useState<string | undefined>(undefined);
-  const [visualTab, setVisualTab] = useState<"diagram" | "scan" | "interactive">("diagram");
-  const [mobileView, setMobileView] = useState<"theory" | "scan" | "diagram">("theory");
+  const [visualTab, setVisualTab] = useState<"video" | "diagram" | "scan" | "interactive">(
+    topic.video_url ? "video" : "diagram"
+  );
+  const [mobileView, setMobileView] = useState<"theory" | "video" | "scan" | "diagram">("theory");
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
   // IntersectionObserver for scroll-synchronization
@@ -217,6 +225,20 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
               <span>Theory</span>
             </button>
             
+            {topic.video_url && (
+              <button
+                onClick={() => setMobileView("video")}
+                className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                  mobileView === "video"
+                    ? "bg-white text-adani-navy shadow-sm"
+                    : "hover:text-slate-900 text-slate-600"
+                }`}
+              >
+                <Film className="w-3.5 h-3.5 text-adani-pink" />
+                <span>Video</span>
+              </button>
+            )}
+
             {activeAsset && (
               <button
                 onClick={() => setMobileView("scan")}
@@ -246,6 +268,30 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
             )}
           </div>
         </div>
+
+        {/* Mobile Dedicated Video Viewport */}
+        {mobileView === "video" && topic.video_url && (
+          <div className="lg:hidden space-y-4 mb-8">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                Clinical Media Video
+              </span>
+              <button
+                onClick={() => setMobileView("theory")}
+                className="text-xs font-bold text-adani-cyan hover:underline flex items-center gap-1"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                Back to Theory
+              </button>
+            </div>
+
+            <ClinicalVideoPlayer
+              src={topic.video_url}
+              title={topic.video_title || topic.title}
+              description={topic.video_description}
+            />
+          </div>
+        )}
 
         {/* Mobile Dedicated Clinical Scan Viewport */}
         {mobileView === "scan" && activeAsset && (
@@ -342,6 +388,38 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
                 {topic.title}
               </h1>
             </div>
+
+            {/* Featured Clinical Video Hero Card (when video_url is present) */}
+            {topic.video_url && (
+              <div className="p-1 rounded-3xl bg-gradient-to-r from-adani-cyan via-adani-purple to-adani-pink shadow-xl">
+                <div className="p-4 sm:p-6 rounded-[22px] bg-[#090d16] text-white space-y-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-adani-pink/20 border border-adani-pink/40 text-adani-pink flex items-center justify-center flex-shrink-0">
+                        <Film className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-adani-cyan bg-adani-cyan/10 px-2 py-0.5 rounded">
+                            Clinical Documentary
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-400">1080p HD Video</span>
+                        </div>
+                        <h3 className="text-base sm:text-lg font-bold text-white tracking-tight mt-0.5">
+                          {topic.video_title || "Seeing Inside the Human Body"}
+                        </h3>
+                      </div>
+                    </div>
+                  </div>
+
+                  <ClinicalVideoPlayer
+                    src={topic.video_url}
+                    title={topic.video_title || topic.title}
+                    description={topic.video_description}
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Structured Topic Sections */}
             {topic.sections.map((sec, idx) => {
@@ -542,6 +620,19 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
           <div className="hidden lg:block lg:col-span-5 sticky top-24 space-y-4">
             {/* Visual Tab Selector */}
             <div className="flex rounded-xl bg-slate-200/70 p-1 space-x-1 text-xs font-bold text-slate-600">
+              {topic.video_url && (
+                <button
+                  onClick={() => setVisualTab("video")}
+                  className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+                    visualTab === "video"
+                      ? "bg-white text-adani-navy shadow-sm"
+                      : "hover:text-slate-900"
+                  }`}
+                >
+                  <Film className="w-3.5 h-3.5 text-adani-pink" />
+                  <span>Clinical Video</span>
+                </button>
+              )}
               <button
                 onClick={() => setVisualTab("diagram")}
                 className={`flex-1 py-1.5 rounded-lg transition-all ${
@@ -567,8 +658,14 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
             </div>
 
             {/* Visual Workstation Area */}
-            <div className="h-[520px]">
-              {visualTab === "diagram" && linkedDiagram ? (
+            <div className="min-h-[460px]">
+              {visualTab === "video" && topic.video_url ? (
+                <ClinicalVideoPlayer
+                  src={topic.video_url}
+                  title={topic.video_title || topic.title}
+                  description={topic.video_description}
+                />
+              ) : visualTab === "diagram" && linkedDiagram ? (
                 <MermaidDiagram
                   id={linkedDiagram.id}
                   code={linkedDiagram.code_or_markup}

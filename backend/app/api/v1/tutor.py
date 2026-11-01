@@ -57,16 +57,6 @@ async def ask_tutor_general(payload: TutorGeneralAskRequest):
     if not prompt:
         raise HTTPException(status_code=400, detail="Prompt cannot be empty.")
 
-    # Guardrail evaluation
-    refusal = rag_service.check_guardrails(prompt)
-    if refusal:
-        return TutorGeneralAskResponse(
-            response=refusal,
-            is_relevant=False,
-            citations=[],
-            highlight_diagram_node=None
-        )
-
     title = payload.topic_title or "Medical Text & Image Processing (AIDS 12605.1)"
     topic_id = payload.topic_id or "general-tutor"
 

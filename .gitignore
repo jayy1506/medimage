@@ -18,6 +18,8 @@ firebase-adminsdk*.json
 *.sqlite3
 /data/
 uploads/
+*.mp4
+*.webm
 
 # Node.js
 node_modules/
