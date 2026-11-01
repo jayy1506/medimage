@@ -87,6 +87,7 @@ app.include_router(missions_router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["System"])
+@app.get("/api/v1/health", tags=["System"])
 async def health_check():
     """System health check endpoint."""
     return {
