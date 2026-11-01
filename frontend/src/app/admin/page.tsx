@@ -101,6 +101,7 @@ export default function AdminDashboardPage() {
   const [revealedPasswords, setRevealedPasswords] = useState<Record<string, boolean>>({});
   const [copiedPasswordId, setCopiedPasswordId] = useState<string | null>(null);
   const [resettingId, setResettingId] = useState<string | null>(null);
+  const [changingRoleId, setChangingRoleId] = useState<string | null>(null);
 
   const API_BASE = typeof window !== "undefined" ? "/api/v1" : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1");
   const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "";
@@ -271,6 +272,55 @@ export default function AdminDashboardPage() {
     } catch (e) {
       console.warn("Saved to local cache while Redis endpoint re-syncs");
     }
+  };
+
+  // Change user institutional role in Redis & sync
+  const handleChangeRole = async (userId: string, newRole: "student" | "faculty" | "admin") => {
+    const targetUser = usersList.find((u) => u.id === userId);
+    if (!targetUser) return;
+    if (targetUser.email === "jthakre62@gmail.com" || targetUser.email === "jthakr62@gmail.com") {
+      alert("The primary Super-Administrator role is permanently locked and cannot be modified.");
+      return;
+    }
+
+    setChangingRoleId(userId);
+
+    // Optimistic UI update
+    const updated = usersList.map((u) => (u.id === userId ? { ...u, role: newRole } : u));
+    setUsersList(updated);
+
+    try {
+      const res = await fetch(`${API_BASE}/admin/roster/${userId}/role`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role: newRole, actor_email: user?.email || "jthakre62@gmail.com" })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.users) setUsersList(data.users);
+        if (data.audit_logs) setAuditLogs(data.audit_logs);
+      }
+    } catch (e) {
+      console.warn("Backend role update issue, using direct Upstash fallback:", e);
+    }
+
+    // Direct Upstash sync fallback
+    if (UPSTASH_URL && UPSTASH_TOKEN) {
+      try {
+        await fetch(`${UPSTASH_URL}/set/medimage:roster:users`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${UPSTASH_TOKEN}`,
+            "Content-Type": "text/plain"
+          },
+          body: JSON.stringify(updated)
+        });
+      } catch (err) {
+        console.warn("Failed direct Upstash role sync", err);
+      }
+    }
+
+    setChangingRoleId(null);
   };
 
   // Add single user in Redis
@@ -729,18 +779,30 @@ export default function AdminDashboardPage() {
                             <span className="text-[11px] text-slate-500 font-mono">{u.email}</span>
                           </td>
                           <td className="px-5 py-3.5">
-                            {u.role === "admin" ? (
+                            {u.email === "jthakre62@gmail.com" || u.email === "jthakr62@gmail.com" ? (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-purple-50 text-adani-purple text-[10px] font-bold border border-purple-200">
-                                Super-Admin
-                              </span>
-                            ) : u.role === "faculty" ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-sky-50 text-adani-cyan text-[10px] font-bold border border-sky-200">
-                                Faculty Instructor
+                                Super-Admin (Master)
                               </span>
                             ) : (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold border border-slate-200">
-                                Student Candidate
-                              </span>
+                              <div className="relative inline-block">
+                                <select
+                                  value={u.role}
+                                  disabled={changingRoleId === u.id}
+                                  onChange={(e) => handleChangeRole(u.id, e.target.value as any)}
+                                  className={`text-[11px] font-bold py-1 px-2.5 rounded-lg border transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-adani-cyan shadow-2xs ${
+                                    u.role === "admin"
+                                      ? "bg-purple-50 text-adani-purple border-purple-200 hover:bg-purple-100"
+                                      : u.role === "faculty"
+                                      ? "bg-sky-50 text-adani-cyan border-sky-200 hover:bg-sky-100"
+                                      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                                  }`}
+                                  title="Change institutional role"
+                                >
+                                  <option value="student">Student Candidate</option>
+                                  <option value="faculty">Faculty Instructor</option>
+                                  <option value="admin">Administrator</option>
+                                </select>
+                              </div>
                             )}
                           </td>
                           <td className="px-5 py-3.5">

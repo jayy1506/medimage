@@ -19,6 +19,11 @@ class UpdateStatusRequest(BaseModel):
     actor_email: Optional[str] = "jthakre62@gmail.com"
 
 
+class UpdateRoleRequest(BaseModel):
+    role: str
+    actor_email: Optional[str] = "jthakre62@gmail.com"
+
+
 class ResetPasswordRequest(BaseModel):
     new_password: str = "Feat@123"
     actor_email: Optional[str] = "jthakre62@gmail.com"
@@ -95,6 +100,19 @@ async def toggle_status(user_id: str, payload: UpdateStatusRequest):
     updated = await roster_redis_service.update_user_status(user_id, payload.status, actor_email=payload.actor_email)
     audit_logs = await roster_redis_service.get_audit_logs()
     return {
+        "users": updated,
+        "audit_logs": audit_logs
+    }
+
+
+@router.patch("/{user_id}/role", summary="Update user institutional role (student, faculty, admin) in Redis")
+async def update_role(user_id: str, payload: UpdateRoleRequest):
+    if payload.role not in ["student", "faculty", "admin"]:
+        raise HTTPException(status_code=400, detail="Role must be student, faculty, or admin")
+    updated = await roster_redis_service.update_user_role(user_id, payload.role, actor_email=payload.actor_email)
+    audit_logs = await roster_redis_service.get_audit_logs()
+    return {
+        "message": f"Successfully updated role to {payload.role}",
         "users": updated,
         "audit_logs": audit_logs
     }

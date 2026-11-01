@@ -332,6 +332,33 @@ class RosterRedisService:
             })
         return self._in_memory_roster
 
+    async def update_user_role(self, user_id: str, new_role: str, actor_email: str = "jthakre62@gmail.com") -> List[Dict[str, Any]]:
+        roster = await self.get_roster()
+        target_email = ""
+        old_role = ""
+        for u in roster:
+            if u["id"] == user_id:
+                # Protect root super-admin from demotion
+                if u.get("email", "").lower() in ["jthakre62@gmail.com", "jthakr62@gmail.com"]:
+                    return roster
+                old_role = u.get("role", "student")
+                u["role"] = new_role
+                target_email = u.get("email", "")
+                break
+        self._in_memory_roster = roster
+        await self._redis_set(self.roster_key, roster)
+        if target_email:
+            await self.add_audit_log({
+                "id": f"aud-role-{user_id}-{int(id(new_role))}",
+                "actor_email": actor_email,
+                "action": "UPDATE_ROLE",
+                "target": target_email,
+                "timestamp": "Just now",
+                "ip": "127.0.0.1",
+                "details": f"Institutional role updated from {old_role} to {new_role}"
+            })
+        return self._in_memory_roster
+
     async def reset_user_password(self, user_id: str, new_password: str = "Feat@123", actor_email: str = "jthakre62@gmail.com") -> List[Dict[str, Any]]:
         roster = await self.get_roster()
         target_email = ""
