@@ -159,7 +159,7 @@ async function queryGeminiDirect(prompt: string): Promise<{ text: string; citati
     ? "You are Lexi, the official academic AI Clinical Tutor for 'Medical Text and Image Processing (AIDS 12605.1)' at the Faculty of Engineering and Technology, Adani Institute of Higher Education and Research. The student greeted you. Reply warmly, conversationally, and engagingly as Lexi. Ask what medical imaging modality or topic (such as CT, MRI, Ultrasound, DICOM, or segmentation) they want to explore today. Do NOT include any course citation line."
     : `You are Lexi, the official academic AI Clinical Tutor for 'Medical Text and Image Processing (AIDS 12605.1)' at the Faculty of Engineering and Technology, Adani Institute of Higher Education and Research.\n\nINSTRUCTIONS:\n1. Answer like an expert AI tutor.\n2. If asked about an acronym or modality (e.g. CT, MRI, PET, SPECT, X-ray, Ultrasound, DICOM, PACS, HU, FBP), state the FULL FORM in bold right at the beginning (e.g. **CT** stands for **Computed Tomography**), provide diagnostic definition, operational physics, and math with KaTeX ($...$).\n3. End with a clean reference line: 📚 Course Reference: ${cleanRef}`;
 
-  const models = ["gemini-flash-lite-latest", "gemini-3.1-flash-lite", "gemini-3.5-flash-lite"];
+  const models = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-1.5-pro"];
 
   for (const key of keys) {
     for (const model of models) {
@@ -188,6 +188,14 @@ async function queryGeminiDirect(prompt: string): Promise<{ text: string; citati
       }
     }
   }
+
+  if (isGreeting) {
+    return {
+      text: "Hey! What's up? I'm Lexi, your academic AI Clinical Tutor for **Medical Text & Image Processing (AIDS 12605.1)** at Adani University.\n\nI'm ready to help you explore imaging physics, modalities like CT, MRI, Ultrasound, DICOM standards, or clinical segmentation pipelines. What topic would you like to master today?",
+      citations: []
+    };
+  }
+
   return null;
 }
 

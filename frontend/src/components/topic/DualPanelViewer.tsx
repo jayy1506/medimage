@@ -28,6 +28,7 @@ import { EquationCard } from "@/components/ui/MathView";
 import { BrandLogo } from "@/components/BrandLogo";
 import { SUBTOPIC_5_MCQS_REGISTRY } from "@/data/subtopicQuizDatabase";
 import ClinicalVideoPlayer from "@/components/topic/ClinicalVideoPlayer";
+import ClinicalScanViewer from "@/components/topic/ClinicalScanViewer";
 
 export interface SectionData {
   id: string;
@@ -310,43 +311,7 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
               </button>
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate-200 p-4 text-slate-900 shadow-sm space-y-3">
-              {visualAssets.length > 1 && (
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-                  {visualAssets.map((asset, idx) => (
-                    <button
-                      key={asset.id}
-                      type="button"
-                      onClick={() => setSelectedAssetIndex(idx)}
-                      className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-                        selectedAssetIndex === idx
-                          ? "bg-slate-900 text-white shadow-sm"
-                          : "bg-slate-100 hover:bg-slate-200 text-slate-700"
-                      }`}
-                    >
-                      Figure {idx + 1}
-                    </button>
-                  ))}
-                </div>
-              )}
-              <div className="relative w-full h-72 sm:h-96 bg-slate-50/80 rounded-xl overflow-hidden flex items-center justify-center border border-slate-100 p-2">
-                <img
-                  src={activeAsset.storage_url}
-                  alt={activeAsset.alt_text}
-                  className="max-h-full max-w-full object-contain mx-auto select-none"
-                  loading="eager"
-                />
-              </div>
-              <div className="pt-3 border-t border-slate-100 text-xs">
-                <span className="font-bold text-slate-900 text-sm block mb-1">{activeAsset.title}</span>
-                <p className="leading-relaxed text-slate-600">{activeAsset.alt_text}</p>
-                {activeAsset.attribution && (
-                  <div className="text-[11px] text-slate-400 mt-2 font-mono">
-                    Source: {activeAsset.attribution} ({activeAsset.license})
-                  </div>
-                )}
-              </div>
-            </div>
+            <ClinicalScanViewer assets={visualAssets} />
           </div>
         )}
 
@@ -663,43 +628,7 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
                   activeNodeId={highlightedNode}
                 />
               ) : visualTab === "scan" && activeAsset ? (
-                <div className="bg-white rounded-2xl border border-slate-200 p-5 text-slate-900 shadow-sm space-y-4">
-                  {visualAssets.length > 1 && (
-                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-                      {visualAssets.map((asset, idx) => (
-                        <button
-                          key={asset.id}
-                          type="button"
-                          onClick={() => setSelectedAssetIndex(idx)}
-                          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-                            selectedAssetIndex === idx
-                              ? "bg-slate-900 text-white shadow-sm"
-                              : "bg-slate-100 hover:bg-slate-200 text-slate-700"
-                          }`}
-                        >
-                          Figure {idx + 1}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <div className="relative w-full h-[360px] sm:h-[400px] bg-slate-50/80 rounded-xl overflow-hidden flex items-center justify-center border border-slate-100 p-3">
-                    <img
-                      src={activeAsset.storage_url}
-                      alt={activeAsset.alt_text}
-                      className="max-h-full max-w-full object-contain mx-auto select-none"
-                      loading="eager"
-                    />
-                  </div>
-                  <div className="pt-3 border-t border-slate-100 text-xs">
-                    <span className="font-bold text-slate-900 text-sm block mb-1">{activeAsset.title}</span>
-                    <p className="leading-relaxed text-slate-600">{activeAsset.alt_text}</p>
-                    {activeAsset.attribution && (
-                      <div className="text-[11px] text-slate-400 mt-2 font-mono">
-                        Source: {activeAsset.attribution} ({activeAsset.license})
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <ClinicalScanViewer assets={visualAssets} />
               ) : (
                 <div className="h-full bg-white rounded-2xl border border-slate-200 p-6 flex flex-col items-center justify-center text-center text-slate-400 text-xs">
                   <Layers className="w-8 h-8 mb-2 text-slate-300" />

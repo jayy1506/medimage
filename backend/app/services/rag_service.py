@@ -269,6 +269,13 @@ class RAGService:
         active_diagram_node: Optional[str] = None
     ) -> Dict[str, Any]:
         # 1. Greeting check
+        greeting_text = self.check_greeting(prompt)
+        if greeting_text:
+            return {
+                "response": greeting_text,
+                "citations": [],
+                "highlight_diagram_node": None
+            }
         is_greeting = bool(GREETING_REGEX.match(prompt.strip().lower()) or IDENTITY_REGEX.match(prompt.strip().lower()))
 
         # 2. Guardrails check
@@ -320,11 +327,10 @@ class RAGService:
 
         # 6. Attempt Gemini API with candidate models using provided API keys
         gemini_models = [
-            "gemini-flash-lite-latest",
-            "gemini-3.1-flash-lite",
-            "gemini-3.5-flash-lite",
-            "gemini-flash-latest",
-            "gemini-3.8-flash"
+            "gemini-2.0-flash",
+            "gemini-1.5-flash",
+            "gemini-1.5-flash-8b",
+            "gemini-1.5-pro"
         ]
         if self.gemini_keys:
             for _ in range(min(len(self.gemini_keys), 4)):
@@ -539,6 +545,14 @@ class RAGService:
                     f"📚 Course Reference: {clean_ref}"
                 )
 
+            elif is_greeting:
+                response_text = (
+                    "Hey! What's up? I'm Lexi, your academic AI Clinical Tutor for "
+                    "**Medical Text & Image Processing (AIDS 12605.1)** at Adani University.\n\n"
+                    "I'm here to help you understand imaging physics, modalities like CT and MRI, "
+                    "DICOM standards, image processing algorithms, or clinical segmentation pipelines. "
+                    "What topic or concept would you like to explore today?"
+                )
             else:
                 response_text = (
                     f"In this area of **{match['topic_title']}**, clinical diagnostic performance depends on understanding "
