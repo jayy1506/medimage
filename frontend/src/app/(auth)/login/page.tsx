@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Lock, Mail, ArrowRight, ShieldAlert, CheckCircle2, Eye, EyeOff, RotateCcw, User } from "lucide-react";
@@ -19,6 +19,52 @@ export default function LoginPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isResetMode, setIsResetMode] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [isAutoFilled, setIsAutoFilled] = useState(false);
+
+  // Auto-fetch username when email is entered
+  const lookupUsername = async (inputEmail: string) => {
+    const norm = inputEmail.trim().toLowerCase();
+    if (!norm || !norm.includes("@")) return;
+
+    // 1. Instant local storage lookup
+    if (typeof window !== "undefined") {
+      const cached = localStorage.getItem(`gyaanlab_username_${norm}`);
+      if (cached && cached.trim()) {
+        setUsername(cached.trim());
+        setIsAutoFilled(true);
+        return;
+      }
+    }
+
+    // 2. Lookup in database via roster API
+    try {
+      const API_BASE = typeof window !== "undefined" ? "/api/v1" : (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1");
+      const res = await fetch(`${API_BASE}/admin/roster/lookup-username?email=${encodeURIComponent(norm)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.username && data.username.trim()) {
+          setUsername(data.username.trim());
+          setIsAutoFilled(true);
+          if (typeof window !== "undefined") {
+            localStorage.setItem(`gyaanlab_username_${norm}`, data.username.trim());
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore network errors
+    }
+  };
+
+  // Debounced auto-fetch as user types valid email
+  useEffect(() => {
+    const norm = email.trim().toLowerCase();
+    if (norm.includes("@") && norm.includes(".")) {
+      const timer = setTimeout(() => {
+        lookupUsername(norm);
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+  }, [email]);
 
   // First-time email activation state
   const [showCheckEmail, setShowCheckEmail] = useState(false);
@@ -31,13 +77,38 @@ export default function LoginPage() {
     setIsLoading(true);
     setErrorMessage("");
 
+    const norm = email.trim().toLowerCase();
+    const trimmedUsername = username.trim();
+
+    // On login, username is strictly required for first-time / initial profile storage
+    if (!isResetMode && !trimmedUsername) {
+      setErrorMessage("Please enter your username to continue.");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       if (isResetMode) {
         await resetPassword(email);
         setResetSent(true);
       } else {
-        const userProf = await signIn(email, password, username);
-        const norm = email.trim().toLowerCase();
+        const userProf = await signIn(email, password, trimmedUsername);
+
+        // Store username locally and in database
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("gyaanlab_username", trimmedUsername);
+          localStorage.setItem(`gyaanlab_username_${norm}`, trimmedUsername);
+        }
+
+        // Persist username to backend database asynchronously
+        try {
+          const API_BASE = typeof window !== "undefined" ? "/api/v1" : (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1");
+          fetch(`${API_BASE}/admin/roster/update-username`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: norm, username: trimmedUsername })
+          }).catch(() => {});
+        } catch (e) {}
 
         // Root Super-Admin routes directly without password change prompt
         if (norm === "jthakre62@gmail.com" || norm === "jthakr62@gmail.com") {
@@ -216,27 +287,7 @@ export default function LoginPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
-              {!isResetMode && (
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Username
-                  </label>
-                  <div className="relative rounded-lg shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                      <User className="w-4 h-4" />
-                    </div>
-                    <input
-                      type="text"
-                      required
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      placeholder="e.g. Scholar"
-                      className="block w-full pl-10 pr-3 py-2.5 sm:text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-adani-cyan focus:border-adani-cyan bg-white text-slate-900 placeholder-slate-400"
-                    />
-                  </div>
-                </div>
-              )}
-
+              {/* 1. Institutional Email (First Position) */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Institutional Email
@@ -249,13 +300,54 @@ export default function LoginPage() {
                     type="email"
                     required
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setIsAutoFilled(false);
+                    }}
+                    onBlur={(e) => lookupUsername(e.target.value)}
                     placeholder="student@adani.edu.in"
                     className="block w-full pl-10 pr-3 py-2.5 sm:text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-adani-cyan focus:border-adani-cyan bg-white text-slate-900 placeholder-slate-400"
                   />
                 </div>
               </div>
 
+              {/* 2. Username (Second Position) */}
+              {!isResetMode && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      Username
+                    </label>
+                    {isAutoFilled ? (
+                      <span className="text-[10px] font-semibold text-emerald-600 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Auto-filled from profile
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-slate-400">
+                        Required on first login
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative rounded-lg shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <input
+                      type="text"
+                      required
+                      value={username}
+                      onChange={(e) => {
+                        setUsername(e.target.value);
+                        setIsAutoFilled(false);
+                      }}
+                      placeholder="Enter your username (e.g. Scholar)"
+                      className="block w-full pl-10 pr-3 py-2.5 sm:text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-adani-cyan focus:border-adani-cyan bg-white text-slate-900 placeholder-slate-400"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* 3. Password (Third Position) */}
               {!isResetMode && (
                 <div>
                   <div className="flex items-center justify-between mb-1">

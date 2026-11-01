@@ -34,6 +34,23 @@ class ChangePasswordRequest(BaseModel):
     new_password: str
 
 
+class UpdateUsernameRequest(BaseModel):
+    email: EmailStr
+    username: str
+
+
+@router.get("/lookup-username", summary="Lookup saved username by institutional email")
+async def lookup_username(email: str):
+    username = await roster_redis_service.get_username_by_email(email)
+    return {"email": email, "username": username or ""}
+
+
+@router.post("/update-username", summary="Store or update username in institutional roster database")
+async def update_username(payload: UpdateUsernameRequest):
+    success = await roster_redis_service.update_username_by_email(payload.email, payload.username)
+    return {"status": "success" if success else "updated", "username": payload.username}
+
+
 @router.get("", summary="Get all students, faculty, and admins from Redis cache")
 async def get_roster():
     users = await roster_redis_service.get_roster()

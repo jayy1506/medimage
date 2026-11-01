@@ -562,4 +562,44 @@ class RosterRedisService:
         await self._redis_set(key, reset_data)
         return reset_data
 
+    async def get_username_by_email(self, email: str) -> Optional[str]:
+        roster = await self.get_roster()
+        clean_email = email.strip().lower()
+        for u in roster:
+            if u.get("email", "").strip().lower() == clean_email:
+                return u.get("username") or u.get("full_name") or None
+        return None
+
+    async def update_username_by_email(self, email: str, username: str) -> bool:
+        roster = await self.get_roster()
+        clean_email = email.strip().lower()
+        clean_user = username.strip()
+        found = False
+        for u in roster:
+            if u.get("email", "").strip().lower() == clean_email:
+                u["username"] = clean_user
+                if not u.get("full_name") or u.get("full_name").lower() in ["student", "scholar", "user"]:
+                    u["full_name"] = clean_user
+                found = True
+                break
+        if not found:
+            # If not in roster, create an entry so their username is remembered in the database
+            roster.append({
+                "id": f"u-{abs(hash(clean_email))}",
+                "email": clean_email,
+                "full_name": clean_user,
+                "username": clean_user,
+                "role": "student",
+                "status": "active",
+                "temporary_password": "",
+                "force_password_change": False,
+                "created_at": "2026-11-01T00:00:00Z"
+            })
+            found = True
+
+        self._in_memory_roster = roster
+        await self._redis_set(self.roster_key, roster)
+        return True
+
 roster_redis_service = RosterRedisService()
+
