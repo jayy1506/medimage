@@ -16,8 +16,7 @@ import {
   AlertCircle,
   Award,
   ArrowRight,
-  Film,
-  Play
+  Film
 } from "lucide-react";
 import MermaidDiagram from "@/components/diagrams/MermaidDiagram";
 import QuickCheckQuiz, { QuickCheckQuestion } from "@/components/topic/QuickCheckQuiz";
@@ -389,37 +388,6 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
               </h1>
             </div>
 
-            {/* Featured Clinical Video Hero Card (when video_url is present) */}
-            {topic.video_url && (
-              <div className="p-1 rounded-3xl bg-gradient-to-r from-adani-cyan via-adani-purple to-adani-pink shadow-xl">
-                <div className="p-4 sm:p-6 rounded-[22px] bg-[#090d16] text-white space-y-4">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-adani-pink/20 border border-adani-pink/40 text-adani-pink flex items-center justify-center flex-shrink-0">
-                        <Film className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-adani-cyan bg-adani-cyan/10 px-2 py-0.5 rounded">
-                            Clinical Documentary
-                          </span>
-                          <span className="text-[10px] font-mono text-slate-400">1080p HD Video</span>
-                        </div>
-                        <h3 className="text-base sm:text-lg font-bold text-white tracking-tight mt-0.5">
-                          {topic.video_title || "Seeing Inside the Human Body"}
-                        </h3>
-                      </div>
-                    </div>
-                  </div>
-
-                  <ClinicalVideoPlayer
-                    src={topic.video_url}
-                    title={topic.video_title || topic.title}
-                    description={topic.video_description}
-                  />
-                </div>
-              </div>
-            )}
 
             {/* Structured Topic Sections */}
             {topic.sections.map((sec, idx) => {

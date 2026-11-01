@@ -20,12 +20,48 @@ if settings.SENTRY_DSN:
         traces_sample_rate=0.1
     )
 
+import os
+import asyncio
+import httpx
+from contextlib import asynccontextmanager
+
+async def _keep_render_alive():
+    """
+    Background keep-alive heartbeat for Render free-tier deployments.
+    Pings the public external endpoint every 10 minutes (600s) to reset Render's 15-minute inactivity timer.
+    """
+    await asyncio.sleep(20)  # Wait for initial boot
+    url = os.getenv("RENDER_EXTERNAL_URL") or os.getenv("KEEP_ALIVE_URL")
+    if not url:
+        return
+
+    target = url.rstrip("/")
+    if not target.endswith("/health"):
+        target = f"{target}/health"
+
+    print(f"[KEEPALIVE] Anti-sleep heartbeat active targeting: {target}")
+    while True:
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                res = await client.get(target)
+                print(f"[KEEPALIVE] Keep-alive ping sent to {target} (Status: {res.status_code})")
+        except Exception as e:
+            print(f"[KEEPALIVE] Keep-alive ping notice: {e}")
+        await asyncio.sleep(600)  # Ping every 10 minutes (well within Render's 15m limit)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = asyncio.create_task(_keep_render_alive())
+    yield
+    task.cancel()
+
 app = FastAPI(
     title="Medical Text and Image Processing Learning Platform API",
     description="API for AIDS 12605.1 - Faculty of Engineering and Technology, Adani Institute of Higher Education and Research",
     version="1.0.0",
     docs_url="/api/docs",
-    redoc_url="/api/redoc"
+    redoc_url="/api/redoc",
+    lifespan=lifespan
 )
 
 # CORS Middleware
