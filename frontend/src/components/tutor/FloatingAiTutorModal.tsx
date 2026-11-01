@@ -348,13 +348,12 @@ export default function FloatingAiTutorModal() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-20 right-3 sm:bottom-6 sm:right-6 z-50 flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white hover:bg-slate-50 text-adani-pink border-2 border-adani-pink/30 hover:border-adani-pink shadow-[0_6px_20px_-3px_rgba(184,38,98,0.3)] hover:shadow-[0_8px_25px_-3px_rgba(184,38,98,0.45)] transition-all transform hover:scale-110 active:scale-95 touch-manipulation cursor-pointer group"
+          className="fixed bottom-20 right-3 sm:bottom-6 sm:right-6 z-50 flex items-center justify-center w-12 h-12 rounded-full bg-white hover:bg-slate-50 text-[#B82662] border-2 border-[#B82662] shadow-[0_4px_16px_rgba(184,38,98,0.25)] hover:shadow-[0_6px_20px_rgba(184,38,98,0.4)] transition-all transform hover:scale-110 active:scale-95 touch-manipulation cursor-pointer group select-none"
           title="Open Lexi AI Tutor"
         >
-          <span className="font-black text-sm sm:text-base tracking-tight text-adani-pink group-hover:scale-105 transition-transform select-none">
-            Lexi
+          <span className="font-extrabold text-xs sm:text-sm tracking-tight text-[#B82662]">
+            lexi
           </span>
-          <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white shadow-xs animate-pulse" />
         </button>
       )}
 
