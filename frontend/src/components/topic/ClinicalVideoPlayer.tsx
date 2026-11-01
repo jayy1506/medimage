@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   Play,
   Pause,
@@ -8,7 +8,8 @@ import {
   VolumeX,
   Maximize,
   Minimize,
-  RotateCcw
+  RotateCcw,
+  AlertCircle
 } from "lucide-react";
 
 interface Chapter {
@@ -51,48 +52,58 @@ export default function ClinicalVideoPlayer({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [activeChapter, setActiveChapter] = useState<number>(0);
+  const [hasError, setHasError] = useState(false);
 
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
+  const handleTimeUpdate = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
-
-    const onTimeUpdate = () => {
-      setCurrentTime(video.currentTime);
-      for (let i = VIDEO_CHAPTERS.length - 1; i >= 0; i--) {
-        if (video.currentTime >= VIDEO_CHAPTERS[i].time) {
-          setActiveChapter(i);
-          break;
-        }
+    setCurrentTime(video.currentTime);
+    for (let i = VIDEO_CHAPTERS.length - 1; i >= 0; i--) {
+      if (video.currentTime >= VIDEO_CHAPTERS[i].time) {
+        setActiveChapter(i);
+        break;
       }
-    };
-
-    const onLoadedMetadata = () => {
-      setDuration(video.duration);
-    };
-
-    const onEnded = () => {
-      setIsPlaying(false);
-    };
-
-    video.addEventListener("timeupdate", onTimeUpdate);
-    video.addEventListener("loadedmetadata", onLoadedMetadata);
-    video.addEventListener("ended", onEnded);
-
-    return () => {
-      video.removeEventListener("timeupdate", onTimeUpdate);
-      video.removeEventListener("loadedmetadata", onLoadedMetadata);
-      video.removeEventListener("ended", onEnded);
-    };
+    }
   }, []);
 
-  const togglePlay = () => {
+  const handleLoadedMetadata = useCallback(() => {
+    if (videoRef.current) {
+      setDuration(videoRef.current.duration);
+      setHasError(false);
+    }
+  }, []);
+
+  const togglePlay = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const video = videoRef.current;
     if (!video) return;
 
     if (video.paused) {
-      video.play().then(() => setIsPlaying(true)).catch(() => {});
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            setIsPlaying(true);
+            setHasError(false);
+          })
+          .catch((err) => {
+            console.warn("Direct unmuted play blocked by browser policy, trying muted:", err);
+            video.muted = true;
+            setIsMuted(true);
+            video
+              .play()
+              .then(() => setIsPlaying(true))
+              .catch((finalErr) => {
+                console.error("Playback failed completely:", finalErr);
+                setHasError(true);
+              });
+          });
+      }
     } else {
       video.pause();
       setIsPlaying(false);
@@ -119,7 +130,7 @@ export default function ClinicalVideoPlayer({
 
   const skipSeconds = (delta: number) => {
     if (videoRef.current) {
-      const newTime = Math.max(0, Math.min(duration, videoRef.current.currentTime + delta));
+      const newTime = Math.max(0, Math.min(duration || 1000, videoRef.current.currentTime + delta));
       videoRef.current.currentTime = newTime;
       setCurrentTime(newTime);
     }
@@ -178,8 +189,8 @@ export default function ClinicalVideoPlayer({
   };
 
   return (
-    <div className={`space-y-3 ${className}`}>
-      {/* Video Container */}
+    <div className={`bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3 ${className}`}>
+      {/* Video Workstation Frame */}
       <div
         ref={containerRef}
         onMouseMove={handleMouseMove}
@@ -212,18 +223,53 @@ export default function ClinicalVideoPlayer({
             src={src}
             autoPlay={autoPlay}
             playsInline
+            preload="auto"
+            onPlay={() => setIsPlaying(true)}
+            onPause={() => setIsPlaying(false)}
+            onTimeUpdate={handleTimeUpdate}
+            onLoadedMetadata={handleLoadedMetadata}
+            onError={() => setHasError(true)}
             className="w-full h-full object-contain"
           />
 
           {/* Minimal Play Overlay Button */}
-          {!isPlaying && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/35 backdrop-blur-[1px] transition-all">
+          {!isPlaying && !hasError && (
+            <div
+              onClick={togglePlay}
+              className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px] transition-all cursor-pointer z-10"
+            >
               <button
                 type="button"
+                onClick={togglePlay}
                 aria-label="Play video"
-                className="w-14 h-14 rounded-full bg-white/95 hover:bg-white text-slate-900 flex items-center justify-center shadow-lg transition-transform hover:scale-105 active:scale-95"
+                className="w-16 h-16 rounded-full bg-white/95 hover:bg-white text-slate-900 flex items-center justify-center shadow-2xl transition-transform hover:scale-105 active:scale-95 pointer-events-auto"
               >
-                <Play className="w-6 h-6 fill-slate-900 text-slate-900 translate-x-0.5" />
+                <Play className="w-7 h-7 fill-slate-900 text-slate-900 translate-x-0.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Error Notice */}
+          {hasError && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 text-white p-4 text-center z-10">
+              <AlertCircle className="w-8 h-8 text-amber-400 mb-2" />
+              <p className="text-xs font-semibold text-slate-200">Video source currently unavailable locally or on cloud.</p>
+              <p className="text-[11px] text-slate-400 mt-1 max-w-sm">
+                Target: {src}
+              </p>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setHasError(false);
+                  if (videoRef.current) {
+                    videoRef.current.load();
+                    togglePlay();
+                  }
+                }}
+                className="mt-3 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium border border-white/20 transition-all"
+              >
+                Retry Playback
               </button>
             </div>
           )}
@@ -336,8 +382,8 @@ export default function ClinicalVideoPlayer({
       </div>
 
       {/* Minimal Chapter Quick-Jump Bar */}
-      <div className="flex items-center gap-1.5 overflow-x-auto py-1 text-xs">
-        <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mr-1 flex-shrink-0">
+      <div className="flex items-center gap-1.5 overflow-x-auto pt-1 text-xs">
+        <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mr-1 flex-shrink-0">
           Chapters:
         </span>
         {VIDEO_CHAPTERS.map((ch, idx) => {
@@ -349,8 +395,8 @@ export default function ClinicalVideoPlayer({
               onClick={() => jumpToTime(ch.time)}
               className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors flex-shrink-0 flex items-center gap-1.5 ${
                 isCurrent
-                  ? "bg-slate-900 text-white border border-slate-700 shadow-sm"
-                  : "bg-slate-100 hover:bg-slate-200 text-slate-600 border border-transparent"
+                  ? "bg-slate-900 text-white border border-slate-900 shadow-sm"
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200"
               }`}
             >
               <span className="font-mono text-[10px] text-slate-400">{formatTime(ch.time)}</span>

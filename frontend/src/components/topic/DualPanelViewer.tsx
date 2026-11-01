@@ -123,9 +123,11 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
   }, [topic.sections]);
 
   // Determine active visual according to current active section
+  const [selectedAssetIndex, setSelectedAssetIndex] = useState(0);
   const currentSection = (topic.sections || []).find((s) => s.id === activeSectionId) || topic.sections?.[0];
   const linkedDiagram = (topic.diagrams || []).find((d) => d.id === currentSection?.linked_diagram_id) || topic.diagrams?.[0];
-  const activeAsset = (topic.visual_assets || [])[0];
+  const visualAssets = topic.visual_assets || [];
+  const activeAsset = visualAssets[selectedAssetIndex] || visualAssets[0];
 
   const handleNodeClick = (nodeId: string) => {
     setHighlightedNode(nodeId);
@@ -308,20 +310,38 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
               </button>
             </div>
 
-            <div className="bg-black rounded-2xl border border-slate-800 p-4 text-white overflow-hidden shadow-lg space-y-3">
-              <div className="relative w-full h-72 sm:h-96">
-                <Image
+            <div className="bg-white rounded-2xl border border-slate-200 p-4 text-slate-900 shadow-sm space-y-3">
+              {visualAssets.length > 1 && (
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+                  {visualAssets.map((asset, idx) => (
+                    <button
+                      key={asset.id}
+                      type="button"
+                      onClick={() => setSelectedAssetIndex(idx)}
+                      className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                        selectedAssetIndex === idx
+                          ? "bg-slate-900 text-white shadow-sm"
+                          : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                      }`}
+                    >
+                      Figure {idx + 1}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="relative w-full h-72 sm:h-96 bg-slate-50/80 rounded-xl overflow-hidden flex items-center justify-center border border-slate-100 p-2">
+                <img
                   src={activeAsset.storage_url}
                   alt={activeAsset.alt_text}
-                  fill
-                  className="object-contain"
+                  className="max-h-full max-w-full object-contain mx-auto select-none"
+                  loading="eager"
                 />
               </div>
-              <div className="pt-3 border-t border-slate-800 text-xs text-slate-300">
-                <span className="font-bold text-white text-sm block mb-1">{activeAsset.title}</span>
-                <p className="leading-relaxed">{activeAsset.alt_text}</p>
+              <div className="pt-3 border-t border-slate-100 text-xs">
+                <span className="font-bold text-slate-900 text-sm block mb-1">{activeAsset.title}</span>
+                <p className="leading-relaxed text-slate-600">{activeAsset.alt_text}</p>
                 {activeAsset.attribution && (
-                  <div className="text-[10px] text-slate-500 mt-2">
+                  <div className="text-[11px] text-slate-400 mt-2 font-mono">
                     Source: {activeAsset.attribution} ({activeAsset.license})
                   </div>
                 )}
@@ -643,20 +663,38 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
                   activeNodeId={highlightedNode}
                 />
               ) : visualTab === "scan" && activeAsset ? (
-                <div className="h-full bg-black rounded-2xl border border-slate-800 p-4 flex flex-col justify-between text-white overflow-hidden">
-                  <div className="relative flex-1 w-full">
-                    <Image
+                <div className="bg-white rounded-2xl border border-slate-200 p-5 text-slate-900 shadow-sm space-y-4">
+                  {visualAssets.length > 1 && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+                      {visualAssets.map((asset, idx) => (
+                        <button
+                          key={asset.id}
+                          type="button"
+                          onClick={() => setSelectedAssetIndex(idx)}
+                          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                            selectedAssetIndex === idx
+                              ? "bg-slate-900 text-white shadow-sm"
+                              : "bg-slate-100 hover:bg-slate-200 text-slate-700"
+                          }`}
+                        >
+                          Figure {idx + 1}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="relative w-full h-[360px] sm:h-[400px] bg-slate-50/80 rounded-xl overflow-hidden flex items-center justify-center border border-slate-100 p-3">
+                    <img
                       src={activeAsset.storage_url}
                       alt={activeAsset.alt_text}
-                      fill
-                      className="object-contain"
+                      className="max-h-full max-w-full object-contain mx-auto select-none"
+                      loading="eager"
                     />
                   </div>
-                  <div className="mt-2 pt-2 border-t border-slate-800 text-[11px] text-slate-400">
-                    <span className="font-semibold text-white">{activeAsset.title}: </span>
-                    {activeAsset.alt_text}
+                  <div className="pt-3 border-t border-slate-100 text-xs">
+                    <span className="font-bold text-slate-900 text-sm block mb-1">{activeAsset.title}</span>
+                    <p className="leading-relaxed text-slate-600">{activeAsset.alt_text}</p>
                     {activeAsset.attribution && (
-                      <div className="text-[10px] text-slate-500 mt-0.5">
+                      <div className="text-[11px] text-slate-400 mt-2 font-mono">
                         Source: {activeAsset.attribution} ({activeAsset.license})
                       </div>
                     )}
