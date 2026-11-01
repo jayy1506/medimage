@@ -158,9 +158,12 @@ export default function AiTutorPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Derive candidate display name
-  const studentName = profile?.full_name || 
-    (user?.email ? user.email.split("@")[0].replace(/[0-9]/g, "").replace(/\./g, " ").trim() : "Jay Thakre");
-  const studentInitial = studentName ? studentName.charAt(0).toUpperCase() : "J";
+  const studentName =
+    (typeof window !== "undefined" ? sessionStorage.getItem("gyaanlab_username") : null) ||
+    profile?.username ||
+    profile?.full_name || 
+    (user?.email ? user.email.split("@")[0].replace(/[0-9]/g, "").replace(/\./g, " ").trim() : "Scholar");
+  const studentInitial = studentName ? studentName.charAt(0).toUpperCase() : "S";
 
   // Load chat history from localStorage
   useEffect(() => {

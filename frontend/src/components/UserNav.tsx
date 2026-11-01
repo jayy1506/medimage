@@ -43,8 +43,8 @@ export function UserNav() {
     user?.displayName ||
     (profile?.email ? profile.email.split("@")[0] : null) ||
     (user?.email ? user.email.split("@")[0] : null) ||
-    "Jay Thakre";
-  const email = profile?.email || user?.email || "jay.thakre@adani.edu.in";
+    "Scholar";
+  const email = profile?.email || user?.email || "scholar@adani.edu.in";
   const userRole = profile?.role || role || "student";
 
   // Compute initials for the avatar logo

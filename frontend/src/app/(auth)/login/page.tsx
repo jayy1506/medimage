@@ -230,7 +230,7 @@ export default function LoginPage() {
                       required
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      placeholder="e.g. Jay Thakre"
+                      placeholder="e.g. Scholar"
                       className="block w-full pl-10 pr-3 py-2.5 sm:text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-adani-cyan focus:border-adani-cyan bg-white text-slate-900 placeholder-slate-400"
                     />
                   </div>

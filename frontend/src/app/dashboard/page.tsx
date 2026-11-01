@@ -70,7 +70,7 @@ export default function UnifiedCurriculumDashboard() {
     (profile?.username ? profile.username : null) ||
     (profile?.full_name && profile.full_name.toLowerCase() !== "student" ? profile.full_name : null) ||
     (user?.displayName && user.displayName.toLowerCase() !== "student" ? user.displayName : null) ||
-    "Jay Thakre";
+    "Scholar";
 
   if (!mounted) return null;
 

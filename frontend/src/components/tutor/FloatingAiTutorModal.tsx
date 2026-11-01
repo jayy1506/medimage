@@ -135,9 +135,12 @@ export default function FloatingAiTutorModal() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Derive candidate student name
-  const candidateName = profile?.full_name || 
+  const candidateName =
+    (typeof window !== "undefined" ? sessionStorage.getItem("gyaanlab_username") : null) ||
+    profile?.username ||
+    profile?.full_name || 
     (user?.displayName) || 
-    (user?.email ? user.email.split("@")[0].replace(/[0-9]/g, "").replace(/\./g, " ").trim().split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : "Jay Thakre") || "Jay Thakre";
+    (user?.email ? user.email.split("@")[0].replace(/[0-9]/g, "").replace(/\./g, " ").trim().split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") : "Scholar") || "Scholar";
 
 
   // Load chat history from localStorage
