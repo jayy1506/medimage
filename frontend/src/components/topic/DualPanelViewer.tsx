@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import MermaidDiagram from "@/components/diagrams/MermaidDiagram";
 import QuickCheckQuiz, { QuickCheckQuestion } from "@/components/topic/QuickCheckQuiz";
-import TopicAiTutor from "@/components/tutor/TopicAiTutor";
 import { UserNav } from "@/components/UserNav";
 import PlaygroundNavModal from "@/components/playground/PlaygroundNavModal";
 import { useProgress } from "@/context/ProgressContext";
@@ -610,12 +609,7 @@ export default function DualPanelViewer({ topic }: DualPanelViewerProps) {
         </div>
       </div>
 
-      {/* Embedded Topic AI Tutor Assistant */}
-      <TopicAiTutor
-        topicId={topic.id}
-        topicTitle={topic.title}
-        onHighlightNode={(node) => setHighlightedNode(node)}
-      />
+
       {/* Sticky Mobile Bottom Navigation Bar */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 px-3 py-2 sm:px-4 sm:py-2.5 flex items-center justify-between gap-2 shadow-lg">
         {topic.previous_topic_slug ? (

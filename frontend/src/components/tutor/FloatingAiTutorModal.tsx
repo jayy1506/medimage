@@ -27,6 +27,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { MathView } from "@/components/ui/MathView";
 import { FormattedAiMessage } from "@/components/tutor/FormattedAiMessage";
+import { MedAiIcon } from "@/components/ui/MedAiIcon";
 
 interface Citation {
   topic_title: string;
@@ -347,21 +348,28 @@ export default function FloatingAiTutorModal() {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-20 right-3 sm:bottom-6 sm:right-6 z-50 flex items-center gap-2.5 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-full bg-white hover:bg-slate-50 text-slate-900 font-bold text-xs border border-slate-200 shadow-xl hover:shadow-2xl transition-all transform hover:scale-105 group active:scale-95 touch-manipulation cursor-pointer"
+          className="fixed bottom-20 right-3 sm:bottom-6 sm:right-6 z-50 flex items-center gap-3 px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-full bg-slate-900/95 hover:bg-slate-900 text-white font-bold text-xs border border-sky-400/30 shadow-[0_10px_25px_-5px_rgba(2,132,199,0.35)] hover:shadow-[0_15px_30px_-5px_rgba(14,165,233,0.5)] transition-all transform hover:scale-105 group active:scale-95 touch-manipulation cursor-pointer backdrop-blur-md"
           title="Open MedAI Clinical Tutor"
         >
-          <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-adani-cyan via-purple-600 to-adani-magenta flex items-center justify-center text-white shadow-sm">
-            <Sparkles className="w-3.5 h-3.5" />
+          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-sky-500 via-indigo-600 to-cyan-400 p-0.5 flex items-center justify-center shadow-inner flex-shrink-0">
+            <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center">
+              <MedAiIcon size={18} className="w-4.5 h-4.5" glow={false} />
+            </div>
           </div>
           <div className="text-left hidden sm:block">
-            <span className="block text-xs font-black text-slate-900 group-hover:text-adani-cyan transition-colors">
-              MedAI Tutor
-            </span>
-            <span className="block text-[10px] text-slate-500 font-medium">
+            <div className="flex items-center gap-1.5">
+              <span className="block text-xs font-black bg-gradient-to-r from-white via-sky-100 to-sky-300 bg-clip-text text-transparent group-hover:to-cyan-200 transition-colors">
+                MedAI Tutor
+              </span>
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-sky-500/20 text-sky-300 border border-sky-400/30">
+                AI
+              </span>
+            </div>
+            <span className="block text-[10px] text-slate-400 font-medium">
               Grounded Gemini 3.5
             </span>
           </div>
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse ml-0.5" />
+          <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse ml-0.5" />
         </button>
       )}
 
@@ -371,8 +379,8 @@ export default function FloatingAiTutorModal() {
           {/* WINDOW HEADER (Pure Adani White Theme with Controls) */}
           <header className="px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between flex-shrink-0 select-none">
             <div className="flex items-center gap-2.5 overflow-hidden">
-              <div className="w-7 h-7 rounded-xl bg-sky-50 border border-sky-100 flex items-center justify-center text-adani-cyan flex-shrink-0">
-                <Sparkles className="w-4 h-4" />
+              <div className="w-8 h-8 rounded-xl bg-slate-950 border border-sky-400/30 flex items-center justify-center text-adani-cyan flex-shrink-0 shadow-sm">
+                <MedAiIcon size={18} className="w-5 h-5" glow={false} />
               </div>
               <div className="truncate">
                 <div className="flex items-center gap-2">
