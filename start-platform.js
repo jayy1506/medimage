@@ -38,55 +38,64 @@ function getBasePythonCommand() {
 const basePythonCmd = getBasePythonCommand();
 console.log(`🐍 Detected base Python command: ${basePythonCmd}`);
 
-// 2. Ensure Python Dependencies (supports Debian/Ubuntu PEP 668 externally-managed environments)
+const VENV_DIR = path.join(ROOT_DIR, '.venv');
+const VENV_PYTHON = process.platform === 'win32'
+  ? path.join(VENV_DIR, 'Scripts', 'python.exe')
+  : path.join(VENV_DIR, 'bin', 'python');
+const VENV_PIP = process.platform === 'win32'
+  ? path.join(VENV_DIR, 'Scripts', 'pip.exe')
+  : path.join(VENV_DIR, 'bin', 'pip');
+
+// 2. Ensure Python Dependencies (cached in persistent .venv or user site-packages)
 function ensureDependencies() {
-  console.log('🔍 Checking Python dependencies (fastapi, uvicorn, etc.)...');
-  
-  // First check if base python already has packages
+  console.log('🔍 Checking Python environment & dependencies...');
+
+  // Check 1: Existing .venv with satisfied dependencies
+  if (fs.existsSync(VENV_PYTHON)) {
+    try {
+      execSync(`"${VENV_PYTHON}" -c "import fastapi, uvicorn, pydantic, sqlalchemy, asyncpg"`, {
+        stdio: 'ignore',
+      });
+      console.log('✅ Python dependencies already satisfied in persistent .venv (skipping installation).');
+      return VENV_PYTHON;
+    } catch (e) {
+      console.log('⚠️ .venv exists but packages incomplete, updating...');
+    }
+  }
+
+  // Check 2: Base Python with user-site packages
   try {
-    execSync(`${basePythonCmd} -c "import fastapi, uvicorn, pydantic, sqlalchemy, asyncpg"`, {
+    execSync(`${basePythonCmd} -c "import site, sys; sys.path.insert(0, site.getusersitepackages()); import fastapi, uvicorn, pydantic, sqlalchemy, asyncpg"`, {
       stdio: 'ignore',
     });
-    console.log('✅ Python dependencies already satisfied in base environment.');
+    console.log('✅ Python dependencies already satisfied in Python environment (skipping installation).');
     return basePythonCmd;
   } catch (err) {
-    console.log('📦 Missing Python dependencies. Installing from backend/requirements.txt...');
+    console.log('📦 Python dependencies not found in current environment. Preparing persistent environment...');
   }
 
   const reqPath = path.join(BACKEND_DIR, 'requirements.txt');
 
-  // Strategy A: Try pip install with --break-system-packages (recommended by PEP 668 in containers/VMs)
-  try {
-    console.log('⚡ Trying: pip install --break-system-packages...');
-    execSync(`${basePythonCmd} -m pip install --break-system-packages --no-cache-dir -r "${reqPath}"`, {
-      stdio: 'inherit',
-    });
-    console.log('✅ Python dependencies installed successfully via --break-system-packages.');
-    return basePythonCmd;
-  } catch (breakErr) {
-    console.warn('⚠️ pip install --break-system-packages failed or unsupported, creating .venv...');
+  // Strategy A: Create persistent .venv in project root
+  if (!fs.existsSync(VENV_PYTHON)) {
+    console.log(`🌱 Creating persistent virtual environment at ${VENV_DIR}...`);
+    try {
+      execSync(`${basePythonCmd} -m venv "${VENV_DIR}"`, { stdio: 'inherit' });
+    } catch (venvErr) {
+      console.warn('⚠️ venv creation failed, installing via pip --break-system-packages...');
+      execSync(`${basePythonCmd} -m pip install --break-system-packages --no-cache-dir -r "${reqPath}"`, {
+        stdio: 'inherit',
+      });
+      return basePythonCmd;
+    }
   }
 
-  // Strategy B: Create an isolated virtual environment (.venv)
-  const venvDir = path.join(ROOT_DIR, '.venv');
-  const venvPython = process.platform === 'win32'
-    ? path.join(venvDir, 'Scripts', 'python.exe')
-    : path.join(venvDir, 'bin', 'python');
-  const venvPip = process.platform === 'win32'
-    ? path.join(venvDir, 'Scripts', 'pip.exe')
-    : path.join(venvDir, 'bin', 'pip');
-
-  if (!fs.existsSync(venvPython)) {
-    console.log(`🌱 Creating virtual environment at ${venvDir}...`);
-    execSync(`${basePythonCmd} -m venv "${venvDir}"`, { stdio: 'inherit' });
-  }
-
-  console.log(`📦 Installing dependencies into .venv...`);
-  execSync(`"${venvPip}" install --no-cache-dir -r "${reqPath}"`, {
+  console.log('📦 Installing dependencies into persistent .venv (one-time setup)...');
+  execSync(`"${VENV_PIP}" install --no-cache-dir -r "${reqPath}"`, {
     stdio: 'inherit',
   });
-  console.log('✅ Python dependencies installed successfully in .venv.');
-  return venvPython;
+  console.log('✅ Python dependencies installed and cached in .venv.');
+  return VENV_PYTHON;
 }
 
 let activePythonCmd = basePythonCmd;
