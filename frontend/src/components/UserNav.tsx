@@ -36,7 +36,14 @@ export function UserNav() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const fullName = profile?.full_name || user?.displayName || "Jay Thakre";
+  const username =
+    (typeof window !== "undefined" ? sessionStorage.getItem("gyaanlab_username") : null) ||
+    profile?.username ||
+    profile?.full_name ||
+    user?.displayName ||
+    (profile?.email ? profile.email.split("@")[0] : null) ||
+    (user?.email ? user.email.split("@")[0] : null) ||
+    "Jay Thakre";
   const email = profile?.email || user?.email || "jay.thakre@adani.edu.in";
   const userRole = profile?.role || role || "student";
 
@@ -49,7 +56,7 @@ export function UserNav() {
     return name.slice(0, 2).toUpperCase();
   };
 
-  const initials = getInitials(fullName);
+  const initials = getInitials(username);
 
   return (
     <>
@@ -57,7 +64,7 @@ export function UserNav() {
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="w-8 h-8 rounded-full bg-gradient-to-tr from-adani-cyan via-purple-600 to-adani-purple hover:opacity-90 flex items-center justify-center text-white font-bold text-xs shadow-sm ring-2 ring-white border border-slate-200 transition-all transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-adani-cyan/40 touch-manipulation cursor-pointer"
-          title={`${fullName} (${email})`}
+          title={`${username} (${email})`}
         >
           {initials}
         </button>
@@ -71,8 +78,8 @@ export function UserNav() {
                 {initials}
               </div>
               <div className="overflow-hidden">
-                <p className="text-xs font-bold text-slate-900 truncate">{fullName}</p>
-                <p className="text-[11px] text-slate-500 font-mono truncate">{email}</p>
+                <p className="text-xs font-bold text-slate-900 truncate" title={username}>{username}</p>
+                <p className="text-[11px] text-slate-500 font-mono truncate" title={email}>{email}</p>
                 <div className="mt-1">
                   {userRole === "admin" ? (
                     <span className="inline-flex items-center px-1.5 py-0.2 rounded-full bg-purple-50 text-adani-purple text-[10px] font-bold border border-purple-200">

@@ -66,6 +66,8 @@ export default function UnifiedCurriculumDashboard() {
 
   const totalModules = ALL_MODULES.length;
   const candidateName =
+    (typeof window !== "undefined" ? sessionStorage.getItem("gyaanlab_username") : null) ||
+    (profile?.username ? profile.username : null) ||
     (profile?.full_name && profile.full_name.toLowerCase() !== "student" ? profile.full_name : null) ||
     (user?.displayName && user.displayName.toLowerCase() !== "student" ? user.displayName : null) ||
     "Jay Thakre";

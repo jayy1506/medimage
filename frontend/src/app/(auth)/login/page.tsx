@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Lock, Mail, ArrowRight, ShieldAlert, CheckCircle2, Eye, EyeOff, RotateCcw } from "lucide-react";
+import { Lock, Mail, ArrowRight, ShieldAlert, CheckCircle2, Eye, EyeOff, RotateCcw, User } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { BrandLogo } from "@/components/BrandLogo";
 
@@ -11,6 +11,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { signIn, resetPassword, signOut } = useAuth();
 
+  const [username, setUsername] = useState(() => (typeof window !== "undefined" ? sessionStorage.getItem("gyaanlab_username") || "" : ""));
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -35,7 +36,7 @@ export default function LoginPage() {
         await resetPassword(email);
         setResetSent(true);
       } else {
-        const userProf = await signIn(email, password);
+        const userProf = await signIn(email, password, username);
         const norm = email.trim().toLowerCase();
 
         // Root Super-Admin routes directly without password change prompt
@@ -215,6 +216,27 @@ export default function LoginPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
+              {!isResetMode && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Username
+                  </label>
+                  <div className="relative rounded-lg shadow-sm">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                      <User className="w-4 h-4" />
+                    </div>
+                    <input
+                      type="text"
+                      required
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="e.g. Jay Thakre"
+                      className="block w-full pl-10 pr-3 py-2.5 sm:text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-adani-cyan focus:border-adani-cyan bg-white text-slate-900 placeholder-slate-400"
+                    />
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Institutional Email

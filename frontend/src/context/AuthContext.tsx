@@ -19,6 +19,7 @@ export interface UserProfile {
   firebase_uid: string;
   email: string;
   full_name: string;
+  username?: string;
   role: UserRole;
   status: UserStatus;
   force_password_change: boolean;
@@ -30,7 +31,7 @@ interface AuthContextType {
   role: UserRole | null;
   isLoading: boolean;
   token: string | null;
-  signIn: (email: string, pass: string) => Promise<UserProfile | null>;
+  signIn: (email: string, pass: string, username?: string) => Promise<UserProfile | null>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updateUserPassword: (email: string, newPass: string) => Promise<boolean>;
@@ -141,6 +142,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setToken(idToken);
         const backendProf = await fetchBackendProfile(idToken);
         const emailLower = firebaseUser.email?.toLowerCase() || "";
+        const storedUsername = typeof window !== "undefined" ? sessionStorage.getItem("gyaanlab_username") : null;
+
+        if (storedUsername && backendProf) {
+          backendProf.full_name = storedUsername;
+          backendProf.username = storedUsername;
+          setProfile({ ...backendProf });
+        }
         
         // Permanent admin session check
         if (!backendProf && (emailLower === "jthakre62@gmail.com" || emailLower === "jthakr62@gmail.com")) {
@@ -148,7 +156,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             id: firebaseUser.uid,
             firebase_uid: firebaseUser.uid,
             email: "jthakre62@gmail.com",
-            full_name: "Jay Thakre",
+            full_name: storedUsername || "Jay Thakre",
+            username: storedUsername || "Jay Thakre",
             role: "admin",
             status: "active",
             force_password_change: false
@@ -169,20 +178,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [API_BASE, profile]);
 
-  const signIn = async (email: string, pass: string): Promise<UserProfile | null> => {
+  const signIn = async (email: string, pass: string, username?: string): Promise<UserProfile | null> => {
     setIsLoading(true);
     const normalizedEmail = email.trim().toLowerCase();
+    const trimmedUsername = username?.trim();
+    if (trimmedUsername && typeof window !== "undefined") {
+      sessionStorage.setItem("gyaanlab_username", trimmedUsername);
+    }
 
     // 1. Strict Super-Admin Authentication (Permanent Admin: jthakre62@gmail.com / Jay1523)
     if (
       (normalizedEmail === "jthakre62@gmail.com" || normalizedEmail === "jthakr62@gmail.com") &&
       pass === "Jay1523"
     ) {
+      const chosenAdminName = trimmedUsername || "Jay Thakre";
       const adminProf: UserProfile = {
         id: "admin-jay-thakre-master-uid",
         firebase_uid: "admin-jay-thakre-master-uid",
         email: "jthakre62@gmail.com",
-        full_name: "Jay Thakre",
+        full_name: chosenAdminName,
+        username: chosenAdminName,
         role: "admin",
         status: "active",
         force_password_change: false
@@ -213,11 +228,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (isCommonDefault || isCustomMatch) {
           const mustChange = found.force_password_change !== false && (isCommonDefault || found.status === "pending_first_login");
+          const chosenName = trimmedUsername || found.full_name || found.username || email.split("@")[0];
           const userProf: UserProfile = {
             id: found.id,
             firebase_uid: found.id,
             email: found.email,
-            full_name: found.full_name,
+            full_name: chosenName,
+            username: chosenName,
             role: found.role,
             status: found.status === "disabled" ? "disabled" : "active",
             force_password_change: mustChange
@@ -243,13 +260,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const idToken = await getIdToken(cred.user);
       setToken(idToken);
       let userProf = await fetchBackendProfile(idToken);
-      if (!userProf) {
+      const chosenFallbackName = trimmedUsername || (userProf?.full_name && userProf.full_name !== "student" ? userProf.full_name : null) || backendUsers.find((u) => u.email && u.email.toLowerCase() === normalizedEmail)?.full_name || email.split("@")[0];
+
+      if (userProf) {
+        userProf.full_name = chosenFallbackName;
+        userProf.username = chosenFallbackName;
+        setProfile(userProf);
+        setRole(userProf.role);
+      } else {
         const found = backendUsers.find((u) => u.email && u.email.toLowerCase() === normalizedEmail);
         userProf = {
           id: cred.user.uid,
           firebase_uid: cred.user.uid,
           email: email,
-          full_name: found?.full_name || email.split("@")[0],
+          full_name: chosenFallbackName,
+          username: chosenFallbackName,
           role: found?.role || "student",
           status: "active",
           force_password_change: false
@@ -350,6 +375,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await fbSignOut(auth);
     } catch (e) {}
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("gyaanlab_username");
+    }
     setUser(null);
     setProfile(null);
     setRole(null);
@@ -383,7 +411,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user) {
       const idToken = await getIdToken(user, true);
       setToken(idToken);
-      await fetchBackendProfile(idToken);
+      const prof = await fetchBackendProfile(idToken);
+      const storedUsername = typeof window !== "undefined" ? sessionStorage.getItem("gyaanlab_username") : null;
+      if (storedUsername && prof) {
+        prof.full_name = storedUsername;
+        prof.username = storedUsername;
+        setProfile({ ...prof });
+      }
     }
   };
 
