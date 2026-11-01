@@ -191,6 +191,26 @@ async function startFrontend() {
   const foundStandalone = standaloneLocations.find((loc) => fs.existsSync(loc));
 
   if (foundStandalone) {
+    const standaloneDir = path.dirname(foundStandalone);
+    const targetPublic = path.join(standaloneDir, 'public');
+    const targetStatic = path.join(standaloneDir, '.next', 'static');
+    const srcPublic = path.join(FRONTEND_DIR, 'public');
+    const srcStatic = path.join(FRONTEND_DIR, '.next', 'static');
+
+    try {
+      if (fs.existsSync(srcPublic) && !fs.existsSync(targetPublic)) {
+        console.log(`📋 Syncing public assets to standalone server directory...`);
+        fs.cpSync(srcPublic, targetPublic, { recursive: true });
+      }
+      if (fs.existsSync(srcStatic) && !fs.existsSync(targetStatic)) {
+        console.log(`📋 Syncing .next/static assets to standalone server directory...`);
+        fs.mkdirSync(path.dirname(targetStatic), { recursive: true });
+        fs.cpSync(srcStatic, targetStatic, { recursive: true });
+      }
+    } catch (copyErr) {
+      console.warn('⚠️ Asset sync warning:', copyErr.message);
+    }
+
     console.log(`📦 Using Next.js standalone server: ${foundStandalone}`);
     nextProcess = spawn(process.execPath, [foundStandalone], {
       cwd: path.dirname(foundStandalone),
