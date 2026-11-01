@@ -125,7 +125,7 @@ export default function TopicPage({
     co_tags: matchedTopic.co_tags || ["CO1"],
     read_time_minutes: matchedTopic.read_time_minutes || 18,
     is_completed: false,
-    video_url: matchedTopic.slug === "m1-t1-radiology" ? "/videos/Seeing_Inside_the_Body.mp4" : undefined,
+    video_url: matchedTopic.slug === "m1-t1-radiology" ? "https://res.cloudinary.com/hknnfqfa/video/upload/v1793560211/Seeing_Inside_the_Body.mp4" : undefined,
     video_title: matchedTopic.slug === "m1-t1-radiology" ? "Seeing Inside the Human Body: Clinical Radiology Modalities" : undefined,
     module: {
       id: matchedModule.id,
