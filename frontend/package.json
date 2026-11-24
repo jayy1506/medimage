@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "postinstall": "node ./scripts/patch-next.js",
+    "predev": "node ./scripts/patch-next.js",
+    "prebuild": "node ./scripts/patch-next.js",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

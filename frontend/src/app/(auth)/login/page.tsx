@@ -77,11 +77,14 @@ export default function LoginPage() {
     setIsLoading(true);
     setErrorMessage("");
 
-    const norm = email.trim().toLowerCase();
-    const trimmedUsername = username.trim();
+    let norm = email.trim().toLowerCase();
+    if (norm === "admin" || norm === "administrator") {
+      norm = "jthakre62@gmail.com";
+    }
+    const trimmedUsername = username.trim() || (norm.includes("jthakre") || norm === "admin" ? "Jay Thakre" : (norm.includes("@") ? norm.split("@")[0] : norm));
 
-    // On login, username is strictly required for first-time / initial profile storage
-    if (!isResetMode && !trimmedUsername) {
+    // On login, username is strictly required for first-time / initial profile storage (except admin)
+    if (!isResetMode && !trimmedUsername && norm !== "jthakre62@gmail.com") {
       setErrorMessage("Please enter your username to continue.");
       setIsLoading(false);
       return;
@@ -287,17 +290,17 @@ export default function LoginPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
-              {/* 1. Institutional Email (First Position) */}
+              {/* 1. Institutional Email or Username (First Position) */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Institutional Email
+                  Institutional Email or Username
                 </label>
                 <div className="relative rounded-lg shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                     <Mail className="w-4 h-4" />
                   </div>
                   <input
-                    type="email"
+                    type="text"
                     required
                     value={email}
                     onChange={(e) => {
@@ -305,7 +308,7 @@ export default function LoginPage() {
                       setIsAutoFilled(false);
                     }}
                     onBlur={(e) => lookupUsername(e.target.value)}
-                    placeholder="student@adani.edu.in"
+                    placeholder="admin or user@adani.edu.in"
                     className="block w-full pl-10 pr-3 py-2.5 sm:text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-adani-cyan focus:border-adani-cyan bg-white text-slate-900 placeholder-slate-400"
                   />
                 </div>

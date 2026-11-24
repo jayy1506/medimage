@@ -64,11 +64,20 @@ const DEFAULT_USERS: ManagedUser[] = [
     role: "admin",
     status: "active",
     created_at: "2026-10-29T10:00:00Z",
-    temporary_password: "Jay1523",
+    temporary_password: "Jay@1523",
+    force_password_change: false
+  },
+  {
+    id: "u-2",
+    email: "aryagawate5@gmail.com",
+    full_name: "Ms Arya Gawate",
+    role: "admin",
+    status: "active",
+    created_at: "2026-11-24T10:00:00Z",
+    temporary_password: "Arya@2006",
     force_password_change: false
   }
 ];
-
 export default function AdminDashboardPage() {
   const { user, profile, role, signOut } = useAuth();
   const [mounted, setMounted] = useState(false);
@@ -153,7 +162,7 @@ export default function AdminDashboardPage() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ requestType: "PASSWORD_RESET", email: email })
           }
-        ).catch(() => {});
+        ).catch(() => { });
       }
 
       const res = await fetch(`${API_BASE}/admin/roster/${userId}/reset-password`, {
@@ -278,7 +287,7 @@ export default function AdminDashboardPage() {
   const handleChangeRole = async (userId: string, newRole: "student" | "faculty" | "admin") => {
     const targetUser = usersList.find((u) => u.id === userId);
     if (!targetUser) return;
-    if (targetUser.email === "jthakre62@gmail.com" || targetUser.email === "jthakr62@gmail.com") {
+    if (targetUser.email === "jthakre62@gmail.com" || targetUser.email === "jthakr62@gmail.com" || targetUser.email === "aryagawate5@gmail.com") {
       alert("The primary Super-Administrator role is permanently locked and cannot be modified.");
       return;
     }
@@ -779,7 +788,7 @@ export default function AdminDashboardPage() {
                             <span className="text-[11px] text-slate-500 font-mono">{u.email}</span>
                           </td>
                           <td className="px-5 py-3.5">
-                            {u.email === "jthakre62@gmail.com" || u.email === "jthakr62@gmail.com" ? (
+                            {u.email === "jthakre62@gmail.com" || u.email === "jthakr62@gmail.com" || u.email === "aryagawate5@gmail.com" ? (
                               <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-purple-50 text-adani-purple text-[10px] font-bold border border-purple-200">
                                 Super-Admin (Master)
                               </span>
@@ -789,13 +798,12 @@ export default function AdminDashboardPage() {
                                   value={u.role}
                                   disabled={changingRoleId === u.id}
                                   onChange={(e) => handleChangeRole(u.id, e.target.value as any)}
-                                  className={`text-[11px] font-bold py-1 px-2.5 rounded-lg border transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-adani-cyan shadow-2xs ${
-                                    u.role === "admin"
+                                  className={`text-[11px] font-bold py-1 px-2.5 rounded-lg border transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-adani-cyan shadow-2xs ${u.role === "admin"
                                       ? "bg-purple-50 text-adani-purple border-purple-200 hover:bg-purple-100"
                                       : u.role === "faculty"
-                                      ? "bg-sky-50 text-adani-cyan border-sky-200 hover:bg-sky-100"
-                                      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
-                                  }`}
+                                        ? "bg-sky-50 text-adani-cyan border-sky-200 hover:bg-sky-100"
+                                        : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                                    }`}
                                   title="Change institutional role"
                                 >
                                   <option value="student">Student Candidate</option>
@@ -834,7 +842,7 @@ export default function AdminDashboardPage() {
                               <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono">
                                 <span className="font-semibold text-slate-800 tracking-wider">
                                   {revealedPasswords[u.id]
-                                    ? (u.temporary_password || (u.email === "jthakre62@gmail.com" ? "Jay1523" : "Feat@123"))
+                                    ? (u.temporary_password || (u.email === "jthakre62@gmail.com" ? "Jay@1523" : u.email === "aryagawate5@gmail.com" ? "Arya@2006" : "Feat@123"))
                                     : "••••••••••••"}
                                 </span>
                                 <button
@@ -853,7 +861,7 @@ export default function AdminDashboardPage() {
                                   type="button"
                                   onClick={() =>
                                     copyPassword(
-                                      u.temporary_password || (u.email === "jthakre62@gmail.com" ? "Jay1523" : "Feat@123"),
+                                      u.temporary_password || (u.email === "jthakre62@gmail.com" ? "Jay@1523" : u.email === "aryagawate5@gmail.com" ? "Arya@2006" : "Feat@123"),
                                       u.id
                                     )
                                   }
@@ -868,7 +876,7 @@ export default function AdminDashboardPage() {
                                 </button>
                               </div>
 
-                              {u.email !== "jthakre62@gmail.com" && (
+                              {u.email !== "jthakre62@gmail.com" && u.email !== "aryagawate5@gmail.com" && (
                                 <button
                                   onClick={() => handleResetPassword(u.id, u.email)}
                                   disabled={resettingId === u.id}
@@ -921,7 +929,7 @@ export default function AdminDashboardPage() {
                             </div>
                           </td>
                           <td className="px-5 py-3.5 text-right space-x-2">
-                            {u.email === "jthakre62@gmail.com" ? (
+                            {u.email === "jthakre62@gmail.com" || u.email === "aryagawate5@gmail.com" ? (
                               <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
                                 Protected Admin
                               </span>

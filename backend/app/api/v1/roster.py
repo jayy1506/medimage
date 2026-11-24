@@ -35,7 +35,7 @@ class ChangePasswordRequest(BaseModel):
 
 
 class UpdateUsernameRequest(BaseModel):
-    email: EmailStr
+    email: str
     username: str
 
 

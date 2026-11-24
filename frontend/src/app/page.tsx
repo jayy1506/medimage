@@ -78,18 +78,18 @@ export default function HomePage() {
             <div className="lg:col-span-7 space-y-6">
               <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-adani-cyan/10 border border-adani-cyan/20 text-adani-cyan text-xs font-bold uppercase tracking-wider">
                 <Activity className="w-3.5 h-3.5" />
-                <span>B.Tech Semester VI • Accredited Curriculum</span>
+                <span>GyaanLab Academic Platform • Institutional Learning Workstation</span>
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.1]">
-                Interactive Medical <br />
+                Next-Generation Interactive <br />
                 <span className="bg-gradient-to-r from-adani-cyan via-adani-purple to-adani-magenta bg-clip-text text-transparent">
-                  Image &amp; Text Processing
+                  GyaanLab Learning Portal
                 </span>
               </h1>
 
               <p className="text-lg text-slate-600 leading-relaxed max-w-2xl">
-                A purpose-built clinical learning workstation. Master radiology physics, CT/MRI reconstruction, DICOM metadata structures, Fourier filtering, and in-browser Python algorithms with real-time synchronized visual workstations.
+                A purpose-built interactive academic learning workstation. Master complex engineering and scientific curricula through real-time synchronized visual workstations, in-browser simulations, and rigorous competency assessments.
               </p>
 
               <div className="flex flex-wrap gap-4 pt-2">
@@ -113,25 +113,25 @@ export default function HomePage() {
               <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                 <Layers className="w-8 h-8 text-adani-cyan mb-3" />
                 <h3 className="font-bold text-slate-900 text-sm">Dual-Panel Sync</h3>
-                <p className="text-xs text-slate-500 mt-1">Textual derivations dynamically trigger sticky Mermaid &amp; SVG workstations on scroll.</p>
+                <p className="text-xs text-slate-500 mt-1">Theory and derivations dynamically synchronize with sticky interactive diagrams and visual workstations on scroll.</p>
               </div>
 
               <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                 <Binary className="w-8 h-8 text-adani-purple mb-3" />
-                <h3 className="font-bold text-slate-900 text-sm">Client Playground</h3>
-                <p className="text-xs text-slate-500 mt-1">Live CT windowing sliders (WW/WL), histogram equalization, and 2D FFT convolution.</p>
+                <h3 className="font-bold text-slate-900 text-sm">Client Playgrounds</h3>
+                <p className="text-xs text-slate-500 mt-1">Interactive visual simulations, dynamic algorithmic controls, and real-time canvas tools executing 100% in-browser at 60 FPS.</p>
               </div>
 
               <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                 <FileCode2 className="w-8 h-8 text-adani-magenta mb-3" />
-                <h3 className="font-bold text-slate-900 text-sm">Pyodide Sandbox</h3>
-                <p className="text-xs text-slate-500 mt-1">Client-side Python execution (NumPy, OpenCV, pydicom) with zero server compute bills.</p>
+                <h3 className="font-bold text-slate-900 text-sm">In-Browser Sandbox</h3>
+                <p className="text-xs text-slate-500 mt-1">Client-side code execution and scientific computation via WebAssembly with zero server compute overhead.</p>
               </div>
 
               <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                 <Cpu className="w-8 h-8 text-amber-600 mb-3" />
-                <h3 className="font-bold text-slate-900 text-sm">&gt;75% Pass Rule</h3>
-                <p className="text-xs text-slate-500 mt-1">Rigorous formative quizzes with randomized pools, tracking best and latest attempts.</p>
+                <h3 className="font-bold text-slate-900 text-sm">Mastery Assessments</h3>
+                <p className="text-xs text-slate-500 mt-1">Rigorous formative assessments with randomized question pools, server-side grading, and enforced mastery thresholds.</p>
               </div>
             </div>
           </div>

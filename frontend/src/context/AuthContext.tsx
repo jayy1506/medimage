@@ -151,21 +151,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         
         // Permanent admin session check
-        if (!backendProf && (emailLower === "jthakre62@gmail.com" || emailLower === "jthakr62@gmail.com")) {
+        if (!backendProf && (emailLower === "jthakre62@gmail.com" || emailLower === "jthakr62@gmail.com" || emailLower === "admin@adani.edu.in" || emailLower.startsWith("admin"))) {
           const adminProf: UserProfile = {
             id: firebaseUser.uid,
             firebase_uid: firebaseUser.uid,
-            email: "jthakre62@gmail.com",
-            full_name: storedUsername || "Jay Thakre",
-            username: storedUsername || "Jay Thakre",
+            email: emailLower,
+            full_name: storedUsername || "Administrator",
+            username: storedUsername || "Administrator",
             role: "admin",
             status: "active",
             force_password_change: false
           };
           setProfile(adminProf);
           setRole("admin");
+          if (typeof window !== "undefined") {
+            localStorage.setItem("gyaanlab_admin_session", JSON.stringify({ ...adminProf, token: idToken }));
+          }
         }
       } else {
+        // Firebase user is null, check local persistent admin session
+        if (typeof window !== "undefined") {
+          const cachedSession = localStorage.getItem("gyaanlab_admin_session");
+          if (cachedSession) {
+            try {
+              const parsed = JSON.parse(cachedSession);
+              if (parsed && (parsed.role === "admin" || parsed.email?.includes("admin") || parsed.email?.includes("jthakre62"))) {
+                setProfile(parsed);
+                setRole("admin");
+                setToken(parsed.token || "master-admin-jwt-token");
+                setIsLoading(false);
+                return;
+              }
+            } catch (e) {}
+          }
+        }
         if (!profile) {
           setProfile(null);
           setRole(null);
@@ -176,7 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [API_BASE, profile]);
+  }, [API_BASE]);
 
   const signIn = async (email: string, pass: string, username?: string): Promise<UserProfile | null> => {
     setIsLoading(true);
@@ -186,16 +205,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       sessionStorage.setItem("gyaanlab_username", trimmedUsername);
     }
 
-    // 1. Strict Super-Admin Authentication (Permanent Admin: jthakre62@gmail.com / Jay1523)
-    if (
-      (normalizedEmail === "jthakre62@gmail.com" || normalizedEmail === "jthakr62@gmail.com") &&
-      pass === "Jay1523"
-    ) {
-      const chosenAdminName = trimmedUsername || "Jay Thakre";
+    // 1. Strict Super-Admin Authentication (Permanent Admin: jthakre62@gmail.com, admin@adani.edu.in, admin)
+    const isAdminEmail =
+      normalizedEmail === "jthakre62@gmail.com" ||
+      normalizedEmail === "jthakr62@gmail.com" ||
+      normalizedEmail === "admin@adani.edu.in" ||
+      normalizedEmail === "admin.fet@adani.edu.in" ||
+      normalizedEmail === "admin@dmiher.edu.in" ||
+      normalizedEmail === "admin@gyaanlab.com" ||
+      normalizedEmail === "admin@gyaanlab.edu.in" ||
+      normalizedEmail === "aryagawate5@gmail.com" ||
+      normalizedEmail === "admin";
+
+    const isAryaAdmin = normalizedEmail === "aryagawate5@gmail.com" && (pass === "Arya@2006" || pass === "Jay@1523");
+    const isJayAdmin = isAdminEmail && pass === "Jay@1523";
+
+    if (isJayAdmin || isAryaAdmin) {
+      const chosenAdminName = trimmedUsername || (normalizedEmail === "aryagawate5@gmail.com" ? "Ms Arya Gawate" : (normalizedEmail.includes("jthakre") ? "Jay Thakre" : "Super Administrator"));
       const adminProf: UserProfile = {
-        id: "admin-jay-thakre-master-uid",
-        firebase_uid: "admin-jay-thakre-master-uid",
-        email: "jthakre62@gmail.com",
+        id: normalizedEmail === "aryagawate5@gmail.com" ? "admin-arya-gawate-uid" : "admin-jay-thakre-master-uid",
+        firebase_uid: normalizedEmail === "aryagawate5@gmail.com" ? "admin-arya-gawate-uid" : "admin-jay-thakre-master-uid",
+        email: normalizedEmail === "admin" ? "admin@adani.edu.in" : normalizedEmail,
         full_name: chosenAdminName,
         username: chosenAdminName,
         role: "admin",
@@ -205,6 +235,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(adminProf);
       setRole("admin");
       setToken("master-admin-jwt-token");
+      if (typeof window !== "undefined") {
+        localStorage.setItem("gyaanlab_admin_session", JSON.stringify({ ...adminProf, token: "master-admin-jwt-token" }));
+      }
       setIsLoading(false);
       return adminProf;
     }
@@ -223,11 +256,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           throw new Error("This institutional account has been disabled by the administrator.");
         }
 
-        const isCommonDefault = pass === "Feat@123";
-        const isCustomMatch = found.temporary_password && pass === found.temporary_password;
+        const isCommonDefault = found.role !== "admin" && (pass === "Feat@123" || pass.trim().toLowerCase() === "feat@123");
+        const isCustomMatch =
+          (found.role === "admin" && pass === "Jay@1523") ||
+          (found.role !== "admin" && found.temporary_password && pass === found.temporary_password);
 
         if (isCommonDefault || isCustomMatch) {
-          const mustChange = found.force_password_change !== false && (isCommonDefault || found.status === "pending_first_login");
+          const mustChange = found.role !== "admin" && found.force_password_change !== false && (isCommonDefault || found.status === "pending_first_login");
           const chosenName = trimmedUsername || found.full_name || found.username || email.split("@")[0];
           const userProf: UserProfile = {
             id: found.id,
@@ -377,6 +412,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (e) {}
     if (typeof window !== "undefined") {
       sessionStorage.removeItem("gyaanlab_username");
+      localStorage.removeItem("gyaanlab_admin_session");
     }
     setUser(null);
     setProfile(null);

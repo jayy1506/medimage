@@ -108,7 +108,7 @@ class RosterRedisService:
         if not self.redis_url or not self.redis_token:
             return (False, None, False)
         try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
+            async with httpx.AsyncClient(timeout=2.5) as client:
                 res = await client.get(
                     f"{self.redis_url}/get/{key}",
                     headers={"Authorization": f"Bearer {self.redis_token}"}
@@ -123,25 +123,24 @@ class RosterRedisService:
                     print(f"[REDIS] HTTP {res.status_code} while reading {key}")
                     return (False, None, False)
         except Exception as e:
-            print(f"[REDIS] Error reading {key}: {e}")
+            print(f"[REDIS] Transient read issue for {key}: {e}")
             return (False, None, False)
 
     async def _redis_set(self, key: str, data: Any) -> bool:
         if not self.redis_url or not self.redis_token:
             return False
         val_str = json.dumps(data)
-        for attempt in range(3):
-            try:
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    res = await client.post(
-                        f"{self.redis_url}/set/{key}",
-                        headers={"Authorization": f"Bearer {self.redis_token}"},
-                        content=val_str
-                    )
-                    if res.status_code == 200:
-                        return True
-            except Exception as e:
-                print(f"[REDIS] Set attempt {attempt + 1} failed for {key}: {e}")
+        try:
+            async with httpx.AsyncClient(timeout=2.5) as client:
+                res = await client.post(
+                    f"{self.redis_url}/set/{key}",
+                    headers={"Authorization": f"Bearer {self.redis_token}"},
+                    content=val_str
+                )
+                if res.status_code == 200:
+                    return True
+        except Exception as e:
+            print(f"[REDIS] Notice: Background Redis sync deferred for {key}: {e}")
         return False
 
     async def get_roster(self) -> List[Dict[str, Any]]:
