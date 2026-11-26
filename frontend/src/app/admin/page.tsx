@@ -955,10 +955,8 @@ export default function AdminDashboardPage() {
                   onChange={(e) => setStatusFilter(e.target.value as any)}
                   className="px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-adani-cyan"
                 >
-                  <option value="all">All Statuses</option>
-                  <option value="active">Active</option>
-                  <option value="disabled">Disabled</option>
-                  <option value="pending_first_login">Pending First Login</option>
+                  <option value="all">All Users</option>
+                  <option value="active">Active (Enabled)</option>
                 </select>
               </div>
             </div>
@@ -1018,28 +1016,17 @@ export default function AdminDashboardPage() {
                             )}
                           </td>
                           <td className="px-5 py-3.5">
-                            {u.status === "disabled" ? (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-red-600">
-                                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                                Disabled
+                            <div>
+                              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                Active (Enabled)
                               </span>
-                            ) : u.status === "active" && !u.force_password_change ? (
-                              <div>
-                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                  Active
-                                </span>
-                                <span className="text-[10px] text-emerald-600 block font-medium">Personal Password Set</span>
-                              </div>
-                            ) : (
-                              <div>
-                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-600">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                                  Pending Activation
-                                </span>
-                                <span className="text-[10px] text-amber-600 block font-medium">Initial Feat@123 (Must Change)</span>
-                              </div>
-                            )}
+                              {u.force_password_change ? (
+                                <span className="text-[10px] text-slate-500 block font-medium mt-0.5">Initial: Feat@123</span>
+                              ) : (
+                                <span className="text-[10px] text-emerald-600 block font-medium mt-0.5">Active</span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-5 py-3.5">
                             <div className="flex items-center gap-2">
@@ -1138,25 +1125,14 @@ export default function AdminDashboardPage() {
                                 Protected Admin
                               </span>
                             ) : (
-                              <>
-                                <button
-                                  onClick={() => handleToggleStatus(u.id)}
-                                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-colors border ${u.status === "active"
-                                    ? "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200"
-                                    : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200"
-                                    }`}
-                                >
-                                  {u.status === "active" ? "Disable" : "Enable"}
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteUser(u.id, u.email)}
-                                  className="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 hover:border-red-300 inline-flex items-center gap-1 shadow-sm"
-                                  title={`Permanently delete ${u.full_name || u.email}`}
-                                >
-                                  <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                                  <span>Delete</span>
-                                </button>
-                              </>
+                              <button
+                                onClick={() => handleDeleteUser(u.id, u.email)}
+                                className="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 hover:border-red-300 inline-flex items-center gap-1 shadow-sm cursor-pointer"
+                                title={`Permanently delete ${u.full_name || u.email}`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                                <span>Delete</span>
+                              </button>
                             )}
                           </td>
                         </tr>
