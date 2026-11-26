@@ -32,7 +32,8 @@ import {
   Eye,
   EyeOff,
   Key,
-  Mail
+  Mail,
+  UploadCloud
 } from "lucide-react";
 
 interface ManagedUser {
@@ -55,6 +56,19 @@ interface AuditEntry {
   ip: string;
   details: string;
 }
+
+const ROSTER_STORAGE_KEY = "medimage_permanent_roster_cache_v3";
+
+const mergeRosterLists = (primary: ManagedUser[], secondary: ManagedUser[]): ManagedUser[] => {
+  const map = new Map<string, ManagedUser>();
+  for (const u of secondary) {
+    if (u?.email) map.set(u.email.toLowerCase().trim(), u);
+  }
+  for (const u of primary) {
+    if (u?.email) map.set(u.email.toLowerCase().trim(), u);
+  }
+  return Array.from(map.values());
+};
 
 const DEFAULT_USERS: ManagedUser[] = [
   {
@@ -103,6 +117,9 @@ export default function AdminDashboardPage() {
   const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
   const [inviteAgeConsent, setInviteAgeConsent] = useState(false);
   const [csvContent, setCsvContent] = useState("");
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+  const [duplicateCount, setDuplicateCount] = useState<number>(0);
+  const [newCount, setNewCount] = useState<number>(0);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [emailSentId, setEmailSentId] = useState<string | null>(null);
 
@@ -193,10 +210,18 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     setMounted(true);
 
-    // Clean legacy local storage
+    // 1. Instant load from permanent local cache
+    let initialCached: ManagedUser[] = DEFAULT_USERS;
     if (typeof window !== "undefined") {
       try {
-        localStorage.removeItem("medimage_redis_roster_cache");
+        const cachedStr = localStorage.getItem(ROSTER_STORAGE_KEY);
+        if (cachedStr) {
+          const parsed = JSON.parse(cachedStr);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            initialCached = mergeRosterLists(parsed, DEFAULT_USERS);
+            setUsersList(initialCached);
+          }
+        }
       } catch (e) { }
     }
 
@@ -208,7 +233,7 @@ export default function AdminDashboardPage() {
       "kabir.m@adani.edu.in"
     ]);
 
-    // Fetch latest from Upstash Redis and populate roster state
+    // 2. Fetch latest from backend & cloud Redis and merge permanently
     const loadRedisRoster = async () => {
       try {
         const api = typeof window !== "undefined" ? "/api/v1" : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1");
@@ -217,7 +242,13 @@ export default function AdminDashboardPage() {
           const data = await res.json();
           if (data.users && Array.isArray(data.users)) {
             const cleanUsers = data.users.filter((u: ManagedUser) => !DUMMY_EMAILS.has(u.email.toLowerCase()));
-            setUsersList(cleanUsers);
+            const merged = mergeRosterLists(cleanUsers, initialCached);
+            setUsersList(merged);
+            if (typeof window !== "undefined") {
+              try {
+                localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify(merged));
+              } catch (e) { }
+            }
           }
           if (data.audit_logs) {
             setAuditLogs(data.audit_logs);
@@ -241,7 +272,13 @@ export default function AdminDashboardPage() {
               const parsed = JSON.parse(uJson.result);
               if (Array.isArray(parsed)) {
                 const cleanUsers = parsed.filter((u: ManagedUser) => !DUMMY_EMAILS.has(u.email.toLowerCase()));
-                setUsersList(cleanUsers);
+                const merged = mergeRosterLists(cleanUsers, initialCached);
+                setUsersList(merged);
+                if (typeof window !== "undefined") {
+                  try {
+                    localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify(merged));
+                  } catch (e) { }
+                }
                 setIsRedisSynced(true);
               }
             }
@@ -350,19 +387,26 @@ export default function AdminDashboardPage() {
       actor_email: user?.email || "jthakre62@gmail.com"
     };
 
-    // Optimistic local update
+    // Optimistic local update with active status for direct access
     const tempUser: ManagedUser = {
       id: `u-${Date.now()}`,
       email: payload.email,
       full_name: payload.full_name,
       role: payload.role as any,
-      status: "pending_first_login",
+      status: "active",
       created_at: new Date().toISOString(),
       temporary_password: payload.temporary_password,
-      force_password_change: true
+      force_password_change: false
     };
     const updated = [tempUser, ...usersList.filter((u) => u.email.toLowerCase() !== payload.email.toLowerCase())];
     setUsersList(updated);
+
+    // Save to permanent browser storage
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify(updated));
+      } catch (e) { }
+    }
 
     try {
       const res = await fetch(`${API_BASE}/admin/roster`, {
@@ -373,23 +417,37 @@ export default function AdminDashboardPage() {
       if (res.ok) {
         const data = await res.json();
         if (data.users && Array.isArray(data.users)) {
-          const userMap = new Map<string, ManagedUser>();
-          for (const u of updated) {
-            if (u && u.email) userMap.set(u.email.toLowerCase(), u);
-          }
-          for (const u of data.users) {
-            if (u && u.email) userMap.set(u.email.toLowerCase(), u);
-          }
-          const merged = Array.from(userMap.values());
+          const merged = mergeRosterLists(data.users, updated);
           setUsersList(merged);
+          if (typeof window !== "undefined") {
+            try {
+              localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify(merged));
+            } catch (e) { }
+          }
         }
         if (data.audit_logs) setAuditLogs(data.audit_logs);
       }
     } catch (err) {
-      console.warn("Cached locally, syncing with Redis in background");
+      console.warn("Cached locally, syncing with Redis directly in background");
     }
 
-    setInviteSuccess(`Invitation link provisioned and cached in Redis for ${inviteEmail}`);
+    // Direct Upstash sync fallback
+    if (UPSTASH_URL && UPSTASH_TOKEN) {
+      try {
+        await fetch(`${UPSTASH_URL}/set/medimage:roster:users`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${UPSTASH_TOKEN}`,
+            "Content-Type": "text/plain"
+          },
+          body: JSON.stringify(updated)
+        });
+      } catch (err) {
+        console.warn("Direct Upstash sync notice:", err);
+      }
+    }
+
+    setInviteSuccess(`User ${inviteEmail} provisioned with direct active access and saved to database.`);
     setInviteEmail("");
     setInviteName("");
     setTimeout(() => {
@@ -466,51 +524,190 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // Bulk CSV Roster Import
+  // Laptop CSV file picker reader
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadedFileName(file.name);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = (event.target?.result as string) || "";
+      if (text) {
+        setCsvContent(text);
+
+        // Pre-scan duplicates vs new records against existing roster
+        const existingEmails = new Set(usersList.map((u) => u.email.trim().toLowerCase()));
+        const seenInBatch = new Set<string>();
+        let dupes = 0;
+        let news = 0;
+
+        const lines = text.split("\n");
+        for (const rawLine of lines) {
+          const line = rawLine.trim();
+          if (!line) continue;
+          if (
+            line.toLowerCase().startsWith("email") ||
+            line.toLowerCase().startsWith("name") ||
+            line.toLowerCase().startsWith("full_name")
+          ) {
+            continue;
+          }
+          const parts = line.split(",").map((p) => p.trim().replace(/^["']|["']$/g, ""));
+          if (parts.length >= 2) {
+            let email = "";
+            let name = "";
+            if (parts[0].includes("@")) {
+              email = parts[0].toLowerCase();
+              name = parts[1];
+            } else if (parts[1].includes("@")) {
+              name = parts[0];
+              email = parts[1].toLowerCase();
+            }
+
+            if (email && name) {
+              if (existingEmails.has(email) || seenInBatch.has(email)) {
+                dupes++;
+              } else {
+                seenInBatch.add(email);
+                news++;
+              }
+            }
+          }
+        }
+        setDuplicateCount(dupes);
+        setNewCount(news);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // Bulk CSV Roster Import with automatic database duplicate removal & direct active access
   const handleBulkUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    const lines = csvContent.split("\n");
-    let addedCount = 0;
+    const existingEmails = new Set(usersList.map((u) => u.email.trim().toLowerCase()));
+    const seenInBatch = new Set<string>();
+    const newUsersToAdd: ManagedUser[] = [];
+    let duplicatesSkipped = 0;
 
+    const lines = csvContent.split("\n");
     for (const rawLine of lines) {
       const line = rawLine.trim();
-      if (!line || line.startsWith("email")) continue;
-      const parts = line.split(",").map((p) => p.trim());
+      if (!line) continue;
+      if (
+        line.toLowerCase().startsWith("email") ||
+        line.toLowerCase().startsWith("name") ||
+        line.toLowerCase().startsWith("full_name")
+      ) {
+        continue;
+      }
+      const parts = line.split(",").map((p) => p.trim().replace(/^["']|["']$/g, ""));
       if (parts.length >= 2) {
-        const [email, fullName, role = "student"] = parts;
-        try {
-          await fetch(`${API_BASE}/admin/roster`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: email,
-              full_name: fullName,
-              role: role.toLowerCase(),
-              actor_email: user?.email || "jthakre62@gmail.com"
-            })
-          });
-          addedCount++;
-        } catch (e) { }
+        let email = "";
+        let fullName = "";
+        let role: "student" | "faculty" | "admin" = "student";
+
+        if (parts[0].includes("@")) {
+          email = parts[0].toLowerCase();
+          fullName = parts[1];
+          if (parts[2] && ["student", "faculty", "admin"].includes(parts[2].toLowerCase())) {
+            role = parts[2].toLowerCase() as any;
+          }
+        } else if (parts[1].includes("@")) {
+          fullName = parts[0];
+          email = parts[1].toLowerCase();
+          if (parts[2] && ["student", "faculty", "admin"].includes(parts[2].toLowerCase())) {
+            role = parts[2].toLowerCase() as any;
+          }
+        }
+
+        if (!email || !fullName) continue;
+
+        if (existingEmails.has(email) || seenInBatch.has(email)) {
+          duplicatesSkipped++;
+          continue;
+        }
+
+        seenInBatch.add(email);
+        newUsersToAdd.push({
+          id: `u-${Date.now()}-${newUsersToAdd.length}`,
+          email,
+          full_name: fullName,
+          role,
+          status: "active", // Direct active access, no enablement required!
+          created_at: new Date().toISOString(),
+          temporary_password: "Feat@123",
+          force_password_change: false
+        });
       }
     }
 
-    // Refresh from Redis
-    try {
-      const res = await fetch(`${API_BASE}/admin/roster`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.users && Array.isArray(data.users)) {
-          setUsersList(data.users);
-        }
-      }
-    } catch (e) { }
+    if (newUsersToAdd.length === 0) {
+      alert(
+        duplicatesSkipped > 0
+          ? `All ${duplicatesSkipped} user(s) in this CSV already exist in the database. Zero duplicates added.`
+          : "No valid user rows found in CSV."
+      );
+      return;
+    }
 
-    setInviteSuccess(`Successfully imported and cached ${addedCount} users in Redis`);
+    // Merge new users with existing roster (union by email)
+    const updatedRoster = mergeRosterLists(newUsersToAdd, usersList);
+    setUsersList(updatedRoster);
+
+    // Save to permanent browser storage immediately
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(ROSTER_STORAGE_KEY, JSON.stringify(updatedRoster));
+      } catch (e) { }
+    }
+
+    // Send to backend batch endpoint
+    try {
+      await fetch(`${API_BASE}/admin/roster/bulk`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          users: newUsersToAdd.map((u) => ({
+            email: u.email,
+            full_name: u.full_name,
+            role: u.role,
+            temporary_password: u.temporary_password
+          })),
+          actor_email: user?.email || "jthakre62@gmail.com"
+        })
+      });
+    } catch (e) {
+      console.warn("Backend bulk API deferred, syncing to cloud Redis directly");
+    }
+
+    // Direct Upstash Cloud Redis sync fallback
+    if (UPSTASH_URL && UPSTASH_TOKEN) {
+      try {
+        await fetch(`${UPSTASH_URL}/set/medimage:roster:users`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${UPSTASH_TOKEN}`,
+            "Content-Type": "text/plain"
+          },
+          body: JSON.stringify(updatedRoster)
+        });
+      } catch (err) {
+        console.warn("Direct Upstash bulk sync error:", err);
+      }
+    }
+
+    setInviteSuccess(
+      `Successfully added ${newUsersToAdd.length} active users to database. ${duplicatesSkipped} duplicates skipped.`
+    );
     setCsvContent("");
+    setUploadedFileName(null);
+    setDuplicateCount(0);
+    setNewCount(0);
     setTimeout(() => {
       setShowBulkModal(false);
       setInviteSuccess(null);
-    }, 2000);
+    }, 2500);
   };
 
   const copySetupLink = (email: string, id: string) => {
@@ -528,6 +725,13 @@ export default function AdminDashboardPage() {
     const matchesRole = roleFilter === "all" || u.role === roleFilter;
     const matchesStatus = statusFilter === "all" || u.status === statusFilter;
     return matchesSearch && matchesRole && matchesStatus;
+  });
+
+  // Strict Alphabetical Sorting ($A -> Z$) by Full Name (case-insensitive, fallback to email)
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    const nameA = (a.full_name || a.email || "").toLowerCase().trim();
+    const nameB = (b.full_name || b.email || "").toLowerCase().trim();
+    return nameA.localeCompare(nameB, undefined, { sensitivity: "base" });
   });
 
   const totalStudents = usersList.filter((u) => u.role === "student").length;
@@ -774,14 +978,14 @@ export default function AdminDashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filteredUsers.length === 0 ? (
+                    {sortedUsers.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="px-5 py-8 text-center text-slate-400 italic">
                           No users found matching your search criteria.
                         </td>
                       </tr>
                     ) : (
-                      filteredUsers.map((u) => (
+                      sortedUsers.map((u) => (
                         <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
                           <td className="px-5 py-3.5">
                             <span className="font-bold text-slate-900 block">{u.full_name}</span>
@@ -1206,31 +1410,75 @@ export default function AdminDashboardPage() {
             ) : (
               <form onSubmit={handleBulkUpload} className="space-y-4">
                 <p className="text-xs text-slate-600">
-                  Paste comma-separated user records. Format: <code className="text-adani-purple font-bold">email, full_name, role</code>
+                  Import students and faculty directly from your laptop. Upload a <code className="text-adani-purple font-bold">.csv</code> file or paste records. Existing database duplicates are automatically detected and skipped.
                 </p>
 
-                <textarea
-                  rows={6}
-                  required
-                  placeholder={"neha.k@adani.edu.in, Neha Kulkarni, student\nvishal.m@adani.edu.in, Vishal Mehta, faculty"}
-                  value={csvContent}
-                  onChange={(e) => setCsvContent(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs text-slate-900 font-mono placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-adani-cyan"
-                />
+                {/* Laptop CSV File Picker & Drop Zone */}
+                <label className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-slate-300 hover:border-adani-cyan rounded-2xl bg-slate-50/80 hover:bg-cyan-50/30 transition-all cursor-pointer group select-none">
+                  <input
+                    type="file"
+                    accept=".csv,text/csv"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <UploadCloud className="w-7 h-7 text-slate-400 group-hover:text-adani-cyan mb-1.5 transition-colors" />
+                  <span className="text-xs font-bold text-slate-800 group-hover:text-adani-cyan">
+                    {uploadedFileName ? `File Loaded: ${uploadedFileName}` : "Browse CSV file from computer"}
+                  </span>
+                  <span className="text-[11px] text-slate-400 mt-0.5">
+                    Supports columns: (name, email, role) or (email, name)
+                  </span>
+                </label>
+
+                {/* File Parsing Analysis Badge */}
+                {uploadedFileName && (
+                  <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-100 rounded-xl text-xs">
+                    <span className="font-semibold text-slate-700">Roster Analysis:</span>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold text-[11px]">
+                        +{newCount} New Active Users
+                      </span>
+                      {duplicateCount > 0 && (
+                        <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 font-bold text-[11px]">
+                          {duplicateCount} Duplicates Skipped
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                    <span>Or paste/edit CSV records manually:</span>
+                  </div>
+                  <textarea
+                    rows={4}
+                    required
+                    placeholder={"Aarav Shah, aarav.s@adani.edu.in, student\nDiya Patel, diya.p@adani.edu.in, student"}
+                    value={csvContent}
+                    onChange={(e) => setCsvContent(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs text-slate-900 font-mono placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-adani-cyan"
+                  />
+                </div>
 
                 <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                   <button
                     type="button"
-                    onClick={() => setShowBulkModal(false)}
+                    onClick={() => {
+                      setShowBulkModal(false);
+                      setUploadedFileName(null);
+                      setDuplicateCount(0);
+                      setNewCount(0);
+                    }}
                     className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-colors shadow-sm cursor-pointer"
                   >
-                    Import &amp; Cache Roster
+                    Store Directly in Database
                   </button>
                 </div>
               </form>

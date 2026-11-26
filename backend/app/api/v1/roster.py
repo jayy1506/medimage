@@ -62,23 +62,62 @@ async def get_roster():
     }
 
 
-@router.post("", summary="Add new student or faculty with default password Feat@123")
+class BulkUserItem(BaseModel):
+    email: EmailStr
+    full_name: str
+    role: str = "student"
+    temporary_password: Optional[str] = "Feat@123"
+
+
+class BulkInviteRequest(BaseModel):
+    users: List[BulkUserItem]
+    actor_email: Optional[str] = "jthakre62@gmail.com"
+
+
+@router.post("", summary="Add new student or faculty with direct active access")
 async def add_roster_user(payload: InviteUserRequest):
     new_user = {
         "id": f"u-{int(id(payload))}",
         "email": payload.email,
         "full_name": payload.full_name,
         "role": payload.role,
-        "status": "pending_first_login",
+        "status": "active",
         "temporary_password": payload.temporary_password or "Feat@123",
-        "force_password_change": True,
+        "force_password_change": False,
         "created_at": "2026-10-30T00:00:00Z"
     }
     updated_roster = await roster_redis_service.add_user(new_user, actor_email=payload.actor_email)
     audit_logs = await roster_redis_service.get_audit_logs()
     return {
-        "message": f"Successfully added {payload.role} {payload.email} with default password Feat@123",
+        "message": f"Successfully added {payload.role} {payload.email} with direct active access",
         "users": updated_roster,
+        "audit_logs": audit_logs
+    }
+
+
+@router.post("/bulk", summary="Bulk add students or faculty with duplicate removal")
+async def bulk_add_roster_users(payload: BulkInviteRequest):
+    new_user_dicts = [
+        {
+            "id": f"u-{i}-{int(id(u))}",
+            "email": u.email,
+            "full_name": u.full_name,
+            "role": u.role,
+            "status": "active",
+            "temporary_password": u.temporary_password or "Feat@123",
+            "force_password_change": False,
+            "created_at": "2026-10-30T00:00:00Z"
+        }
+        for i, u in enumerate(payload.users)
+    ]
+    res = await roster_redis_service.bulk_add_users(new_user_dicts, actor_email=payload.actor_email)
+    audit_logs = await roster_redis_service.get_audit_logs()
+    return {
+        "message": f"Bulk import completed: added {res['added_count']} new active users, skipped {res['skipped_count']} duplicates",
+        "users": res["roster"],
+        "added_count": res["added_count"],
+        "skipped_count": res["skipped_count"],
+        "skipped_emails": res["skipped_emails"],
         "audit_logs": audit_logs
     }
 

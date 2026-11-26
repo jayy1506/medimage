@@ -1,7 +1,10 @@
 import json
+import os
 import httpx
 from typing import List, Dict, Any, Optional
 from app.core.config import settings
+
+BACKUP_FILE = os.path.join(os.path.dirname(__file__), "roster_backup.json")
 
 INITIAL_ROSTER = [
     {
@@ -19,9 +22,9 @@ INITIAL_ROSTER = [
         "email": "aryagawate5@gmail.com",
         "full_name": "Arya Gawate",
         "role": "admin",
-        "status": "pending_first_login",
+        "status": "active",
         "temporary_password": "Feat@123",
-        "force_password_change": True,
+        "force_password_change": False,
         "created_at": "2026-10-31T00:00:00Z"
     },
     {
@@ -131,6 +134,12 @@ class RosterRedisService:
             return False
         val_str = json.dumps(data)
         try:
+            if key == self.roster_key and isinstance(data, list):
+                try:
+                    with open(BACKUP_FILE, "w", encoding="utf-8") as bf:
+                        json.dump(data, bf)
+                except Exception:
+                    pass
             async with httpx.AsyncClient(timeout=2.5) as client:
                 res = await client.post(
                     f"{self.redis_url}/set/{key}",
@@ -156,13 +165,30 @@ class RosterRedisService:
                     u["temporary_password"] = "Jay1523" if "jthakre" in u.get("email", "") else "Feat@123"
                     has_changes = True
                 if "force_password_change" not in u:
-                    u["force_password_change"] = False if "jthakre" in u.get("email", "") else True
+                    u["force_password_change"] = False
+                    has_changes = True
+                if u.get("status") != "active" and u.get("status") != "disabled":
+                    u["status"] = "active"
                     has_changes = True
 
             self._in_memory_roster = merged
             if has_changes or len(merged) > len(data):
                 await self._redis_set(self.roster_key, merged)
             return self._in_memory_roster
+
+        # Check local disk backup if Redis was empty or temporarily unreachable
+        if os.path.exists(BACKUP_FILE):
+            try:
+                with open(BACKUP_FILE, "r", encoding="utf-8") as bf:
+                    b_data = json.load(bf)
+                    if isinstance(b_data, list) and len(b_data) > 0:
+                        merged = self._merge_rosters(b_data, self._in_memory_roster)
+                        self._in_memory_roster = merged
+                        if success:
+                            await self._redis_set(self.roster_key, merged)
+                        return self._in_memory_roster
+            except Exception:
+                pass
 
         if success and not key_exists:
             # Key confirmed NOT in Redis (brand new fresh instance)
@@ -280,8 +306,8 @@ class RosterRedisService:
         # Fetch current roster safely
         roster = await self.get_roster()
         user["temporary_password"] = user.get("temporary_password") or "Feat@123"
-        user["force_password_change"] = user.get("force_password_change", True)
-        user["status"] = user.get("status", "pending_first_login")
+        user["force_password_change"] = user.get("force_password_change", False)
+        user["status"] = "active"
 
         # Merge new user into roster (deduplicating by email)
         email_clean = user["email"].strip().lower()
@@ -291,7 +317,7 @@ class RosterRedisService:
         # Always update in-memory state immediately
         self._in_memory_roster = updated_roster
 
-        # Persist to Upstash Redis
+        # Persist to Upstash Redis & local backup
         await self._redis_set(self.roster_key, updated_roster)
 
         # Provision into Firebase Console & dispatch setup email
@@ -305,9 +331,53 @@ class RosterRedisService:
             "target": user["email"],
             "timestamp": "Just now",
             "ip": "127.0.0.1",
-            "details": f"Added {user.get('role', 'user')} {user.get('full_name')} with initial Feat@123 and dispatched Firebase password change email"
+            "details": f"Added active {user.get('role', 'user')} {user.get('full_name')} with direct access"
         })
         return self._in_memory_roster
+
+    async def bulk_add_users(self, new_users: List[Dict[str, Any]], actor_email: str = "jthakre62@gmail.com") -> Dict[str, Any]:
+        """
+        Deduplicates against existing roster and stores new users with active status directly.
+        """
+        roster = await self.get_roster()
+        existing_emails = {u.get("email", "").strip().lower() for u in roster if u.get("email")}
+
+        added = []
+        skipped = []
+
+        for u in new_users:
+            email_clean = (u.get("email") or "").strip().lower()
+            if not email_clean or email_clean in existing_emails:
+                skipped.append(email_clean or "unknown")
+                continue
+
+            existing_emails.add(email_clean)
+            u["status"] = "active"
+            u["temporary_password"] = u.get("temporary_password") or "Feat@123"
+            u["force_password_change"] = False
+            u["created_at"] = u.get("created_at") or "2026-10-30T00:00:00Z"
+            added.append(u)
+
+        if added:
+            updated_roster = added + roster
+            self._in_memory_roster = updated_roster
+            await self._redis_set(self.roster_key, updated_roster)
+            await self.add_audit_log({
+                "id": f"aud-bulk-{len(added)}",
+                "actor_email": actor_email,
+                "action": "BULK_CSV_INVITE",
+                "target": f"{len(added)}_users",
+                "timestamp": "Just now",
+                "ip": "127.0.0.1",
+                "details": f"Bulk imported {len(added)} active users from CSV, skipped {len(skipped)} duplicates"
+            })
+
+        return {
+            "roster": self._in_memory_roster,
+            "added_count": len(added),
+            "skipped_count": len(skipped),
+            "skipped_emails": skipped
+        }
 
     async def update_user_status(self, user_id: str, new_status: str, actor_email: str = "jthakre62@gmail.com") -> List[Dict[str, Any]]:
         roster = await self.get_roster()
