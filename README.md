@@ -392,4 +392,34 @@ For exhaustive technical references, inspect the `/docs` directory:
 
 ---
 
+## 12. Lexi Academic AI Guide (v2.0 Claude-Style Architecture)
+
+Lexi is the institutional, project-centric AI Academic Guide for Medical Text and Image Processing (`AIDS 12605.1`, B.Tech Sem VI, FET Adani University), powered by Google Gemini and vector RAG retrieval.
+
+### Key Capabilities & Architecture:
+1. **Server-Side Security & Client Key Pool:**
+   - Strict server-side API key isolation (`GEMINI_API_KEYS` in `.env.local`). Zero client-side key exposure.
+   - Round-robin multi-key pool rotating with exponential backoff on `429`/`503` rate limits.
+2. **Fast Scope Gate & Injection Interception:**
+   - Ultra-strict classifier distinguishing `project`, `off_topic`, and `greeting`. Prompt injection attempts are trapped and refused with an exact institutional notice.
+3. **Grounded RAG Pipeline:**
+   - 7 documentation modules in `/knowledge/` chunked and embedded via `gemini-embedding-001` with vector cosine similarity. Responses cite exact sources (`{ file, section }`).
+4. **Claude-Style Chat UI:**
+   - Right-aligned speech bubble for user messages.
+   - Open editorial layout for Lexi responses without repetitive headers or harsh dividing borders.
+   - Floating rounded card composer with inner toolbar, model badge, upward circular send button, and disclaimer.
+   - Real-time thinking indicator pill and collapsible citation cards.
+5. **Three Seamless Display Modes:**
+   - **Normal (Default):** Compact bottom-right floating window (380px $\times$ 600px, max 80vh) with slide-over history drawer.
+   - **Half:** Right docked panel (50% desktop, 40% tablet); host page dynamically shrinks beside it (`flex-1`) with zero overlays.
+   - **Full:** Full-viewport experience with collapsible sidebar and centered conversation column.
+   - Single mounted component with 200ms smooth transitions (survives active SSE streaming, scroll position, and input text).
+   - Shortcuts: `Ctrl/Cmd+J` (toggle), `Ctrl/Cmd+Shift+1/2/3` (modes), `Esc` (exit/close), `Ctrl/Cmd+K` (focus composer).
+6. **Project Palette Integration:**
+   - Styled with Adani Cyan (`#0077B6`), Adani Navy (`#0B2545`), and Clinical Slate dark modes.
+7. **Automated Evaluation Suite:**
+   - 40 test cases across 5 categories in `eval/project-eval.ts` achieving **100% (40/40)** accuracy.
+
+---
+
 *Developed with pride for the Faculty of Engineering and Technology, Adani Institute of Higher Education and Research.*

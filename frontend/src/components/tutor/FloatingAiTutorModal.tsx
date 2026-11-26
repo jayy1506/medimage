@@ -120,83 +120,49 @@ const SUGGESTED_PROMPTS = [
 type WindowSize = "small" | "half" | "full";
 
 async function queryGeminiDirect(prompt: string): Promise<{ text: string; citations: Citation[] } | null> {
-  const keysStr = process.env.NEXT_PUBLIC_GEMINI_API_KEYS || process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
-  const keys = keysStr.split(",").map((k) => k.trim()).filter(Boolean);
-  if (keys.length === 0) return null;
+  try {
+    const resp = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+    if (!resp.ok) return null;
+    const reader = resp.body?.getReader();
+    if (!reader) return null;
+    const decoder = new TextDecoder();
+    let accumulatedText = "";
+    let citations: Citation[] = [];
 
-  const isGreeting = /^(h[iey]+|heyy+|hello+|what'?s\s+up|whats\s+up|howdy|good\s+(morning|afternoon|evening)|sup)\b/i.test(prompt.trim());
-
-  let cleanRef = "Module 1 (M1), Topic 1: Radiology Modalities & Physics";
-  let citations: Citation[] = [];
-
-  const lower = prompt.toLowerCase();
-  if (/\bct\b|computed\s+tomography/i.test(lower)) {
-    cleanRef = "Module 1 (M1), Topic 5: Computed Tomography (CT & Sinograms)";
-    citations = [{ topic_title: "M1 (Module 1), Topic 5: Computed Tomography (CT & Sinograms)", section_number: 5, reference_code: "AIDS-12605.1" }];
-  } else if (/\bmri\b|magnetic\s+resonance/i.test(lower)) {
-    cleanRef = "Module 1 (M1), Topic 6: Magnetic Resonance Tomography (MRI)";
-    citations = [{ topic_title: "M1 (Module 1), Topic 6: Magnetic Resonance Tomography (MRI)", section_number: 6, reference_code: "AIDS-12605.1" }];
-  } else if (/\bultrasound\b|\busg\b|acoustic/i.test(lower)) {
-    cleanRef = "Module 1 (M1), Topic 7: Diagnostic Ultrasound & Acoustic Impedance";
-    citations = [{ topic_title: "M1 (Module 1), Topic 7: Diagnostic Ultrasound & Acoustic Impedance", section_number: 7, reference_code: "AIDS-12605.1" }];
-  } else if (/\bpet\b|\bspect\b|positron/i.test(lower)) {
-    cleanRef = "Module 1 (M1), Topic 8: Nuclear Medicine & Molecular Imaging (SPECT/PET)";
-    citations = [{ topic_title: "M1 (Module 1), Topic 8: Nuclear Medicine & Molecular Imaging (SPECT/PET)", section_number: 8, reference_code: "AIDS-12605.1" }];
-  } else if (/\bdicom\b/i.test(lower)) {
-    cleanRef = "Module 3 (M3), Topic 4: The DICOM Standard & Tag Dictionaries";
-    citations = [{ topic_title: "M3 (Module 3), Topic 4: The DICOM Standard & Tag Dictionaries", section_number: 4, reference_code: "AIDS-12605.1" }];
-  } else if (/\bwindow\b|\bhu\b|hounsfield/i.test(lower)) {
-    cleanRef = "Module 4 (M4), Topic 2: Clinical Windowing (Level, Width & Hounsfield Units)";
-    citations = [{ topic_title: "M4 (Module 4), Topic 2: Clinical Windowing", section_number: 2, reference_code: "AIDS-12605.1" }];
-  } else if (/\bu-?net\b|segmentation/i.test(lower)) {
-    cleanRef = "Module 2 (M2), Topic 4: Clinical Segmentation Strategies & U-Net";
-    citations = [{ topic_title: "M2 (Module 2), Topic 4: Clinical Segmentation Strategies & U-Net", section_number: 4, reference_code: "AIDS-12605.1" }];
-  } else if (!isGreeting) {
-    citations = [{ topic_title: "M1 (Module 1), Topic 1: Radiology Modalities & Physics", section_number: 1, reference_code: "AIDS-12605.1" }];
-  }
-
-  const systemInstruction = isGreeting
-    ? "You are Lexi, the official academic AI Clinical Tutor for 'Medical Text and Image Processing (AIDS 12605.1)' at the Faculty of Engineering and Technology, Adani Institute of Higher Education and Research. The student greeted you. Reply warmly, conversationally, and engagingly as Lexi. Ask what medical imaging modality or topic (such as CT, MRI, Ultrasound, DICOM, or segmentation) they want to explore today. Do NOT include any course citation line."
-    : `You are Lexi, the official academic AI Clinical Tutor for 'Medical Text and Image Processing (AIDS 12605.1)' at the Faculty of Engineering and Technology, Adani Institute of Higher Education and Research.\n\nINSTRUCTIONS:\n1. Answer like an expert AI tutor.\n2. If asked about an acronym or modality (e.g. CT, MRI, PET, SPECT, X-ray, Ultrasound, DICOM, PACS, HU, FBP), state the FULL FORM in bold right at the beginning (e.g. **CT** stands for **Computed Tomography**), provide diagnostic definition, operational physics, and math with KaTeX ($...$).\n3. End with a clean reference line: 📚 Course Reference: ${cleanRef}`;
-
-  const models = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b", "gemini-1.5-pro"];
-
-  for (const key of keys) {
-    for (const model of models) {
-      try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-        const resp = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: `${systemInstruction}\n\nUSER QUESTION: ${prompt}` }] }],
-            generationConfig: { temperature: isGreeting ? 0.7 : 0.3, maxOutputTokens: 900 }
-          })
-        });
-        if (resp.ok) {
-          const data = await resp.json();
-          const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (candidateText) {
-            return {
-              text: candidateText,
-              citations: isGreeting ? [] : citations
-            };
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value, { stream: true });
+      const lines = chunk.split("\n");
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.type === "token") {
+              accumulatedText += data.text;
+            } else if (data.type === "sources" && Array.isArray(data.items)) {
+              citations = data.items.map((item: any, idx: number) => ({
+                topic_title: `${item.file}: ${item.section}`,
+                section_number: idx + 1,
+                reference_code: "AIDS-12605.1"
+              }));
+            }
+          } catch {
+            // ignore non-json
           }
         }
-      } catch (e) {
-        // continue rotation
       }
     }
+    return { text: accumulatedText, citations };
+  } catch {
+    return null;
   }
-
-  if (isGreeting) {
-    return {
-      text: "Hey! What's up? I'm Lexi, your academic AI Clinical Tutor for **Medical Text & Image Processing (AIDS 12605.1)** at Adani University.\n\nI'm ready to help you explore imaging physics, modalities like CT, MRI, Ultrasound, DICOM standards, or clinical segmentation pipelines. What topic would you like to master today?",
-      citations: []
-    };
-  }
-
-  return null;
 }
 
 export default function FloatingAiTutorModal() {

@@ -3,7 +3,8 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProgressProvider } from "@/context/ProgressContext";
 import { GamificationProvider } from "@/context/GamificationContext";
-import FloatingAiTutorModal from "@/components/tutor/FloatingAiTutorModal";
+import { LexiChatProvider } from "@/context/LexiChatContext";
+import { AppShell } from "@/components/lexi/AppShell";
 
 export const metadata: Metadata = {
   title: "GyaanLab | Adani University",
@@ -24,8 +25,9 @@ export default function RootLayout({
         <AuthProvider>
           <ProgressProvider>
             <GamificationProvider>
-              {children}
-              <FloatingAiTutorModal />
+              <LexiChatProvider>
+                <AppShell>{children}</AppShell>
+              </LexiChatProvider>
             </GamificationProvider>
           </ProgressProvider>
         </AuthProvider>
