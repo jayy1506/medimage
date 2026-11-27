@@ -81,7 +81,6 @@ mcp_config.json
 .gemini/
 .gsd/
 adapters/
-docs/
 GSD-STYLE.md
 AGENTS.md
 PROJECT_RULES.md

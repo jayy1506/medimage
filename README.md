@@ -2,14 +2,14 @@
 ### Course: AIDS 12605.1 (B.Tech Semester VI)
 ### Faculty of Engineering and Technology, Adani Institute of Higher Education and Research (Deemed to be University)
 
-[![Platform Status](https://img.shields.io/badge/Milestones%200--6-Fully%20Implemented-brightgreen.svg)](docs/PLAN.md)
+[![Platform Status](https://img.shields.io/badge/Milestones%200--7-Fully%20Implemented-brightgreen.svg)](docs/PLAN.md)
 [![Access Control](https://img.shields.io/badge/Access-Invite--Only%20(RBAC)-blue.svg)](docs/AUTH.md)
 [![Zero Local Storage](https://img.shields.io/badge/Storage-Hosted%20DB%20Only%20(Supabase)-orange.svg)](docs/DATABASE.md)
 [![100% Free Tier](https://img.shields.io/badge/Infrastructure-100%25%20Free%20Tier-success.svg)](docs/PRD.md)
 [![Next.js 14](https://img.shields.io/badge/Frontend-Next.js%2014%20(App%20Router)-black.svg)](frontend)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI%20Python-009688.svg)](backend)
 [![Pyodide Sandbox](https://img.shields.io/badge/Sandbox-Pyodide%20WebAssembly-yellowgreen.svg)](docs/FEATURES.md)
-[![AI Tutor](https://img.shields.io/badge/AI%20Tutor-Gemini%201.5%20Flash%20%2B%20pgvector-blueviolet.svg)](docs/AI_AGENTS.md)
+[![AI Tutor](https://img.shields.io/badge/AI%20Tutor-Lexi%20v2.0%20(Gemini%20%2B%20RAG)-blueviolet.svg)](docs/AI_AGENTS.md)
 
 ---
 
