@@ -967,12 +967,12 @@ export default function AdminDashboardPage() {
                 <table className="w-full text-left text-xs text-slate-700">
                   <thead className="bg-slate-50 text-[11px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-200">
                     <tr>
-                      <th className="px-5 py-3.5">User</th>
-                      <th className="px-5 py-3.5">Assigned Role</th>
-                      <th className="px-5 py-3.5">Status</th>
-                      <th className="px-5 py-3.5">Password / Credential</th>
-                      <th className="px-5 py-3.5">Access Link</th>
-                      <th className="px-5 py-3.5 text-right">Actions</th>
+                      <th className="px-5 py-3.5 text-left whitespace-nowrap">User</th>
+                      <th className="px-5 py-3.5 text-left whitespace-nowrap">Assigned Role</th>
+                      <th className="px-5 py-3.5 text-left whitespace-nowrap">Status</th>
+                      <th className="px-5 py-3.5 text-left whitespace-nowrap">Password / Credential</th>
+                      <th className="px-5 py-3.5 text-left whitespace-nowrap">Access Link</th>
+                      <th className="px-5 py-3.5 text-right whitespace-nowrap">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -985,22 +985,22 @@ export default function AdminDashboardPage() {
                     ) : (
                       sortedUsers.map((u) => (
                         <tr key={u.id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="px-5 py-3.5">
-                            <span className="font-bold text-slate-900 block">{u.full_name}</span>
-                            <span className="text-[11px] text-slate-500 font-mono">{u.email}</span>
+                          <td className="px-5 py-3.5 align-middle whitespace-nowrap">
+                            <span className="font-bold text-slate-900 block leading-snug">{u.full_name}</span>
+                            <span className="text-[11px] text-slate-500 font-mono block mt-0.5">{u.email}</span>
                           </td>
-                          <td className="px-5 py-3.5">
-                            {u.email === "jthakre62@gmail.com" || u.email === "jthakr62@gmail.com" || u.email === "aryagawate5@gmail.com" ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-purple-50 text-adani-purple text-[10px] font-bold border border-purple-200">
-                                Super-Admin (Master)
-                              </span>
-                            ) : (
-                              <div className="relative inline-block">
+                          <td className="px-5 py-3.5 align-middle whitespace-nowrap">
+                            <div className="flex items-center">
+                              {u.email === "jthakre62@gmail.com" || u.email === "jthakr62@gmail.com" || u.email === "aryagawate5@gmail.com" ? (
+                                <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-purple-50 text-adani-purple text-[10px] font-bold border border-purple-200 whitespace-nowrap">
+                                  Super-Admin (Master)
+                                </span>
+                              ) : (
                                 <select
                                   value={u.role}
                                   disabled={changingRoleId === u.id}
                                   onChange={(e) => handleChangeRole(u.id, e.target.value as any)}
-                                  className={`text-[11px] font-bold py-1 px-2.5 rounded-lg border transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-adani-cyan shadow-2xs ${u.role === "admin"
+                                  className={`text-[11px] font-bold py-1 px-2.5 rounded-lg border transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-adani-cyan shadow-2xs whitespace-nowrap ${u.role === "admin"
                                       ? "bg-purple-50 text-adani-purple border-purple-200 hover:bg-purple-100"
                                       : u.role === "faculty"
                                         ? "bg-sky-50 text-adani-cyan border-sky-200 hover:bg-sky-100"
@@ -1012,23 +1012,18 @@ export default function AdminDashboardPage() {
                                   <option value="faculty">Faculty Instructor</option>
                                   <option value="admin">Administrator</option>
                                 </select>
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-5 py-3.5">
-                            <div>
-                              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                Active (Enabled)
-                              </span>
-                              {u.force_password_change ? (
-                                <span className="text-[10px] text-slate-500 block font-medium mt-0.5">Initial: Feat@123</span>
-                              ) : (
-                                <span className="text-[10px] text-emerald-600 block font-medium mt-0.5">Active</span>
                               )}
                             </div>
                           </td>
-                          <td className="px-5 py-3.5">
+                          <td className="px-5 py-3.5 align-middle whitespace-nowrap">
+                            <div className="flex items-center">
+                              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 shadow-2xs whitespace-nowrap">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                Active (Enabled)
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-5 py-3.5 align-middle whitespace-nowrap">
                             <div className="flex items-center gap-2">
                               <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono">
                                 <span className="font-semibold text-slate-800 tracking-wider">
@@ -1039,7 +1034,7 @@ export default function AdminDashboardPage() {
                                 <button
                                   type="button"
                                   onClick={() => togglePasswordVisibility(u.id)}
-                                  className="text-slate-400 hover:text-slate-700 transition-colors p-0.5"
+                                  className="text-slate-400 hover:text-slate-700 transition-colors p-0.5 cursor-pointer"
                                   title={revealedPasswords[u.id] ? "Hide Password" : "Show Password"}
                                 >
                                   {revealedPasswords[u.id] ? (
@@ -1056,7 +1051,7 @@ export default function AdminDashboardPage() {
                                       u.id
                                     )
                                   }
-                                  className="text-slate-400 hover:text-adani-cyan transition-colors p-0.5"
+                                  className="text-slate-400 hover:text-adani-cyan transition-colors p-0.5 cursor-pointer"
                                   title="Copy Password"
                                 >
                                   {copiedPasswordId === u.id ? (
@@ -1071,7 +1066,7 @@ export default function AdminDashboardPage() {
                                 <button
                                   onClick={() => handleResetPassword(u.id, u.email)}
                                   disabled={resettingId === u.id}
-                                  className="px-2 py-1 text-[10px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors flex items-center gap-1"
+                                  className="px-2.5 py-1 text-[10px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer"
                                   title="Reset password to initial Feat@123"
                                 >
                                   <RotateCcw className="w-3 h-3" />
@@ -1080,11 +1075,11 @@ export default function AdminDashboardPage() {
                               )}
                             </div>
                           </td>
-                          <td className="px-5 py-3.5 whitespace-nowrap">
+                          <td className="px-5 py-3.5 align-middle whitespace-nowrap">
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => copySetupLink(u.email, u.id)}
-                                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-medium transition-colors inline-flex items-center gap-1 border border-slate-200"
+                                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-medium transition-colors inline-flex items-center gap-1 border border-slate-200 cursor-pointer"
                                 title="Copy secure sign-in / setup link"
                               >
                                 {copiedId === u.id ? (
@@ -1102,7 +1097,7 @@ export default function AdminDashboardPage() {
 
                               <button
                                 onClick={() => handleSendSetupEmail(u.email, u.id)}
-                                className="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 text-[11px] font-medium transition-colors inline-flex items-center gap-1 border border-sky-200"
+                                className="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 text-[11px] font-medium transition-colors inline-flex items-center gap-1 border border-sky-200 cursor-pointer"
                                 title="Send Firebase password setup email to user's inbox"
                               >
                                 {emailSentId === u.id ? (
@@ -1119,21 +1114,23 @@ export default function AdminDashboardPage() {
                               </button>
                             </div>
                           </td>
-                          <td className="px-5 py-3.5 text-right space-x-2">
-                            {u.email === "jthakre62@gmail.com" || u.email === "aryagawate5@gmail.com" ? (
-                              <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
-                                Protected Admin
-                              </span>
-                            ) : (
-                              <button
-                                onClick={() => handleDeleteUser(u.id, u.email)}
-                                className="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 hover:border-red-300 inline-flex items-center gap-1 shadow-sm cursor-pointer"
-                                title={`Permanently delete ${u.full_name || u.email}`}
-                              >
-                                <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                                <span>Delete</span>
-                              </button>
-                            )}
+                          <td className="px-5 py-3.5 align-middle text-right whitespace-nowrap">
+                            <div className="flex items-center justify-end">
+                              {u.email === "jthakre62@gmail.com" || u.email === "aryagawate5@gmail.com" ? (
+                                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 whitespace-nowrap inline-flex items-center">
+                                  Protected Admin
+                                </span>
+                              ) : (
+                                <button
+                                  onClick={() => handleDeleteUser(u.id, u.email)}
+                                  className="px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 hover:border-red-300 inline-flex items-center gap-1 shadow-sm cursor-pointer whitespace-nowrap"
+                                  title={`Permanently delete ${u.full_name || u.email}`}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                                  <span>Delete</span>
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))
